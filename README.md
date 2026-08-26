@@ -1,3 +1,5 @@
+> ⚠️ **THIS APP IS CURRENTLY IN ACTIVE DEVELOPMENT AND AT A VERY EARLY STAGE — FUNCTIONALITIES MIGHT BE MISSING OR INCOMPLETE.**
+
 # Finderella
 
 A self-hosted media streaming app — like Plex or Jellyfin, except the server and
