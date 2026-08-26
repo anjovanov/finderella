@@ -6,29 +6,29 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import {
 	DEFAULT_LIMITS,
 	PROTOCOL_VERSION,
-	parseAgentMessage,
-	type AgentMessage
+	parseGatewayMessage,
+	type GatewayMessage
 } from '@finderella/protocol';
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
-import { agent } from '$lib/server/db/schema';
+import { gateway } from '$lib/server/db/schema';
 import { finalizeScan, ingestScanBatch } from '$lib/server/catalog/ingest';
 import { log } from '$lib/server/log';
-import { registry, type ConnectedAgent } from './registry';
+import { registry, type ConnectedGateway } from './registry';
 
 const wss = new WebSocketServer({ noServer: true });
 
-type AgentRow = typeof agent.$inferSelect;
+type GatewayRow = typeof gateway.$inferSelect;
 
 /**
- * Authenticate and accept an agent WebSocket at /agent/ws. Called from the
+ * Authenticate and accept an gateway WebSocket at /gateway/ws. Called from the
  * dev-server Vite plugin and, in production, from server/index.js via the
  * `init` hook bridge (see src/hooks.server.ts).
  *
- * Auth: per-agent bearer token minted by the pairing flow, matched by sha256
- * hash. In dev, AGENT_DEV_TOKEN is also accepted and lazily creates a
- * "Dev Agent" row so the rest of the pipeline behaves identically.
+ * Auth: per-gateway bearer token minted by the pairing flow, matched by sha256
+ * hash. In dev, GATEWAY_DEV_TOKEN is also accepted and lazily creates a
+ * "Dev Gateway" row so the rest of the pipeline behaves identically.
  */
 export async function handleUpgrade(
 	req: IncomingMessage,
@@ -38,14 +38,14 @@ export async function handleUpgrade(
 	try {
 		const row = await authenticate(bearerToken(req.headers.authorization));
 		if (!row) {
-			log.warn('rejected agent upgrade: bad or missing token');
+			log.warn('rejected gateway upgrade: bad or missing token');
 			socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
 			socket.destroy();
 			return;
 		}
 		wss.handleUpgrade(req, socket, head, (ws) => onConnection(ws, row));
 	} catch (err) {
-		log.error({ err }, 'agent upgrade failed');
+		log.error({ err }, 'gateway upgrade failed');
 		socket.destroy();
 	}
 }
@@ -55,34 +55,36 @@ function bearerToken(header: string | undefined): string | null {
 	return header.slice('Bearer '.length).trim() || null;
 }
 
-async function authenticate(token: string | null): Promise<AgentRow | null> {
+async function authenticate(token: string | null): Promise<GatewayRow | null> {
 	if (!token) return null;
 	const tokenHash = createHash('sha256').update(token).digest('hex');
-	const row = await db.query.agent.findFirst({ where: eq(agent.tokenHash, tokenHash) });
+	const row = await db.query.gateway.findFirst({ where: eq(gateway.tokenHash, tokenHash) });
 	if (row) return row;
 
-	// Dev convenience: a shared token that self-registers a real agent row.
-	if (dev && env.AGENT_DEV_TOKEN && token === env.AGENT_DEV_TOKEN) {
+	// Dev convenience: a shared token that self-registers a real gateway row.
+	if (dev && env.GATEWAY_DEV_TOKEN && token === env.GATEWAY_DEV_TOKEN) {
 		const anyUser = await db.query.user.findFirst({ columns: { id: true } });
 		if (!anyUser) {
-			log.warn('AGENT_DEV_TOKEN used but no user exists yet — sign up first');
+			log.warn('GATEWAY_DEV_TOKEN used but no user exists yet — sign up first');
 			return null;
 		}
 		const [created] = await db
-			.insert(agent)
-			.values({ name: 'Dev Agent', tokenHash, pairedByUserId: anyUser.id })
-			.onConflictDoNothing({ target: agent.tokenHash })
+			.insert(gateway)
+			.values({ name: 'Dev Gateway', tokenHash, pairedByUserId: anyUser.id })
+			.onConflictDoNothing({ target: gateway.tokenHash })
 			.returning();
 		return (
-			created ?? (await db.query.agent.findFirst({ where: eq(agent.tokenHash, tokenHash) })) ?? null
+			created ??
+			(await db.query.gateway.findFirst({ where: eq(gateway.tokenHash, tokenHash) })) ??
+			null
 		);
 	}
 	return null;
 }
 
-function onConnection(ws: WebSocket, row: AgentRow): void {
-	const agentId = row.id;
-	let registered: ConnectedAgent | null = null;
+function onConnection(ws: WebSocket, row: GatewayRow): void {
+	const gatewayId = row.id;
+	let registered: ConnectedGateway | null = null;
 
 	ws.on('message', (data, isBinary) => {
 		if (isBinary) {
@@ -98,60 +100,60 @@ function onConnection(ws: WebSocket, row: AgentRow): void {
 			);
 			return;
 		}
-		const parsed = parseAgentMessage(data.toString());
+		const parsed = parseGatewayMessage(data.toString());
 		if (!parsed.ok) {
-			log.warn({ agentId, error: parsed.error }, 'unparseable agent message');
+			log.warn({ gatewayId, error: parsed.error }, 'unparseable gateway message');
 			return;
 		}
 		registered = handleMessage(ws, row, registered, parsed.message);
 	});
 
 	ws.on('close', () => {
-		if (registered) registry.unregister(agentId, ws);
+		if (registered) registry.unregister(gatewayId, ws);
 	});
 
 	ws.on('error', (err) => {
-		log.warn({ agentId, err }, 'agent socket error');
+		log.warn({ gatewayId, err }, 'gateway socket error');
 	});
 }
 
 function handleMessage(
 	ws: WebSocket,
-	row: AgentRow,
-	registered: ConnectedAgent | null,
-	message: AgentMessage
-): ConnectedAgent | null {
+	row: GatewayRow,
+	registered: ConnectedGateway | null,
+	message: GatewayMessage
+): ConnectedGateway | null {
 	switch (message.type) {
 		case 'hello': {
 			if (message.protocolVersion !== PROTOCOL_VERSION) {
 				log.warn(
-					{ agentId: row.id, theirs: message.protocolVersion, ours: PROTOCOL_VERSION },
+					{ gatewayId: row.id, theirs: message.protocolVersion, ours: PROTOCOL_VERSION },
 					'protocol version mismatch; closing'
 				);
 				ws.close(4001, 'protocol version mismatch');
 				return registered;
 			}
 			const connected = registry.register({
-				agentId: row.id,
+				gatewayId: row.id,
 				socket: ws,
-				agentVersion: message.agentVersion,
+				gatewayVersion: message.gatewayVersion,
 				capabilities: message.capabilities
 			});
 			void db
-				.update(agent)
+				.update(gateway)
 				.set({
-					agentVersion: message.agentVersion,
+					gatewayVersion: message.gatewayVersion,
 					capabilities: message.capabilities,
 					lastSeenAt: new Date()
 				})
-				.where(eq(agent.id, row.id))
-				.catch((err) => log.error({ err }, 'failed to persist agent hello'));
+				.where(eq(gateway.id, row.id))
+				.catch((err) => log.error({ err }, 'failed to persist gateway hello'));
 			ws.send(
 				JSON.stringify({
 					id: connected.nextId(),
 					type: 'welcome',
 					protocolVersion: PROTOCOL_VERSION,
-					agentId: row.id,
+					gatewayId: row.id,
 					limits: DEFAULT_LIMITS
 				})
 			);
@@ -160,10 +162,10 @@ function handleMessage(
 		case 'ping':
 			registry.touch(row.id);
 			void db
-				.update(agent)
+				.update(gateway)
 				.set({ lastSeenAt: new Date() })
-				.where(eq(agent.id, row.id))
-				.catch((err) => log.error({ err }, 'failed to persist agent heartbeat'));
+				.where(eq(gateway.id, row.id))
+				.catch((err) => log.error({ err }, 'failed to persist gateway heartbeat'));
 			ws.send(JSON.stringify({ id: registered?.nextId() ?? 1, type: 'pong', re: message.id }));
 			return registered;
 		case 'resp':

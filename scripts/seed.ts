@@ -1,6 +1,6 @@
 /**
  * Dev seed: inserts the mock catalog (src/lib/data) into the database so the
- * UI is fully browsable without any paired agent. Idempotent — existing slugs
+ * UI is fully browsable without any paired gateway. Idempotent — existing slugs
  * are skipped. Media files are NOT created (playback uses the demo fallback).
  *
  * Run: npm run seed

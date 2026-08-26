@@ -4,24 +4,24 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
 
 /**
- * Attach the Finderella agent WebSocket endpoint to the Vite dev server.
+ * Attach the Finderella gateway WebSocket endpoint to the Vite dev server.
  * Production uses server/index.js + the `init` hook bridge instead; this
  * plugin loads the same handler module through Vite's SSR pipeline so the
  * registry singleton is shared with the running app (and stays HMR-friendly).
  */
-function agentWsDev(): Plugin {
+function gatewayWsDev(): Plugin {
 	return {
-		name: 'finderella-agent-ws-dev',
+		name: 'finderella-gateway-ws-dev',
 		configureServer(server: ViteDevServer) {
 			server.httpServer?.on('upgrade', async (req, socket, head) => {
-				if (!req.url?.startsWith('/agent/ws')) return;
+				if (!req.url?.startsWith('/gateway/ws')) return;
 				try {
-					const mod = await server.ssrLoadModule('/src/lib/server/agents/ws.ts');
+					const mod = await server.ssrLoadModule('/src/lib/server/gateways/ws.ts');
 					(
 						mod as { handleUpgrade: (r: typeof req, s: typeof socket, h: Buffer) => void }
 					).handleUpgrade(req, socket, head);
 				} catch (err) {
-					console.error('[agent-ws] failed to handle upgrade', err);
+					console.error('[gateway-ws] failed to handle upgrade', err);
 					socket.destroy();
 				}
 			});
@@ -32,7 +32,7 @@ function agentWsDev(): Plugin {
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
-		agentWsDev(),
+		gatewayWsDev(),
 		sveltekit({
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
@@ -41,7 +41,7 @@ export default defineConfig({
 			},
 
 			// VPS deployment: Node server (see server/index.js, which also owns the
-			// /agent/ws WebSocket upgrade).
+			// /gateway/ws WebSocket upgrade).
 			adapter: adapter(),
 
 			typescript: {

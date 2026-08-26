@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { pgEnum, pgTable, real, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { user } from './auth.schema';
-import { agent, mediaFile } from './agents.sql';
+import { gateway, mediaFile } from './gateways.sql';
 import { episode, movie, series } from './catalog.sql';
 
 export const playbackMode = pgEnum('playback_mode', ['direct', 'hls']);
@@ -20,9 +20,9 @@ export const playbackSession = pgTable('playback_session', {
 	mediaFileId: uuid('media_file_id')
 		.notNull()
 		.references(() => mediaFile.id, { onDelete: 'cascade' }),
-	agentId: uuid('agent_id')
+	gatewayId: uuid('gateway_id')
 		.notNull()
-		.references(() => agent.id, { onDelete: 'cascade' }),
+		.references(() => gateway.id, { onDelete: 'cascade' }),
 	mode: playbackMode('mode').notNull(),
 	quality: text('quality'),
 	startSeconds: real('start_seconds').notNull().default(0),

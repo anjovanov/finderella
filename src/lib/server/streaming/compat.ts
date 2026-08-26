@@ -21,7 +21,7 @@ export const CONTENT_TYPES: Record<string, string> = {
 
 /**
  * Can the browser play this file as-is (progressive <video src>)?
- * Unknown codecs (agent had no ffprobe) are given the benefit of the doubt
+ * Unknown codecs (gateway had no ffprobe) are given the benefit of the doubt
  * for browser-native containers — playback simply fails client-side if not.
  */
 export function isDirectPlayable(file: MediaFileRow): boolean {

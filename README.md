@@ -48,7 +48,7 @@ npm start              # serves the app + storage-gateway WebSocket on :3000
 ```
 
 Put a TLS reverse proxy in front (nginx/Caddy) and make sure WebSocket upgrades
-are forwarded on `/agent/ws` (nginx: `proxy_set_header Upgrade $http_upgrade;
+are forwarded on `/gateway/ws` (nginx: `proxy_set_header Upgrade $http_upgrade;
 proxy_set_header Connection "upgrade";`).
 
 Open the site, create the first account, and you're in.
@@ -57,7 +57,7 @@ Open the site, create the first account, and you're in.
 
 Install the storage gateway (`finderella-storage-gateway`, the media agent) on
 each device that holds media — see
-**[docs/agent-install.md](docs/agent-install.md)** for the full guide. Short
+**[docs/gateway-install.md](docs/gateway-install.md)** for the full guide. Short
 version:
 
 ```sh
@@ -78,18 +78,18 @@ npm run seed            # demo catalog, browsable without any gateway
 npm run dev
 ```
 
-Run a local storage gateway against the dev server with `AGENT_DEV_TOKEN` set
+Run a local storage gateway against the dev server with `GATEWAY_DEV_TOKEN` set
 in `.env`:
 
 ```sh
-npm run agent:dev -- connect
+npm run gateway:dev -- connect
 ```
 
 Useful scripts: `npm test` (protocol/parser/mp4 unit tests), `npm run check`
 (svelte-check), `npm run lint` / `npm run format`, `npm run db:studio`.
 
 Workspace layout: the repo root is the SvelteKit hub; `packages/protocol` holds
-the shared zod message schemas and binary framing; `packages/agent` is the
+the shared zod message schemas and binary framing; `packages/storage-gateway` is the
 storage-gateway CLI (`finderella-storage-gateway`, the media agent). See
 `CLAUDE.md` for architecture details and hard-won gotchas.
 

@@ -13,8 +13,8 @@ export const VIDEO_EXTENSIONS = [
 ] as const;
 
 /**
- * One scanned media file as reported by an agent. Codec/duration fields are
- * absent when the agent has no ffprobe (capability reported in `hello`).
+ * One scanned media file as reported by an gateway. Codec/duration fields are
+ * absent when the gateway has no ffprobe (capability reported in `hello`).
  */
 export const ProbedFile = z.object({
 	relPath: z.string().min(1),

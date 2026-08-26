@@ -1,6 +1,6 @@
 import { open } from 'node:fs/promises';
 import { encodeBinaryFrame, type HubLimits } from '@finderella/protocol';
-import type { AgentConnection } from './connection.js';
+import type { GatewayConnection } from './connection.js';
 
 export interface TransferRequest {
 	requestId: number;
@@ -17,14 +17,14 @@ export interface TransferRequest {
  * responsible for path validation.
  */
 export class FileTransfer {
-	#conn: AgentConnection;
+	#conn: GatewayConnection;
 	#req: TransferRequest;
 	#chunkBytes: number;
 	#credit: number;
 	#creditWaiter: (() => void) | null = null;
 	#aborted = false;
 
-	constructor(conn: AgentConnection, req: TransferRequest, limits: HubLimits) {
+	constructor(conn: GatewayConnection, req: TransferRequest, limits: HubLimits) {
 		this.#conn = conn;
 		this.#req = req;
 		this.#chunkBytes = limits.chunkBytes;

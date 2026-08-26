@@ -1,7 +1,7 @@
 import { error, json, type RequestHandler } from '@sveltejs/kit';
 import { z } from 'zod';
 import { getVideoSrc } from '$lib/data/playback';
-import { registry } from '$lib/server/agents/registry';
+import { registry } from '$lib/server/gateways/registry';
 import { SEGMENT_SECONDS } from '$lib/server/streaming/hls-playlist';
 import { sessionManager } from '$lib/server/streaming/session-manager';
 import { pickEpisodeSource, pickMovieSource } from '$lib/server/streaming/source-picker';
@@ -16,8 +16,8 @@ const StartRequest = z.object({
 /**
  * Create a playback session for a title and return what the player should
  * load. Modes:
- *  - direct: real file on an online agent, browser-compatible → range proxy
- *  - demo:   no real source (seeded catalog / agent offline with no alternative)
+ *  - direct: real file on an online gateway, browser-compatible → range proxy
+ *  - demo:   no real source (seeded catalog / gateway offline with no alternative)
  *            → sample video, so the UI stays usable without media
  * HLS transcoding for non-direct-playable files arrives in Phase 3.
  */
@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		kind === 'movie' ? await pickMovieSource(slug) : await pickEpisodeSource(slug, episodeSlug!);
 
 	if (!source) {
-		// No file on any online agent — fall back to the demo sample so seeded
+		// No file on any online gateway — fall back to the demo sample so seeded
 		// titles remain playable in development.
 		return json({ mode: 'demo', src: getVideoSrc(episodeSlug ?? slug), sessionId: null });
 	}
@@ -43,8 +43,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ mode: 'direct', src: `/api/stream/${session.id}/file`, sessionId: session.id });
 	}
 
-	// HLS transcode path: ffmpeg runs on the agent that owns the file.
-	const connected = registry.get(source.agentId);
+	// HLS transcode path: ffmpeg runs on the gateway that owns the file.
+	const connected = registry.get(source.gatewayId);
 	if (!connected?.capabilities.ffmpeg) {
 		error(
 			501,
@@ -61,7 +61,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const session = await sessionManager.start(user.id, source, 'hls');
 	try {
 		await registry.request(
-			source.agentId,
+			source.gatewayId,
 			{
 				type: 'session.start',
 				sessionId: session.id,

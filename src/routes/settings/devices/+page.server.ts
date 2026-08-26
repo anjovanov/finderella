@@ -3,9 +3,9 @@ import { count, desc, eq, gt, isNull, and } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { agent, agentPairingCode, library, mediaFile } from '$lib/server/db/schema';
-import { registry } from '$lib/server/agents/registry';
-import { triggerScan } from '$lib/server/agents/scan';
+import { gateway, gatewayPairingCode, library, mediaFile } from '$lib/server/db/schema';
+import { registry } from '$lib/server/gateways/registry';
+import { triggerScan } from '$lib/server/gateways/scan';
 import { LibraryKind } from '@finderella/protocol';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -18,30 +18,30 @@ function generateCode(): string {
 }
 
 export const load: PageServerLoad = async () => {
-	const [agents, fileCounts, pendingCodes] = await Promise.all([
-		db.query.agent.findMany({
+	const [gateways, fileCounts, pendingCodes] = await Promise.all([
+		db.query.gateway.findMany({
 			with: { libraries: true },
-			orderBy: [desc(agent.createdAt)]
+			orderBy: [desc(gateway.createdAt)]
 		}),
 		db
 			.select({ libraryId: mediaFile.libraryId, files: count() })
 			.from(mediaFile)
 			.where(eq(mediaFile.status, 'active'))
 			.groupBy(mediaFile.libraryId),
-		db.query.agentPairingCode.findMany({
+		db.query.gatewayPairingCode.findMany({
 			where: and(
-				isNull(agentPairingCode.claimedByAgentId),
-				gt(agentPairingCode.expiresAt, new Date())
+				isNull(gatewayPairingCode.claimedByGatewayId),
+				gt(gatewayPairingCode.expiresAt, new Date())
 			)
 		})
 	]);
 	const counts = new Map(fileCounts.map((row) => [row.libraryId, row.files]));
 	return {
-		agents: agents.map((a) => ({
+		gateways: gateways.map((a) => ({
 			id: a.id,
 			name: a.name,
 			online: registry.isOnline(a.id),
-			agentVersion: a.agentVersion,
+			gatewayVersion: a.gatewayVersion,
 			ffmpeg: a.capabilities?.ffmpeg ?? false,
 			lastSeenAt: a.lastSeenAt?.toISOString() ?? null,
 			libraries: a.libraries.map((lib) => ({
@@ -55,7 +55,7 @@ export const load: PageServerLoad = async () => {
 		})),
 		pendingCodes: pendingCodes.map((c) => ({
 			code: c.code,
-			agentName: c.agentName,
+			gatewayName: c.gatewayName,
 			expiresAt: c.expiresAt.toISOString()
 		}))
 	};
@@ -64,11 +64,11 @@ export const load: PageServerLoad = async () => {
 export const actions: Actions = {
 	createCode: async (event) => {
 		const formData = await event.request.formData();
-		const agentName = formData.get('name')?.toString().trim() || 'New device';
+		const gatewayName = formData.get('name')?.toString().trim() || 'New device';
 		const code = generateCode();
-		await db.insert(agentPairingCode).values({
+		await db.insert(gatewayPairingCode).values({
 			code,
-			agentName,
+			gatewayName,
 			createdByUserId: event.locals.user!.id,
 			expiresAt: new Date(Date.now() + PAIRING_CODE_TTL_MS)
 		});
@@ -77,18 +77,18 @@ export const actions: Actions = {
 
 	addLibrary: async (event) => {
 		const formData = await event.request.formData();
-		const agentId = formData.get('agentId')?.toString() ?? '';
+		const gatewayId = formData.get('gatewayId')?.toString() ?? '';
 		const rootPath = formData.get('rootPath')?.toString().trim() ?? '';
 		const kindRaw = formData.get('kind')?.toString() ?? '';
 		const name = formData.get('name')?.toString().trim() || rootPath.split('/').at(-1) || rootPath;
 		const kind = LibraryKind.safeParse(kindRaw);
-		if (!agentId || !rootPath || !kind.success) {
-			return fail(400, { message: 'Agent, folder path, and kind are required' });
+		if (!gatewayId || !rootPath || !kind.success) {
+			return fail(400, { message: 'Gateway, folder path, and kind are required' });
 		}
 		const [lib] = await db
 			.insert(library)
-			.values({ agentId, rootPath, name, kind: kind.data })
-			.onConflictDoNothing({ target: [library.agentId, library.rootPath] })
+			.values({ gatewayId, rootPath, name, kind: kind.data })
+			.onConflictDoNothing({ target: [library.gatewayId, library.rootPath] })
 			.returning();
 		if (!lib) return fail(409, { message: 'That folder is already a library on this device' });
 		try {
@@ -112,25 +112,25 @@ export const actions: Actions = {
 		return { rescanned: lib.id };
 	},
 
-	renameAgent: async (event) => {
+	renameGateway: async (event) => {
 		const formData = await event.request.formData();
-		const agentId = formData.get('agentId')?.toString() ?? '';
+		const gatewayId = formData.get('gatewayId')?.toString() ?? '';
 		const name = formData.get('name')?.toString().trim() ?? '';
-		if (!agentId || !name) return fail(400, { message: 'Name is required' });
-		await db.update(agent).set({ name }).where(eq(agent.id, agentId));
-		return { renamed: agentId };
+		if (!gatewayId || !name) return fail(400, { message: 'Name is required' });
+		await db.update(gateway).set({ name }).where(eq(gateway.id, gatewayId));
+		return { renamed: gatewayId };
 	},
 
-	revokeAgent: async (event) => {
+	revokeGateway: async (event) => {
 		const formData = await event.request.formData();
-		const agentId = formData.get('agentId')?.toString() ?? '';
-		if (!agentId) return fail(400, { message: 'Missing agent' });
-		// Close the live connection first so the agent can't keep serving.
-		const connected = registry.get(agentId);
+		const gatewayId = formData.get('gatewayId')?.toString() ?? '';
+		if (!gatewayId) return fail(400, { message: 'Missing gateway' });
+		// Close the live connection first so the gateway can't keep serving.
+		const connected = registry.get(gatewayId);
 		connected?.socket.close(4003, 'revoked');
 		// Cascades libraries and media files; catalog entries remain.
-		await db.delete(agent).where(eq(agent.id, agentId));
-		return { revoked: agentId };
+		await db.delete(gateway).where(eq(gateway.id, gatewayId));
+		return { revoked: gatewayId };
 	},
 
 	removeLibrary: async (event) => {

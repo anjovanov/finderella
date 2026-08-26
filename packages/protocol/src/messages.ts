@@ -2,16 +2,16 @@ import { z } from 'zod';
 import { LibraryKind, ProbedFile } from './media.js';
 
 /**
- * Finderella agent protocol, control plane.
+ * Finderella gateway protocol, control plane.
  *
- * One WebSocket per agent, dialed out from the agent to the hub. Control
+ * One WebSocket per gateway, dialed out from the gateway to the hub. Control
  * messages are JSON text frames validated by the discriminated unions below;
  * bulk data travels as binary frames (see framing.ts).
  *
  * Every message carries a per-connection `id`. Request/response correlation:
  * a `resp` message references the request it answers via `re`. To avoid id
  * collisions without coordination, hub-initiated requests use odd ids and
- * agent-initiated ones even ids (see nextId in framing.ts).
+ * gateway-initiated ones even ids (see nextId in framing.ts).
  */
 
 export const PROTOCOL_VERSION = 1;
@@ -20,20 +20,20 @@ const base = z.object({
 	id: z.number().int().nonnegative()
 });
 
-export const AgentCapabilities = z.object({
+export const GatewayCapabilities = z.object({
 	ffmpeg: z.boolean(),
 	ffmpegVersion: z.string().optional(),
 	hwaccels: z.array(z.string()).default([])
 });
-export type AgentCapabilities = z.infer<typeof AgentCapabilities>;
+export type GatewayCapabilities = z.infer<typeof GatewayCapabilities>;
 
-/* ---------- agent → hub ---------- */
+/* ---------- gateway → hub ---------- */
 
 export const HelloMessage = base.extend({
 	type: z.literal('hello'),
 	protocolVersion: z.number().int(),
-	agentVersion: z.string(),
-	capabilities: AgentCapabilities
+	gatewayVersion: z.string(),
+	capabilities: GatewayCapabilities
 });
 export type HelloMessage = z.infer<typeof HelloMessage>;
 
@@ -70,16 +70,16 @@ export const ScanDoneMessage = base.extend({
 });
 export type ScanDoneMessage = z.infer<typeof ScanDoneMessage>;
 
-export const AgentMessage = z.discriminatedUnion('type', [
+export const GatewayMessage = z.discriminatedUnion('type', [
 	HelloMessage,
 	PingMessage,
 	RespMessage,
 	ScanFileMessage,
 	ScanDoneMessage
 ]);
-export type AgentMessage = z.infer<typeof AgentMessage>;
+export type GatewayMessage = z.infer<typeof GatewayMessage>;
 
-/* ---------- hub → agent ---------- */
+/* ---------- hub → gateway ---------- */
 
 export const HubLimits = z.object({
 	maxConcurrentTransfers: z.number().int().positive(),
@@ -92,7 +92,7 @@ export type HubLimits = z.infer<typeof HubLimits>;
 export const WelcomeMessage = base.extend({
 	type: z.literal('welcome'),
 	protocolVersion: z.number().int(),
-	agentId: z.string(),
+	gatewayId: z.string(),
 	limits: HubLimits
 });
 export type WelcomeMessage = z.infer<typeof WelcomeMessage>;
@@ -112,9 +112,9 @@ export const ScanStartMessage = base.extend({
 export type ScanStartMessage = z.infer<typeof ScanStartMessage>;
 
 /**
- * Read a byte range of a file. The agent answers with binary frames tagged
+ * Read a byte range of a file. The gateway answers with binary frames tagged
  * with this message's id (FIN flag on the last), then `resp {ok:true}`; on
- * failure it sends `resp {ok:false}` instead. Flow control: the agent starts
+ * failure it sends `resp {ok:false}` instead. Flow control: the gateway starts
  * with `limits.creditWindowBytes` of credit and the hub replenishes with
  * `credit` messages as the browser drains.
  */
@@ -142,9 +142,9 @@ export type CancelMessage = z.infer<typeof CancelMessage>;
 
 /**
  * Start an HLS transcode session: ffmpeg re-encodes to 4s-aligned fmp4
- * segments in a per-session temp dir. The agent answers with `resp` once
+ * segments in a per-session temp dir. The gateway answers with `resp` once
  * ffmpeg is spawned (ok) or with an error. Segments are then pulled with
- * `hls.get`; the agent transparently restarts ffmpeg when a requested
+ * `hls.get`; the gateway transparently restarts ffmpeg when a requested
  * segment is outside the produced window (seek).
  */
 export const SessionStartMessage = base.extend({
@@ -201,12 +201,12 @@ function parseWith<T>(schema: z.ZodType<T>, raw: string): ParseResult<T> {
 	return { ok: true, message: result.data };
 }
 
-/** Parse a text frame received BY the hub (i.e. sent by an agent). */
-export function parseAgentMessage(raw: string): ParseResult<AgentMessage> {
-	return parseWith(AgentMessage, raw);
+/** Parse a text frame received BY the hub (i.e. sent by an gateway). */
+export function parseGatewayMessage(raw: string): ParseResult<GatewayMessage> {
+	return parseWith(GatewayMessage, raw);
 }
 
-/** Parse a text frame received BY an agent (i.e. sent by the hub). */
+/** Parse a text frame received BY an gateway (i.e. sent by the hub). */
 export function parseHubMessage(raw: string): ParseResult<HubMessage> {
 	return parseWith(HubMessage, raw);
 }

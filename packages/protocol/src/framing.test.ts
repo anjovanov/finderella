@@ -5,7 +5,7 @@ import {
 	decodeBinaryFrame,
 	encodeBinaryFrame
 } from './framing.js';
-import { parseAgentMessage, parseHubMessage } from './messages.js';
+import { parseGatewayMessage, parseHubMessage } from './messages.js';
 
 describe('binary framing', () => {
 	it('round-trips a frame', () => {
@@ -46,22 +46,22 @@ describe('binary framing', () => {
 });
 
 describe('id allocation', () => {
-	it('keeps hub ids odd and agent ids even', () => {
+	it('keeps hub ids odd and gateway ids even', () => {
 		const hub = createIdAllocator('hub');
-		const agent = createIdAllocator('agent');
+		const gateway = createIdAllocator('gateway');
 		expect([hub(), hub(), hub()]).toEqual([1, 3, 5]);
-		expect([agent(), agent(), agent()]).toEqual([2, 4, 6]);
+		expect([gateway(), gateway(), gateway()]).toEqual([2, 4, 6]);
 	});
 });
 
 describe('message parsing', () => {
 	it('accepts a valid hello', () => {
-		const result = parseAgentMessage(
+		const result = parseGatewayMessage(
 			JSON.stringify({
 				id: 2,
 				type: 'hello',
 				protocolVersion: 1,
-				agentVersion: '0.0.1',
+				gatewayVersion: '0.0.1',
 				capabilities: { ffmpeg: false, hwaccels: [] }
 			})
 		);
@@ -70,8 +70,8 @@ describe('message parsing', () => {
 	});
 
 	it('rejects unknown types and malformed JSON', () => {
-		expect(parseAgentMessage('{"id":1,"type":"nope"}').ok).toBe(false);
-		expect(parseAgentMessage('not json').ok).toBe(false);
+		expect(parseGatewayMessage('{"id":1,"type":"nope"}').ok).toBe(false);
+		expect(parseGatewayMessage('not json').ok).toBe(false);
 		expect(parseHubMessage('{"id":1,"type":"hello"}').ok).toBe(false);
 	});
 });

@@ -47,18 +47,18 @@ and run it with `node` instead of the global command (they are the same file —
 the `finderella-storage-gateway` bin is just a symlink to `dist/cli.js`):
 
 ```sh
-node packages/agent/dist/cli.js pair --hub http://localhost:3000 --code ABCD1234 --name "This server"
-node packages/agent/dist/cli.js connect
+node packages/storage-gateway/dist/cli.js pair --hub http://localhost:3000 --code ABCD1234 --name "This server"
+node packages/storage-gateway/dist/cli.js connect
 ```
 
 Pairing against `http://localhost:3000` is deliberate: the token exchange and
 the WebSocket stay on loopback (your reverse proxy still handles TLS for
 browsers). Everything below applies unchanged — substitute
-`node /path/to/repo/packages/agent/dist/cli.js connect` as the `ExecStart` in
+`node /path/to/repo/packages/storage-gateway/dist/cli.js connect` as the `ExecStart` in
 the systemd unit, and note that a production hub requires the real pairing flow
-(the `AGENT_DEV_TOKEN` shortcut only works under `npm run dev`). Updates come
+(the `GATEWAY_DEV_TOKEN` shortcut only works under `npm run dev`). Updates come
 from the repo (`git pull`, rebuild both, restart both services) rather than a
-release tarball. Optional: `npm install -g ./packages/agent` after building
+release tarball. Optional: `npm install -g ./packages/storage-gateway` after building
 gives you the bare `finderella-storage-gateway` command on this machine too.
 
 ## 2. Generate a pairing code (hub)
@@ -150,13 +150,13 @@ sudo systemctl restart finderella-storage-gateway
 
 ## Troubleshooting
 
-| Symptom                                                | Cause / fix                                                                                                                                                                                                               |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `401` on connect                                       | Device was revoked, or stale token — generate a new code and re-`pair`.                                                                                                                                                   |
-| Pairs fine but never connects (hub behind nginx/Caddy) | The reverse proxy must forward WebSocket upgrades on `/agent/ws` (nginx: `proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";`). Pairing is plain HTTPS, so it can succeed while WS is broken. |
-| "Add library" disabled                                 | The device is offline (or the page is stale — refresh).                                                                                                                                                                   |
-| Titles missing codec/duration; transcoding refused     | The library was scanned without ffprobe — check `connect` startup output, then Rescan.                                                                                                                                    |
-| `ffmpeg NOT found` at startup                          | Transcoding unavailable from this device; direct-play still works. Install ffmpeg or rely on the bundled static build (absent only on unusual platforms).                                                                 |
+| Symptom                                                | Cause / fix                                                                                                                                                                                                                 |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `401` on connect                                       | Device was revoked, or stale token — generate a new code and re-`pair`.                                                                                                                                                     |
+| Pairs fine but never connects (hub behind nginx/Caddy) | The reverse proxy must forward WebSocket upgrades on `/gateway/ws` (nginx: `proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";`). Pairing is plain HTTPS, so it can succeed while WS is broken. |
+| "Add library" disabled                                 | The device is offline (or the page is stale — refresh).                                                                                                                                                                     |
+| Titles missing codec/duration; transcoding refused     | The library was scanned without ffprobe — check `connect` startup output, then Rescan.                                                                                                                                      |
+| `ffmpeg NOT found` at startup                          | Transcoding unavailable from this device; direct-play still works. Install ffmpeg or rely on the bundled static build (absent only on unusual platforms).                                                                   |
 
 ## Security notes
 

@@ -2,7 +2,7 @@ export const SEGMENT_SECONDS = 4;
 
 /**
  * Hub-synthesized VOD playlists (the Jellyfin trick): duration is known from
- * ffprobe, and the agent's ffmpeg is forced onto a fixed segment grid, so we
+ * ffprobe, and the gateway's ffmpeg is forced onto a fixed segment grid, so we
  * can hand the browser a complete seekable playlist before a single segment
  * exists. Segment n deterministically covers [n*len, (n+1)*len).
  */

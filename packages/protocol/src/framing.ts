@@ -1,6 +1,6 @@
 /**
  * Binary frame layout for bulk data (file ranges, HLS segments) multiplexed
- * over the agent WebSocket alongside JSON control frames.
+ * over the gateway WebSocket alongside JSON control frames.
  *
  * Header (6 bytes):
  *   UInt32BE  requestId   — id of the request this payload answers
@@ -44,10 +44,10 @@ export function decodeBinaryFrame(data: Uint8Array): BinaryFrame {
 }
 
 /**
- * Per-connection message-id allocator. The hub uses odd ids, agents even ids,
+ * Per-connection message-id allocator. The hub uses odd ids, gateways even ids,
  * so the two sides can both initiate requests without collisions.
  */
-export function createIdAllocator(side: 'hub' | 'agent'): () => number {
+export function createIdAllocator(side: 'hub' | 'gateway'): () => number {
 	let next = side === 'hub' ? 1 : 2;
 	return () => {
 		const id = next;

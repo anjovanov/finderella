@@ -18,7 +18,7 @@
 		"format": "prettier --write .",
 		"test": "vitest run",
 		"seed": "node --env-file=.env --import tsx scripts/seed.ts",
-		"agent:dev": "npm run dev --workspace @finderella/storage-gateway --",
+		"gateway:dev": "npm run dev --workspace @finderella/storage-gateway --",
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",

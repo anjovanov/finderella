@@ -2,14 +2,14 @@
 import { resolve, sep } from 'node:path';
 import { Command } from 'commander';
 import { DEFAULT_LIMITS } from '@finderella/protocol';
-import { AgentConnection } from './connection.js';
+import { GatewayConnection } from './connection.js';
 import { configPath, loadConfig, saveConfig } from './config.js';
 import { FileTransfer } from './file-reader.js';
 import { detectTools, ffmpegPath } from './probe.js';
 import { runScan } from './scanner.js';
 import { TranscodeSession } from './transcode/session.js';
 
-const log = (message: string) => console.log(`[agent] ${message}`);
+const log = (message: string) => console.log(`[gateway] ${message}`);
 
 const program = new Command();
 
@@ -25,7 +25,7 @@ program
 	.requiredOption('--code <code>', 'pairing code shown in the Finderella UI')
 	.option('--name <name>', 'name for this device')
 	.action(async (opts: { hub: string; code: string; name?: string }) => {
-		const res = await fetch(new URL('/api/agent/pair', opts.hub), {
+		const res = await fetch(new URL('/api/gateway/pair', opts.hub), {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ code: opts.code, name: opts.name })
@@ -36,9 +36,9 @@ program
 			process.exitCode = 1;
 			return;
 		}
-		const data = (await res.json()) as { agentId: string; name: string; token: string };
-		saveConfig({ hubUrl: opts.hub, token: data.token, agentId: data.agentId, name: data.name });
-		log(`paired as "${data.name}" (${data.agentId})`);
+		const data = (await res.json()) as { gatewayId: string; name: string; token: string };
+		saveConfig({ hubUrl: opts.hub, token: data.token, gatewayId: data.gatewayId, name: data.name });
+		log(`paired as "${data.name}" (${data.gatewayId})`);
 		log(`token saved to ${configPath()}`);
 		log(`start serving with: finderella-storage-gateway connect`);
 	});
@@ -47,12 +47,12 @@ program
 	.command('connect')
 	.description('Connect to the Finderella hub and stay online')
 	.option('--hub <url>', 'hub base URL (defaults to saved config)')
-	.option('--token <token>', 'agent token (defaults to saved config / env)')
+	.option('--token <token>', 'gateway token (defaults to saved config / env)')
 	.action(async (opts: { hub?: string; token?: string }) => {
 		const saved = loadConfig();
 		const hubUrl = opts.hub ?? process.env.FINDERELLA_HUB ?? saved?.hubUrl;
 		const token =
-			opts.token ?? process.env.FINDERELLA_TOKEN ?? process.env.AGENT_DEV_TOKEN ?? saved?.token;
+			opts.token ?? process.env.FINDERELLA_TOKEN ?? process.env.GATEWAY_DEV_TOKEN ?? saved?.token;
 		if (!hubUrl || !token) {
 			console.error(
 				`Missing hub URL or token. Pair first (finderella-storage-gateway pair --hub <url> --code <code>), pass --hub/--token, or set FINDERELLA_HUB/FINDERELLA_TOKEN. Config: ${configPath()}`
@@ -73,7 +73,7 @@ program
 		const sessions = new Map<string, TranscodeSession>();
 
 		const startTransfer = (
-			conn: AgentConnection,
+			conn: GatewayConnection,
 			requestId: number,
 			absPath: string,
 			offset: number,
@@ -89,7 +89,7 @@ program
 			void transfer.run().finally(() => transfers.delete(requestId));
 		};
 
-		const connection = new AgentConnection({
+		const connection = new GatewayConnection({
 			hubUrl,
 			token,
 			capabilities: tools.capabilities,

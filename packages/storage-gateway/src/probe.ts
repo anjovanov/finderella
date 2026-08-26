@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { AgentCapabilities, ProbedFile } from '@finderella/protocol';
+import type { GatewayCapabilities, ProbedFile } from '@finderella/protocol';
 
 const execFileAsync = promisify(execFile);
 
@@ -61,7 +61,7 @@ async function resolveBin(
 }
 
 export interface ToolAvailability {
-	capabilities: AgentCapabilities;
+	capabilities: GatewayCapabilities;
 	ffprobe: boolean;
 }
 

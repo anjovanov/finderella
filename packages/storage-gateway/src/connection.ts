@@ -3,12 +3,12 @@ import {
 	PROTOCOL_VERSION,
 	createIdAllocator,
 	parseHubMessage,
-	type AgentCapabilities,
+	type GatewayCapabilities,
 	type HubLimits,
 	type HubMessage
 } from '@finderella/protocol';
 
-const AGENT_VERSION = '0.0.1';
+const GATEWAY_VERSION = '0.0.1';
 const HEARTBEAT_INTERVAL_MS = 15_000;
 const HEARTBEAT_TIMEOUT_MS = 10_000;
 const BACKOFF_MIN_MS = 1_000;
@@ -17,39 +17,39 @@ const BACKOFF_MAX_MS = 30_000;
 export interface ConnectionOptions {
 	hubUrl: string;
 	token: string;
-	capabilities?: AgentCapabilities;
+	capabilities?: GatewayCapabilities;
 	log?: (message: string) => void;
 	/** Handler for hub messages the connection itself doesn't consume. */
-	onMessage?: (message: HubMessage, conn: AgentConnection) => void;
+	onMessage?: (message: HubMessage, conn: GatewayConnection) => void;
 	/** Called when the socket drops (before any reconnect) — abort in-flight work here. */
 	onDisconnect?: () => void;
 }
 
 /**
- * The agent's single outbound WebSocket to the hub: connects, authenticates
+ * The gateway's single outbound WebSocket to the hub: connects, authenticates
  * via bearer token on the upgrade request, sends `hello`, heartbeats with
  * `ping`/`pong`, and reconnects with capped exponential backoff (plus jitter)
  * forever. Later phases hang scan/transfer/transcode handling off `onMessage`.
  */
-export class AgentConnection {
+export class GatewayConnection {
 	#opts: ConnectionOptions;
 	#log: (message: string) => void;
-	#nextId = createIdAllocator('agent');
+	#nextId = createIdAllocator('gateway');
 	#socket: WebSocket | null = null;
 	#backoffMs = BACKOFF_MIN_MS;
 	#heartbeatTimer: NodeJS.Timeout | null = null;
 	#heartbeatDeadline: NodeJS.Timeout | null = null;
 	#closed = false;
 	#limits: HubLimits | null = null;
-	#agentId: string | null = null;
+	#gatewayId: string | null = null;
 
 	constructor(opts: ConnectionOptions) {
 		this.#opts = opts;
 		this.#log = opts.log ?? ((message) => console.log(message));
 	}
 
-	get agentId(): string | null {
-		return this.#agentId;
+	get gatewayId(): string | null {
+		return this.#gatewayId;
 	}
 
 	get limits(): HubLimits | null {
@@ -81,7 +81,7 @@ export class AgentConnection {
 	#wsUrl(): string {
 		const url = new URL(this.#opts.hubUrl);
 		url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-		url.pathname = '/agent/ws';
+		url.pathname = '/gateway/ws';
 		url.search = '';
 		return url.toString();
 	}
@@ -100,13 +100,13 @@ export class AgentConnection {
 			this.send({
 				type: 'hello',
 				protocolVersion: PROTOCOL_VERSION,
-				agentVersion: AGENT_VERSION,
+				gatewayVersion: GATEWAY_VERSION,
 				capabilities: this.#opts.capabilities ?? { ffmpeg: false, hwaccels: [] }
 			});
 		});
 
 		socket.on('message', (data, isBinary) => {
-			if (isBinary) return; // no hub→agent binary frames defined yet
+			if (isBinary) return; // no hub→gateway binary frames defined yet
 			const parsed = parseHubMessage(data.toString());
 			if (!parsed.ok) {
 				this.#log(`ignoring unparseable hub message: ${parsed.error}`);
@@ -118,7 +118,7 @@ export class AgentConnection {
 		socket.on('close', (code, reason) => {
 			this.#clearHeartbeat();
 			this.#socket = null;
-			this.#agentId = null;
+			this.#gatewayId = null;
 			this.#opts.onDisconnect?.();
 			if (this.#closed) return;
 			const delay = this.#backoffMs + Math.floor(Math.random() * 1_000);
@@ -138,9 +138,9 @@ export class AgentConnection {
 	#handleMessage(message: HubMessage): void {
 		switch (message.type) {
 			case 'welcome':
-				this.#agentId = message.agentId;
+				this.#gatewayId = message.gatewayId;
 				this.#limits = message.limits;
-				this.#log(`connected as agent ${message.agentId}`);
+				this.#log(`connected as gateway ${message.gatewayId}`);
 				this.#startHeartbeat();
 				break;
 			case 'pong':

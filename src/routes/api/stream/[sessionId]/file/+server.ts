@@ -1,5 +1,5 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
-import { registry } from '$lib/server/agents/registry';
+import { registry } from '$lib/server/gateways/registry';
 import { contentTypeFor } from '$lib/server/streaming/compat';
 import { sessionManager } from '$lib/server/streaming/session-manager';
 
@@ -14,7 +14,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 	if (!session || session.mode !== 'direct') error(404, 'no such playback session');
 	sessionManager.touch(session.id);
 
-	const { file, rootPath, agentId } = session.source;
+	const { file, rootPath, gatewayId } = session.source;
 	const size = file.size;
 
 	// Parse a single-range header; video elements request "bytes=start-" ranges.
@@ -48,7 +48,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 	let body: ReadableStream<Uint8Array>;
 	try {
 		body = registry.openByteStream(
-			agentId,
+			gatewayId,
 			{ type: 'file.read', rootPath, relPath: file.relPath, offset: start, length },
 			request.signal
 		);

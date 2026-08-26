@@ -1,18 +1,18 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { episode, library, mediaFile, movie, series } from '$lib/server/db/schema';
-import { registry } from '$lib/server/agents/registry';
+import { registry } from '$lib/server/gateways/registry';
 import { isDirectPlayable, type MediaFileRow } from './compat';
 
 export interface PlayableSource {
 	file: MediaFileRow;
 	rootPath: string;
-	agentId: string;
+	gatewayId: string;
 	directPlayable: boolean;
 }
 
 async function pickFrom(files: MediaFileRow[]): Promise<PlayableSource | null> {
-	const online = files.filter((f) => registry.isOnline(f.agentId));
+	const online = files.filter((f) => registry.isOnline(f.gatewayId));
 	if (online.length === 0) return null;
 	const ranked = online.toSorted((a, b) => {
 		const direct = Number(isDirectPlayable(b)) - Number(isDirectPlayable(a));
@@ -27,12 +27,12 @@ async function pickFrom(files: MediaFileRow[]): Promise<PlayableSource | null> {
 	return {
 		file,
 		rootPath: lib.rootPath,
-		agentId: file.agentId,
+		gatewayId: file.gatewayId,
 		directPlayable: isDirectPlayable(file)
 	};
 }
 
-/** Best online source for a movie slug, or null (offline agents / no files). */
+/** Best online source for a movie slug, or null (offline gateways / no files). */
 export async function pickMovieSource(slug: string): Promise<PlayableSource | null> {
 	const row = await db.query.movie.findFirst({ where: eq(movie.slug, slug) });
 	if (!row) return null;

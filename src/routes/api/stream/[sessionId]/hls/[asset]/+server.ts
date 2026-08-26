@@ -1,5 +1,5 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
-import { registry } from '$lib/server/agents/registry';
+import { registry } from '$lib/server/gateways/registry';
 import { buildMasterPlaylist, buildMediaPlaylist } from '$lib/server/streaming/hls-playlist';
 import { sessionManager } from '$lib/server/streaming/session-manager';
 
@@ -7,7 +7,7 @@ const SEGMENT_RE = /^seg-\d+\.m4s$/;
 
 /**
  * HLS delivery for transcode sessions. Playlists are synthesized hub-side
- * from the file's probed duration; init/segments are pulled from the agent
+ * from the file's probed duration; init/segments are pulled from the gateway
  * over the tunnel (which transparently restarts ffmpeg on out-of-window
  * seeks). Authorization = the unguessable session uuid, like /file.
  */
@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 	sessionManager.touch(session.id);
 
 	const asset = params.asset!;
-	const { file, agentId } = session.source;
+	const { file, gatewayId } = session.source;
 
 	if (asset === 'master.m3u8') {
 		return new Response(buildMasterPlaylist(file.bitrate), {
@@ -35,7 +35,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 	let body: ReadableStream<Uint8Array>;
 	try {
 		body = registry.openByteStream(
-			agentId,
+			gatewayId,
 			{ type: 'hls.get', sessionId: session.id, name: asset },
 			request.signal
 		);

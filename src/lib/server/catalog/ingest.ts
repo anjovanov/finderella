@@ -6,7 +6,7 @@ import { log } from '$lib/server/log';
 import { parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
 
 /**
- * Turns agent scan reports into catalog rows. Metadata is filename-derived
+ * Turns gateway scan reports into catalog rows. Metadata is filename-derived
  * (NullMetadataProvider era) — a future TMDB provider fills the same columns.
  * Existing catalog entries are never overwritten by rescans; files just link
  * to them.
@@ -118,7 +118,7 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 				.insert(mediaFile)
 				.values({
 					libraryId,
-					agentId: lib.agentId,
+					gatewayId: lib.gatewayId,
 					relPath: file.relPath,
 					size: file.size,
 					mtimeMs: file.mtimeMs,

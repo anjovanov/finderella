@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { playbackSession } from '$lib/server/db/schema';
-import { registry } from '$lib/server/agents/registry';
+import { registry } from '$lib/server/gateways/registry';
 import { log } from '$lib/server/log';
 import type { PlayableSource } from './source-picker';
 
@@ -34,7 +34,7 @@ class SessionManager {
 			.values({
 				userId,
 				mediaFileId: source.file.id,
-				agentId: source.agentId,
+				gatewayId: source.gatewayId,
 				mode
 			})
 			.returning({ id: playbackSession.id });
@@ -79,11 +79,11 @@ class SessionManager {
 		this.#sessions.delete(sessionId);
 		log.info({ sessionId, reason }, 'playback stopped');
 		if (session.mode === 'hls') {
-			// Tell the agent to kill ffmpeg and wipe the session temp dir.
+			// Tell the gateway to kill ffmpeg and wipe the session temp dir.
 			try {
-				registry.send(session.source.agentId, { type: 'session.stop', sessionId });
+				registry.send(session.source.gatewayId, { type: 'session.stop', sessionId });
 			} catch {
-				// agent offline — it self-reaps on disconnect anyway
+				// gateway offline — it self-reaps on disconnect anyway
 			}
 		}
 		await db

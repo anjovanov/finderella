@@ -14,7 +14,7 @@ export interface HlsJobOptions {
  * playlist from the known duration. `-ss` before `-i` gives fast seeks.
  *
  * Timestamps are 0-based per run (ffmpeg's mov muxer rebases regardless of
- * -copyts/-output_ts_offset); after a mid-file restart the agent patches
+ * -copyts/-output_ts_offset); after a mid-file restart the gateway patches
  * each segment's tfdt boxes to the absolute timeline (see mp4-patch.ts) so
  * hls.js places fragments correctly.
  * (A copy/remux fast path is deliberately deferred: stream-copied segments

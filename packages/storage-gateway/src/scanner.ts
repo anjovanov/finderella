@@ -1,7 +1,7 @@
 import { readdir, stat } from 'node:fs/promises';
 import { extname, join, relative, sep } from 'node:path';
 import { VIDEO_EXTENSIONS, type ProbedFile, type ScanStartMessage } from '@finderella/protocol';
-import type { AgentConnection } from './connection.js';
+import type { GatewayConnection } from './connection.js';
 import { probeFile } from './probe.js';
 
 const BATCH_SIZE = 25;
@@ -31,7 +31,7 @@ async function* walkVideoFiles(root: string): AsyncGenerator<string> {
  * always arrives after every `scan.file` batch.
  */
 export async function runScan(
-	conn: AgentConnection,
+	conn: GatewayConnection,
 	msg: ScanStartMessage,
 	opts: { ffprobe: boolean; log: (m: string) => void }
 ): Promise<void> {

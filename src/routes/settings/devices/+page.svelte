@@ -58,17 +58,17 @@
 			</div>
 		{:else if data.pendingCodes.length > 0}
 			<p class="mt-3 text-xs text-muted-foreground">
-				Pending codes: {data.pendingCodes.map((c) => `${c.code} (${c.agentName})`).join(', ')}
+				Pending codes: {data.pendingCodes.map((c) => `${c.code} (${c.gatewayName})`).join(', ')}
 			</p>
 		{/if}
 	</section>
 
 	<!-- Devices -->
-	{#if data.agents.length === 0}
+	{#if data.gateways.length === 0}
 		<p class="text-sm text-muted-foreground">No devices paired yet.</p>
 	{/if}
 
-	{#each data.agents as device (device.id)}
+	{#each data.gateways as device (device.id)}
 		<section class="rounded-2xl border border-border bg-card p-6">
 			<div class="flex flex-wrap items-center gap-3">
 				<span
@@ -81,12 +81,12 @@
 				<h2 class="text-lg font-medium">{device.name}</h2>
 				<span class="text-xs text-muted-foreground">
 					{device.online ? 'online' : `last seen ${formatWhen(device.lastSeenAt)}`}
-					{#if device.agentVersion}· v{device.agentVersion}{/if}
+					{#if device.gatewayVersion}· v{device.gatewayVersion}{/if}
 					· {device.ffmpeg ? 'transcoding available' : 'no ffmpeg'}
 				</span>
 				<form
 					method="POST"
-					action="?/renameAgent"
+					action="?/renameGateway"
 					class="ml-auto"
 					use:enhance
 					onsubmit={(e) => {
@@ -99,13 +99,13 @@
 						if (input) input.value = name;
 					}}
 				>
-					<input type="hidden" name="agentId" value={device.id} />
+					<input type="hidden" name="gatewayId" value={device.id} />
 					<input type="hidden" name="name" value="" />
 					<Button type="submit" variant="ghost" size="sm">Rename</Button>
 				</form>
 				<form
 					method="POST"
-					action="?/revokeAgent"
+					action="?/revokeGateway"
 					use:enhance
 					onsubmit={(e) => {
 						if (
@@ -115,7 +115,7 @@
 						}
 					}}
 				>
-					<input type="hidden" name="agentId" value={device.id} />
+					<input type="hidden" name="gatewayId" value={device.id} />
 					<Button type="submit" variant="ghost" size="sm" class="text-destructive">Revoke</Button>
 				</form>
 			</div>
@@ -179,7 +179,7 @@
 					class="flex flex-wrap items-center gap-2"
 					use:enhance
 				>
-					<input type="hidden" name="agentId" value={device.id} />
+					<input type="hidden" name="gatewayId" value={device.id} />
 					<Input name="rootPath" placeholder="/path/to/media" class="max-w-60 font-mono text-xs" />
 					<Input name="name" placeholder="Library name" class="max-w-40" />
 					<select
