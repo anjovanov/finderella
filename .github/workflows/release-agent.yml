@@ -1,11 +1,11 @@
-# Builds the media-agent CLI and attaches its installable tarball to the
+# Builds the storage-gateway (media agent) CLI and attaches its installable tarball to the
 # GitHub Release whenever a version tag is pushed:
 #
 #   git tag v0.0.1 && git push origin v0.0.1
 #
-# Users then install the agent on any device with:
+# Users then install the storage gateway on any device with:
 #   npm install -g https://github.com/<owner>/<repo>/releases/download/v0.0.1/finderella-storage-gateway-0.0.1.tgz
-name: Release agent
+name: Release storage gateway
 
 on:
   push:

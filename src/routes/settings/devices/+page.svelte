@@ -21,7 +21,7 @@
 		<div>
 			<h1 class="text-2xl font-semibold">Devices</h1>
 			<p class="text-sm text-muted-foreground">
-				Media agents serving your libraries to this Finderella server.
+				Storage gateways (media agents) serving your libraries to this Finderella server.
 			</p>
 		</div>
 		<form method="POST" action="?/signOut" use:enhance>
@@ -33,7 +33,8 @@
 	<section class="rounded-2xl border border-border bg-card p-6">
 		<h2 class="text-lg font-medium">Pair a new device</h2>
 		<p class="mt-1 text-sm text-muted-foreground">
-			Generate a one-time code, then run the agent on the device that holds your media.
+			Generate a one-time code, then run the finderella-storage-gateway CLI on the device that holds
+			your media.
 		</p>
 		<form method="POST" action="?/createCode" class="mt-4 flex gap-2" use:enhance>
 			<Input name="name" placeholder="Device name (e.g. Office PC)" class="max-w-xs" />

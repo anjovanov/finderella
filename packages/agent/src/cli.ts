@@ -15,7 +15,7 @@ const program = new Command();
 
 program
 	.name('finderella-storage-gateway')
-	.description('Finderella media agent — serves local media to a Finderella hub')
+	.description('Finderella storage gateway (media agent) — serves local media to a Finderella hub')
 	.version('0.0.1');
 
 program

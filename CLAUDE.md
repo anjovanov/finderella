@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Finderella** — a Plex/Jellyfin-style media streaming web app (movies + series) with a **distributed backend**: the SvelteKit app ("hub") runs on a storage-poor VPS; media lives on the user's other devices, each running a Node "media agent" (`packages/agent`) that dials out to the hub over one WebSocket and serves file ranges + ffmpeg HLS transcodes through that tunnel. Dark cinematic theme (forced dark, teal accent).
+**Finderella** — a Plex/Jellyfin-style media streaming web app (movies + series) with a **distributed backend**: the SvelteKit app ("hub") runs on a storage-poor VPS; media lives on the user's other devices, each running a Node storage gateway — the media agent (`packages/agent`, bin `finderella-storage-gateway`) — that dials out to the hub over one WebSocket and serves file ranges + ffmpeg HLS transcodes through that tunnel. Dark cinematic theme (forced dark, teal accent).
 
 ### Built so far
 
@@ -38,7 +38,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` — start dev server (`-- --open` to open browser); serves `/agent/ws` via a Vite plugin
 - `npm run build` / `npm run preview` — production build / preview it
 - `npm run start` — run the production build via `server/index.js` (adapter-node handler + agent WS upgrades)
-- `npm run agent:dev -- connect [--hub URL] [--token T]` — run the media agent from source (env: `FINDERELLA_HUB`, `FINDERELLA_TOKEN` or dev `AGENT_DEV_TOKEN`)
+- `npm run agent:dev -- connect [--hub URL] [--token T]` — run the storage gateway (media agent) from source (env: `FINDERELLA_HUB`, `FINDERELLA_TOKEN` or dev `AGENT_DEV_TOKEN`)
 - `npm run seed` — insert the mock catalog into the DB (idempotent; makes the UI browsable with demo playback, no agent needed)
 - `npm run test` — vitest (protocol framing, filename parser, mp4 tfdt patching)
 - `npm run check` — typecheck with svelte-check (`check:watch` for watch mode)

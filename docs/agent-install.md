@@ -1,24 +1,25 @@
-# Installing a media agent
+# Installing a storage gateway (media agent)
 
 The Finderella **hub** (the web app) runs on a server — typically a small VPS with
 little storage. Your media stays on the machines that already hold it (a desktop,
-home server, or NAS), each running a lightweight **media agent** that connects
+home server, or NAS), each running a lightweight **storage gateway** — the
+`finderella-storage-gateway` CLI, Finderella's media agent — that connects
 _out_ to the hub over a single WebSocket. The hub catalogs everything and streams
 playback to your browser by pulling bytes through that tunnel — direct streaming
 for browser-compatible files, on-device ffmpeg transcoding (HLS) for the rest.
 
-Because the agent only dials out, it works behind NAT/CGNAT with **no port
+Because the gateway only dials out, it works behind NAT/CGNAT with **no port
 forwarding or router configuration**.
 
 ## Prerequisites
 
 - Node.js 18 or newer on the media device (`node --version`).
-- ffmpeg is **optional**: a static build ships with the agent and is used
+- ffmpeg is **optional**: a static build ships with the gateway and is used
   automatically. If the device has its own ffmpeg (often with hardware
-  acceleration), the agent prefers it. Override with `FFMPEG_PATH` /
+  acceleration), the gateway prefers it. Override with `FFMPEG_PATH` /
   `FFPROBE_PATH` if needed.
 
-## 1. Install the agent
+## 1. Install the storage gateway
 
 Grab the tarball URL from the [latest release](../../releases/latest) and:
 
@@ -32,10 +33,10 @@ Verify:
 finderella-storage-gateway --version
 ```
 
-### Alternative: agent on the same machine as the hub
+### Alternative: gateway on the same machine as the hub
 
 If your media lives on the machine that hosts the hub itself, skip the tarball —
-the repo you deployed the hub from already contains the agent. Build it once in
+the repo you deployed the hub from already contains the gateway. Build it once in
 the hub's checkout:
 
 ```sh
@@ -118,7 +119,7 @@ Shows/
 ```ini
 # /etc/systemd/system/finderella-storage-gateway.service
 [Unit]
-Description=Finderella media agent
+Description=Finderella storage gateway (media agent)
 After=network-online.target
 Wants=network-online.target
 
@@ -159,9 +160,9 @@ sudo systemctl restart finderella-storage-gateway
 
 ## Security notes
 
-- The agent holds a single bearer token, revocable any time from
+- The gateway holds a single bearer token, revocable any time from
   **Settings → Devices** (Revoke disconnects the device immediately).
-- All traffic rides one outbound TLS WebSocket to your hub. The agent never
+- All traffic rides one outbound TLS WebSocket to your hub. The gateway never
   listens on any port.
 - File access is restricted to the library roots you configure; range and
-  transcode requests outside them are rejected agent-side.
+  transcode requests outside them are rejected gateway-side.

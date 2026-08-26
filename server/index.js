@@ -2,7 +2,7 @@
  * Finderella production server.
  *
  * Wraps the adapter-node handler in a plain Node http server so we can also
- * accept WebSocket upgrades from media agents at /agent/ws. The actual WS
+ * accept WebSocket upgrades from storage gateways (media agents) at /agent/ws. The actual WS
  * logic lives inside the SvelteKit bundle (src/lib/server/agents/ws.ts) and
  * is exposed on globalThis by the `init` hook in src/hooks.server.ts.
  *
