@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { PlayIcon } from '@hugeicons/core-free-icons';
+	import { PlayIcon, Video01Icon } from '@hugeicons/core-free-icons';
 	import { Button } from '$lib/components/ui/button';
 	import { episodeLabel, playTarget, watchHref, type MediaItem } from '$lib/data';
 	import MetaPills from './meta-pills.svelte';
 	import PosterArt from './poster-art.svelte';
+	import TrailerDialog from './trailer-dialog.svelte';
 
 	let { item }: { item: MediaItem } = $props();
 
@@ -14,6 +15,7 @@
 		target?.resume ? `Resume ${episodeLabel(target.season, target.episode.number)}` : 'Play'
 	);
 	const canPlay = $derived(item.kind === 'movie' || target !== undefined);
+	let trailerOpen = $state(false);
 
 	const byline = $derived(
 		item.kind === 'movie' ? `Directed by ${item.director}` : `Created by ${item.creator}`
@@ -60,7 +62,17 @@
 					<HugeiconsIcon icon={PlayIcon} data-icon="inline-start" />
 					{playLabel}
 				</Button>
+				{#if item.trailerKey}
+					<Button variant="secondary" size="lg" onclick={() => (trailerOpen = true)}>
+						<HugeiconsIcon icon={Video01Icon} data-icon="inline-start" />
+						Watch trailer
+					</Button>
+				{/if}
 			</div>
 		</div>
 	</div>
 </section>
+
+{#if item.trailerKey}
+	<TrailerDialog bind:open={trailerOpen} trailerKey={item.trailerKey} title={item.title} />
+{/if}

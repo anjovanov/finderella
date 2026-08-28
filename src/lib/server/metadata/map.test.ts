@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { mapGenres, movieMaturity, normalizeTitle, pickBestMatch, tvMaturity, yearOf } from './map';
+import {
+	mapGenres,
+	movieMaturity,
+	normalizeTitle,
+	pickBestMatch,
+	pickTrailer,
+	tvMaturity,
+	yearOf,
+	type TrailerCandidate
+} from './map';
 
 describe('mapGenres', () => {
 	it('maps TMDB names onto the fixed tuple, splitting combined TV genres', () => {
@@ -79,5 +88,40 @@ describe('pickBestMatch', () => {
 	it('returns nothing rather than an unrelated result', () => {
 		expect(pickBestMatch(results, 'Silo', 2023)).toBeUndefined();
 		expect(pickBestMatch(results, '***')).toBeUndefined();
+	});
+});
+
+describe('pickTrailer', () => {
+	const yt = (key: string, type: string, extra: Partial<TrailerCandidate> = {}) => ({
+		key,
+		site: 'YouTube',
+		type,
+		official: true,
+		iso_639_1: 'en',
+		...extra
+	});
+
+	it('prefers trailers over teasers and ignores featurettes/clips', () => {
+		const videos = [yt('feat', 'Featurette'), yt('tease', 'Teaser'), yt('trail', 'Trailer')];
+		expect(pickTrailer(videos)?.key).toBe('trail');
+		expect(pickTrailer([yt('feat', 'Featurette'), yt('tease', 'Teaser')])?.key).toBe('tease');
+	});
+
+	it('prefers official English uploads, keeping TMDB order on ties', () => {
+		expect(
+			pickTrailer([
+				yt('fan', 'Trailer', { official: false }),
+				yt('de', 'Trailer', { iso_639_1: 'de' }),
+				yt('en', 'Trailer'),
+				yt('en2', 'Trailer')
+			])?.key
+		).toBe('en');
+	});
+
+	it('only picks YouTube hosts and returns undefined when nothing qualifies', () => {
+		expect(pickTrailer([yt('v', 'Trailer', { site: 'Vimeo' })])).toBeUndefined();
+		expect(pickTrailer([yt('c', 'Clip'), yt('b', 'Behind the Scenes')])).toBeUndefined();
+		expect(pickTrailer([])).toBeUndefined();
+		expect(pickTrailer(undefined)).toBeUndefined();
 	});
 });

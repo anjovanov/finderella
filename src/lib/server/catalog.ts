@@ -45,7 +45,8 @@ function rowToMovie(row: MovieRow): Movie {
 		genres: knownGenres(row.genres),
 		theme: { hue: row.hue, hue2: row.hue2 },
 		posterUrl: row.posterUrl ?? undefined,
-		backdropUrl: row.backdropUrl ?? undefined
+		backdropUrl: row.backdropUrl ?? undefined,
+		trailerKey: row.trailerKey ?? undefined
 	};
 }
 
@@ -85,6 +86,7 @@ function rowToSeries(row: SeriesRow & { seasons: SeasonRow[] }): Series {
 		theme: { hue: row.hue, hue2: row.hue2 },
 		posterUrl: row.posterUrl ?? undefined,
 		backdropUrl: row.backdropUrl ?? undefined,
+		trailerKey: row.trailerKey ?? undefined,
 		seasons
 	};
 }

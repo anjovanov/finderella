@@ -31,6 +31,8 @@ interface MediaBase {
 	theme: { hue: number; hue2: number };
 	posterUrl?: string;
 	backdropUrl?: string;
+	/** YouTube video id of the trailer (from TMDB); unset = no "Watch trailer" button. */
+	trailerKey?: string;
 	/** 0–1 of the viewer's last playback (series: their latest episode); unset = nothing to show. */
 	progress?: number;
 }

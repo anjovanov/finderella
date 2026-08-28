@@ -117,6 +117,16 @@ export const ContentRatings = z.object({
 	results: z.array(z.object({ iso_3166_1: z.string(), rating: z.string().nullish() }))
 });
 
+export const Video = z.object({
+	key: z.string(),
+	site: z.string().nullish(),
+	type: z.string().nullish(),
+	official: z.boolean().nullish(),
+	iso_639_1: z.string().nullish(),
+	published_at: z.string().nullish()
+});
+export const Videos = z.object({ results: z.array(Video).nullish() }).nullish();
+
 export const MovieDetails = z.object({
 	id: z.number(),
 	title: z.string().nullish(),
@@ -130,7 +140,8 @@ export const MovieDetails = z.object({
 	backdrop_path: z.string().nullish(),
 	genres: z.array(TmdbGenre).nullish(),
 	credits: Credits,
-	release_dates: ReleaseDates.nullish()
+	release_dates: ReleaseDates.nullish(),
+	videos: Videos
 });
 
 export const TvDetails = z.object({
@@ -150,7 +161,8 @@ export const TvDetails = z.object({
 		.array(z.object({ season_number: z.number(), air_date: z.string().nullish() }))
 		.nullish(),
 	credits: Credits,
-	content_ratings: ContentRatings.nullish()
+	content_ratings: ContentRatings.nullish(),
+	videos: Videos
 });
 
 export const TvSeason = z.object({
@@ -169,6 +181,7 @@ export const TvSeason = z.object({
 		.nullish()
 });
 
+export type Video = z.infer<typeof Video>;
 export type SearchMovieResult = z.infer<typeof SearchMovieResult>;
 export type SearchTvResult = z.infer<typeof SearchTvResult>;
 export type MovieDetails = z.infer<typeof MovieDetails>;
@@ -196,11 +209,15 @@ export async function searchTv(query: string, year?: number): Promise<SearchTvRe
 }
 
 export function getMovie(id: number): Promise<MovieDetails | null> {
-	return tmdbGet(`/movie/${id}`, { append_to_response: 'credits,release_dates' }, MovieDetails);
+	return tmdbGet(
+		`/movie/${id}`,
+		{ append_to_response: 'credits,release_dates,videos' },
+		MovieDetails
+	);
 }
 
 export function getTv(id: number): Promise<TvDetails | null> {
-	return tmdbGet(`/tv/${id}`, { append_to_response: 'credits,content_ratings' }, TvDetails);
+	return tmdbGet(`/tv/${id}`, { append_to_response: 'credits,content_ratings,videos' }, TvDetails);
 }
 
 export function getTvSeason(id: number, seasonNumber: number): Promise<TvSeason | null> {

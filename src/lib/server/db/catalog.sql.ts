@@ -48,6 +48,8 @@ export const movie = pgTable('movie', {
 	hue2: smallint('hue2').notNull(),
 	posterUrl: text('poster_url'),
 	backdropUrl: text('backdrop_url'),
+	/** YouTube video id of the TMDB trailer; null when TMDB lists none. */
+	trailerKey: text('trailer_key'),
 	tmdbId: integer('tmdb_id'),
 	metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true }),
 	addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow()
@@ -77,6 +79,8 @@ export const series = pgTable('series', {
 	hue2: smallint('hue2').notNull(),
 	posterUrl: text('poster_url'),
 	backdropUrl: text('backdrop_url'),
+	/** YouTube video id of the TMDB trailer; null when TMDB lists none. */
+	trailerKey: text('trailer_key'),
 	tmdbId: integer('tmdb_id'),
 	metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true }),
 	addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow()

@@ -26,4 +26,6 @@
 
 **Progress**: a thin progress line under movie/series/episode cards (series = latest watched episode; full bar when finished), fed by `withProgress` in the browsing loaders.
 
+**Trailers**: TMDB videos (`append_to_response=videos`) now feed a `trailer_key` column on movie/series (migration `0003`); `pickTrailer` in `metadata/map.ts` prefers YouTube trailers over teasers, official over fan uploads, English over other languages, and ignores featurettes/clips. Detail heroes show a **Watch trailer** button only when a key exists; it opens the YouTube embed (`youtube-nocookie.com`, autoplay) in a shadcn `Dialog` (`trailer-dialog.svelte`, new `ui/dialog`). Existing titles pick up trailers on **Settings → Metadata → Refresh all metadata**.
+
 **Resume**: the series **Play** button now targets the viewer's next-in-line episode instead of S1E1 — the most recently watched episode if unfinished, otherwise the one after it — and reads `Resume S2E4`; unwatched shows (and shows whose last episode is finished) keep **Play** → S1E1. Applies to the detail hero and the home banner. `applyProgress` stamps `lastWatchedEpisodeId` on series; the pure pick lives in `src/lib/data/episodes.ts` (`playTarget`, also `flattenEpisodes` shared with the watch loader). `watchHref` no longer throws on a series without episodes (button disabled).

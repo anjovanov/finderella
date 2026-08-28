@@ -81,6 +81,36 @@ export function tvMaturity(
 	return us?.rating ? TV_RATINGS[us.rating.trim().toUpperCase()] : undefined;
 }
 
+export interface TrailerCandidate {
+	key: string;
+	site?: string | null;
+	type?: string | null;
+	official?: boolean | null;
+	iso_639_1?: string | null;
+}
+
+const TRAILER_TYPE_SCORE: Record<string, number> = { trailer: 4, teaser: 2 };
+
+/**
+ * The YouTube video to show behind "Watch trailer": trailers over teasers,
+ * official over fan uploads, English over other languages; TMDB lists newest
+ * first, so ties keep that order. Other video types (featurettes, clips,
+ * bloopers) and non-YouTube hosts are never picked.
+ */
+export function pickTrailer<T extends TrailerCandidate>(
+	videos: T[] | null | undefined
+): T | undefined {
+	let best: { video: T; score: number } | undefined;
+	for (const video of videos ?? []) {
+		if (video.site?.toLowerCase() !== 'youtube' || !video.key) continue;
+		const typeScore = TRAILER_TYPE_SCORE[video.type?.toLowerCase() ?? ''];
+		if (!typeScore) continue;
+		const score = typeScore * 4 + (video.official ? 2 : 0) + (video.iso_639_1 === 'en' ? 1 : 0);
+		if (!best || score > best.score) best = { video, score };
+	}
+	return best?.video;
+}
+
 /** Diacritics-insensitive, punctuation-free key for comparing titles. */
 export function normalizeTitle(title: string): string {
 	return title

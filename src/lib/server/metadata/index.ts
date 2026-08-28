@@ -3,7 +3,7 @@ import { db } from '$lib/server/db';
 import { episode, movie, season, series } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import type { CastMember } from '$lib/data/types';
-import { mapGenres, movieMaturity, pickBestMatch, tvMaturity, yearOf } from './map';
+import { mapGenres, movieMaturity, pickBestMatch, pickTrailer, tvMaturity, yearOf } from './map';
 import {
 	getMovie,
 	getTv,
@@ -75,6 +75,7 @@ function movieUpdate(details: MovieDetails, current: typeof movie.$inferSelect) 
 		castPeople: castFrom(details.credits),
 		posterUrl: imageUrl(details.poster_path, POSTER_SIZE),
 		backdropUrl: imageUrl(details.backdrop_path, BACKDROP_SIZE),
+		trailerKey: pickTrailer(details.videos?.results)?.key ?? null,
 		// TMDB reports 0 for "unknown".
 		budget: details.budget && details.budget > 0 ? details.budget : null
 	};
@@ -135,6 +136,7 @@ function seriesUpdate(details: TvDetails, current: typeof series.$inferSelect) {
 		castPeople: castFrom(details.credits),
 		posterUrl: imageUrl(details.poster_path, POSTER_SIZE),
 		backdropUrl: imageUrl(details.backdrop_path, BACKDROP_SIZE),
+		trailerKey: pickTrailer(details.videos?.results)?.key ?? null,
 		creator: (details.created_by ?? []).map((c) => c.name).join(', ') || current.creator
 	};
 	if (details.name?.trim()) values.title = details.name.trim();
