@@ -21,9 +21,11 @@
 		<Tabs.Root value="1">
 			<div class="flex page-gutter flex-col gap-4">
 				<h2 class="text-lg font-semibold tracking-tight">Episodes</h2>
-				<Tabs.List>
+				<Tabs.List class="h-11">
 					{#each data.show.seasons as season (season.number)}
-						<Tabs.Trigger value={String(season.number)}>Season {season.number}</Tabs.Trigger>
+						<Tabs.Trigger value={String(season.number)} class="px-4 text-base">
+							Season {season.number}
+						</Tabs.Trigger>
 					{/each}
 				</Tabs.List>
 			</div>
@@ -35,7 +37,7 @@
 						</p>
 						<!-- arrowTop: strip padding (0.75rem) + half the 20rem-wide 16:9 thumb (5.625rem)
 						     - half the button (1.125rem) = 5.25rem -->
-						<Carousel label="Season {season.number} episodes" arrowTop="top-[5.25rem]">
+						<Carousel label="Season {season.number} episodes" arrowTop="top-[5.25rem]" hoverShade>
 							{#each season.episodes as episode (episode.id)}
 								<EpisodeCard
 									{episode}
@@ -57,6 +59,6 @@
 		<div class="page-gutter">
 			<Separator />
 		</div>
-		<MediaRow title="More like this" items={data.related} />
+		<MediaRow title="More like this" items={data.related} size="lg" />
 	{/if}
 </div>

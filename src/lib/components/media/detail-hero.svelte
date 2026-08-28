@@ -38,10 +38,10 @@
 		<div class="flex max-w-2xl flex-col gap-3">
 			<h1 class="text-3xl font-bold tracking-tight text-balance sm:text-5xl">{item.title}</h1>
 			{#if item.tagline}
-				<p class="text-muted-foreground italic">{item.tagline}</p>
+				<p class="text-lg text-muted-foreground italic">{item.tagline}</p>
 			{/if}
-			<MetaPills {item} />
-			<p class="text-muted-foreground">{item.synopsis}</p>
+			<MetaPills {item} size="md" />
+			<p class="text-lg text-muted-foreground">{item.synopsis}</p>
 			<p class="text-sm text-muted-foreground">
 				{byline}
 				{#if budgetLabel}

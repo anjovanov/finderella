@@ -21,6 +21,6 @@
 		<div class="page-gutter">
 			<Separator />
 		</div>
-		<MediaRow title="More like this" items={data.related} />
+		<MediaRow title="More like this" items={data.related} size="lg" />
 	{/if}
 </div>

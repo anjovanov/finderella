@@ -34,7 +34,7 @@
 		<span
 			class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm"
 		>
-			<HugeiconsIcon icon={StarIcon} class="size-3 text-primary" />
+			<HugeiconsIcon icon={StarIcon} class="size-3 text-yellow-400" />
 			{item.rating.toFixed(1)}
 		</span>
 	</div>

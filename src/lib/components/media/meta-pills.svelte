@@ -4,7 +4,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import type { MediaItem } from '$lib/data';
 
-	let { item }: { item: MediaItem } = $props();
+	let { item, size = 'sm' }: { item: MediaItem; size?: 'sm' | 'md' } = $props();
+	const md = $derived(size === 'md');
 
 	const yearLabel = $derived(
 		item.kind === 'series' && item.endYear ? `${item.year}–${item.endYear}` : String(item.year)
@@ -16,16 +17,21 @@
 	);
 </script>
 
-<div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+<div
+	class={[
+		'flex flex-wrap items-center text-muted-foreground',
+		md ? 'gap-2.5 text-base' : 'gap-2 text-sm'
+	]}
+>
 	<span class="inline-flex items-center gap-1 font-medium text-foreground">
-		<HugeiconsIcon icon={StarIcon} class="size-4 text-primary" />
+		<HugeiconsIcon icon={StarIcon} class="text-yellow-400 {md ? 'size-5' : 'size-4'}" />
 		{item.rating.toFixed(1)}
 	</span>
 	<span>{yearLabel}</span>
 	<span aria-hidden="true">·</span>
 	<span>{lengthLabel}</span>
-	<Badge variant="outline">{item.maturity}</Badge>
+	<Badge variant="outline" class={md ? 'h-6 px-2.5 text-sm' : ''}>{item.maturity}</Badge>
 	{#each item.genres as genre (genre)}
-		<Badge variant="secondary">{genre}</Badge>
+		<Badge variant="secondary" class={md ? 'h-6 px-2.5 text-sm' : ''}>{genre}</Badge>
 	{/each}
 </div>

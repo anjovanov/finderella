@@ -9,6 +9,7 @@
 		label,
 		arrowTop,
 		gutter = 'page-gutter',
+		hoverShade = false,
 		class: className,
 		children
 	}: {
@@ -19,6 +20,8 @@
 		/** Horizontal padding + matching scroll-padding for the scroller. Defaults to the
 		 *  page gutter; pass e.g. `px-6 scroll-px-6` when embedded in a smaller surface. */
 		gutter?: string;
+		/** Deepen the edge fades while the row is hovered (alongside the arrows). */
+		hoverShade?: boolean;
 		class?: string;
 		children: Snippet;
 	} = $props();
@@ -35,9 +38,18 @@
 
 	function watchEdges(node: HTMLDivElement) {
 		updateEdges();
-		const observer = new ResizeObserver(updateEdges);
-		observer.observe(node);
-		return () => observer.disconnect();
+		const resize = new ResizeObserver(updateEdges);
+		resize.observe(node);
+		// A row inside a hidden tab panel mounts with zero widths; re-measure
+		// once it's actually shown.
+		const visibility = new IntersectionObserver((entries) => {
+			if (entries.some((entry) => entry.isIntersecting)) updateEdges();
+		});
+		visibility.observe(node);
+		return () => {
+			resize.disconnect();
+			visibility.disconnect();
+		};
 	}
 
 	function scroll(direction: -1 | 1) {
@@ -67,12 +79,14 @@
 	<div
 		class={cn(
 			'pointer-events-none absolute inset-y-0 left-0 z-[5] w-10 bg-linear-to-r from-background/60 to-transparent transition-opacity duration-300 sm:w-14',
+			hoverShade && 'group-hover/row:from-background/90 group-hover/row:sm:w-20',
 			canLeft ? 'opacity-100' : 'opacity-0'
 		)}
 	></div>
 	<div
 		class={cn(
 			'pointer-events-none absolute inset-y-0 right-0 z-[5] w-10 bg-linear-to-l from-background/60 to-transparent transition-opacity duration-300 sm:w-14',
+			hoverShade && 'group-hover/row:from-background/90 group-hover/row:sm:w-20',
 			canRight ? 'opacity-100' : 'opacity-0'
 		)}
 	></div>
