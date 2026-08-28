@@ -17,7 +17,6 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"test": "vitest run",
-		"seed": "node --env-file=.env --import tsx scripts/seed.ts",
 		"gateway:dev": "npm run dev --workspace @finderella/storage-gateway --",
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",

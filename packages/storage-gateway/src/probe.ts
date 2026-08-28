@@ -105,6 +105,34 @@ interface FfprobeOutput {
 	format?: { duration?: string; bit_rate?: string };
 }
 
+/** HDR transfer characteristics (PQ / HLG) that need tone-mapping for an SDR output. */
+export function isHdrTransfer(transfer: string | null | undefined): boolean {
+	return transfer === 'smpte2084' || transfer === 'arib-std-b67';
+}
+
+/** `color_transfer` of the first video stream, or null when unknown / no ffprobe. */
+export async function probeColorTransfer(absPath: string): Promise<string | null> {
+	const bin = resolvedFfprobe;
+	if (!bin) return null;
+	try {
+		const { stdout } = await execFileAsync(bin, [
+			'-v',
+			'error',
+			'-select_streams',
+			'v:0',
+			'-show_entries',
+			'stream=color_transfer',
+			'-of',
+			'csv=p=0',
+			absPath
+		]);
+		const value = stdout.trim();
+		return value && value !== 'unknown' ? value : null;
+	} catch {
+		return null;
+	}
+}
+
 /** Extract the fields the hub cares about; returns {} when probing fails. */
 export async function probeFile(
 	absPath: string

@@ -27,7 +27,7 @@
 	)}
 >
 	<div
-		class="relative overflow-hidden rounded-xl ring-1 ring-border transition-all duration-200 group-hover:scale-[1.03] group-hover:ring-2 group-hover:ring-primary"
+		class="relative overflow-hidden rounded-xl ring-1 ring-border transition-all duration-200 group-hover:scale-[1.015] group-hover:ring-2 group-hover:ring-primary"
 	>
 		<PosterArt {item} {variant} showTitle />
 		<span

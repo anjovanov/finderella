@@ -6,6 +6,8 @@ import { db } from '$lib/server/db';
 import { gateway, gatewayPairingCode, library, mediaFile } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
 import { triggerScan } from '$lib/server/gateways/scan';
+import { countOrphans, pruneCatalog } from '$lib/server/catalog/prune';
+import { enrichPending, isTmdbConfigured, metadataStatus } from '$lib/server/metadata';
 import { LibraryKind } from '@finderella/protocol';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -18,7 +20,7 @@ function generateCode(): string {
 }
 
 export const load: PageServerLoad = async () => {
-	const [gateways, fileCounts, pendingCodes] = await Promise.all([
+	const [gateways, fileCounts, pendingCodes, orphans, metadata] = await Promise.all([
 		db.query.gateway.findMany({
 			with: { libraries: true },
 			orderBy: [desc(gateway.createdAt)]
@@ -33,7 +35,9 @@ export const load: PageServerLoad = async () => {
 				isNull(gatewayPairingCode.claimedByGatewayId),
 				gt(gatewayPairingCode.expiresAt, new Date())
 			)
-		})
+		}),
+		countOrphans(),
+		metadataStatus()
 	]);
 	const counts = new Map(fileCounts.map((row) => [row.libraryId, row.files]));
 	return {
@@ -57,7 +61,9 @@ export const load: PageServerLoad = async () => {
 			code: c.code,
 			gatewayName: c.gatewayName,
 			expiresAt: c.expiresAt.toISOString()
-		}))
+		})),
+		orphans,
+		metadata
 	};
 };
 
@@ -128,7 +134,8 @@ export const actions: Actions = {
 		// Close the live connection first so the gateway can't keep serving.
 		const connected = registry.get(gatewayId);
 		connected?.socket.close(4003, 'revoked');
-		// Cascades libraries and media files; catalog entries remain.
+		// Cascades libraries and media files; catalog entries remain until the
+		// next prune (end of any scan, or "Remove titles without files").
 		await db.delete(gateway).where(eq(gateway.id, gatewayId));
 		return { revoked: gatewayId };
 	},
@@ -139,6 +146,18 @@ export const actions: Actions = {
 		if (!libraryId) return fail(400, { message: 'Missing library' });
 		await db.delete(library).where(eq(library.id, libraryId));
 		return { removedLibrary: libraryId };
+	},
+
+	pruneCatalog: async () => {
+		const pruned = await pruneCatalog();
+		return { pruned };
+	},
+
+	refreshMetadata: async () => {
+		if (!isTmdbConfigured()) return fail(400, { message: 'TMDB_API_KEY is not set on the hub' });
+		// Runs in the background; the page shows progress via the pending counts.
+		void enrichPending({ force: true });
+		return { refreshing: true };
 	},
 
 	signOut: async (event) => {

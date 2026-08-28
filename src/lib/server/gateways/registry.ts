@@ -121,8 +121,20 @@ class GatewayRegistry {
 		if (!pending) return; // late response after timeout/cancel/FIN
 		gateway.pending.delete(resp.re);
 		if (pending.timer) clearTimeout(pending.timer);
-		if (resp.ok) pending.resolve(resp.data);
-		else pending.reject(new Error(resp.error ?? 'gateway request failed'));
+		if (resp.ok) {
+			pending.resolve(resp.data);
+			return;
+		}
+		const error = resp.error ?? 'gateway request failed';
+		// Byte-stream failures (hls.get / file.read) otherwise surface only as
+		// a truncated response body; keep the gateway's reason in the hub log.
+		if (pending.onChunk) {
+			log.warn(
+				{ gatewayId: gateway.gatewayId, requestId: resp.re, error },
+				'gateway request failed'
+			);
+		}
+		pending.reject(new Error(error));
 	}
 
 	handleBinaryFrame(gateway: ConnectedGateway, data: Uint8Array): void {

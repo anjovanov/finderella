@@ -4,16 +4,40 @@ import { db } from '$lib/server/db';
 import { episode, library, mediaFile, movie, season, series } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import { parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
+import { pruneCatalog } from './prune';
+import { enrichPending, isTmdbConfigured } from '$lib/server/metadata';
 
 /**
  * Turns gateway scan reports into catalog rows. Metadata is filename-derived
- * (NullMetadataProvider era) — a future TMDB provider fills the same columns.
- * Existing catalog entries are never overwritten by rescans; files just link
- * to them.
+ * here; the TMDB provider (src/lib/server/metadata) fills the same columns
+ * afterwards. Existing catalog entries are never overwritten by rescans; files
+ * just link to them. Titles left without any file are pruned after a scan.
  */
 
 /** In-memory scan bookkeeping: libraryId → scan start time. Single-process hub. */
 const activeScans = new Map<string, Date>();
+
+/**
+ * Per-library work chain so scan batches and the final prune run in the order
+ * the gateway sent them: a title inserted by one batch must not look orphaned
+ * to a prune that overtook its media_file insert.
+ */
+const scanQueues = new Map<string, Promise<void>>();
+
+export function enqueueScanWork(libraryId: string, work: () => Promise<void>): Promise<void> {
+	const prev = scanQueues.get(libraryId) ?? Promise.resolve();
+	const next = prev.then(work);
+	const tail = next.catch(() => {});
+	scanQueues.set(libraryId, tail);
+	void tail.then(() => {
+		if (scanQueues.get(libraryId) === tail) scanQueues.delete(libraryId);
+	});
+	return next;
+}
+
+export function hasActiveScans(): boolean {
+	return activeScans.size > 0;
+}
 
 export function markScanStarted(libraryId: string): Date {
 	const startedAt = new Date();
@@ -179,4 +203,13 @@ export async function finalizeScan(
 	}
 	await db.update(library).set({ lastScanAt: now }).where(eq(library.id, libraryId));
 	log.info({ libraryId, ...stats }, 'library scan finished');
+	// Another library's scan may still be inserting titles; it prunes at its own end.
+	if (!hasActiveScans()) {
+		await pruneCatalog().catch((err) => log.error({ err }, 'catalog prune failed'));
+	}
+	// New titles get TMDB metadata in the background; single-flight, so a
+	// second scan finishing mid-pass just queues one more pass.
+	if (isTmdbConfigured()) {
+		void enrichPending().catch((err) => log.error({ err }, 'metadata enrichment failed'));
+	}
 }

@@ -26,17 +26,27 @@ interface MediaBase {
 	/** 0–10, one decimal */
 	rating: number;
 	maturity: Maturity;
-	cast: string[];
+	cast: CastMember[];
 	/** Drives the generated poster/backdrop gradient art */
 	theme: { hue: number; hue2: number };
 	posterUrl?: string;
 	backdropUrl?: string;
 }
 
+export interface CastMember {
+	name: string;
+	/** Role / character name, when known. */
+	character?: string;
+	/** Headshot URL (TMDB profile), when available. */
+	photoUrl?: string;
+}
+
 export interface Movie extends MediaBase {
 	kind: 'movie';
 	runtimeMinutes: number;
 	director: string;
+	/** Production budget in USD, when known. */
+	budget?: number;
 }
 
 export interface Series extends MediaBase {
@@ -49,6 +59,8 @@ export interface Series extends MediaBase {
 export interface Season {
 	number: number;
 	year: number;
+	/** Season key art (portrait). */
+	posterUrl?: string;
 	episodes: Episode[];
 }
 
@@ -58,6 +70,16 @@ export interface Episode {
 	title: string;
 	synopsis: string;
 	runtimeMinutes: number;
+	/** Episode still (landscape). */
+	stillUrl?: string;
 }
 
 export type MediaItem = Movie | Series;
+
+/** A sidecar text track the player attaches to the <video>. */
+export interface SubtitleTrack {
+	src: string;
+	srclang: string;
+	label: string;
+	kind: 'captions' | 'subtitles';
+}

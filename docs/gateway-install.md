@@ -112,6 +112,8 @@ Shows/
       S01E02 - Thirty Years Late.mkv
 ```
 
+Posters, synopses and episode titles appear a little after a scan finishes when the hub has a `TMDB_API_KEY` configured (see the hub's `.env.example`).
+
 ## 6. Run it permanently
 
 `connect` is a foreground process. On Linux, hand it to systemd:
@@ -156,6 +158,8 @@ sudo systemctl restart finderella-storage-gateway
 | Pairs fine but never connects (hub behind nginx/Caddy) | The reverse proxy must forward WebSocket upgrades on `/gateway/ws` (nginx: `proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";`). Pairing is plain HTTPS, so it can succeed while WS is broken. |
 | "Add library" disabled                                 | The device is offline (or the page is stale — refresh).                                                                                                                                                                     |
 | Titles missing codec/duration; transcoding refused     | The library was scanned without ffprobe — check `connect` startup output, then Rescan.                                                                                                                                      |
+| Player shows "Can't play this right now" mid-stream    | The transcode failed. The gateway's `connect` output has ffmpeg's stderr (`ffmpeg failed (…)`), and the hub log has a `gateway request failed` line with the same reason.                                                   |
+| 4K transcodes stutter or seeks take long               | A 4K HEVC→H.264 software transcode runs near real-time on a desktop-class CPU (veryfast preset); pick a lower quality in the player, or host 4K files on a machine with more cores.                                         |
 | `ffmpeg NOT found` at startup                          | Transcoding unavailable from this device; direct-play still works. Install ffmpeg or rely on the bundled static build (absent only on unusual platforms).                                                                   |
 
 ## Security notes

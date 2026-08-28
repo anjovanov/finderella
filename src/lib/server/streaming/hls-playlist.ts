@@ -7,12 +7,28 @@ export const SEGMENT_SECONDS = 4;
  * exists. Segment n deterministically covers [n*len, (n+1)*len).
  */
 
-export function buildMasterPlaylist(bitrate: number | null): string {
+/**
+ * CODECS must describe what the gateway's ffmpeg actually emits (see hlsArgs
+ * in packages/storage-gateway/src/transcode/ffmpeg.ts): the video codec string
+ * comes from the session's TranscodePlan (High@4.1 or High@5.2, 8-bit); audio
+ * is always AAC-LC. hls.js checks these against MediaSource.isTypeSupported
+ * before opening buffers, so they must track the encoder flags, not the source.
+ */
+export const HLS_AUDIO_CODEC = 'mp4a.40.2';
+
+export function buildMasterPlaylist(
+	bitrate: number | null,
+	hasAudio: boolean,
+	videoCodec: string
+): string {
 	const bandwidth = bitrate && bitrate > 0 ? bitrate : 5_000_000;
+	// Declaring an audio codec for a silent source makes hls.js wait for an
+	// audio track that never arrives.
+	const codecs = hasAudio ? `${videoCodec},${HLS_AUDIO_CODEC}` : videoCodec;
 	return [
 		'#EXTM3U',
 		'#EXT-X-VERSION:7',
-		`#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},CODECS="avc1.640029,mp4a.40.2"`,
+		`#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},CODECS="${codecs}"`,
 		'media.m3u8',
 		''
 	].join('\n');

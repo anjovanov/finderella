@@ -1,6 +1,8 @@
 import { relations } from 'drizzle-orm';
+import type { CastMember } from '$lib/data/types';
 import {
 	integer,
+	jsonb,
 	pgTable,
 	real,
 	smallint,
@@ -14,6 +16,8 @@ import {
  * Catalog tables. Shapes mirror the frontend contract in src/lib/data/types.ts:
  * `slug` is the public ID used in URLs; `hue`/`hue2` feed the generated
  * gradient poster art; genres is a text[] matching the fixed GENRES enum.
+ * `tmdb_id` / `metadata_updated_at` track TMDB enrichment (see
+ * src/lib/server/metadata): stamped even when unmatched so scans don't retry.
  */
 
 export const movie = pgTable('movie', {
@@ -27,12 +31,15 @@ export const movie = pgTable('movie', {
 	rating: real('rating').notNull().default(0),
 	maturity: text('maturity').notNull().default('PG-13'),
 	director: text('director').notNull().default(''),
+	/** USD, from TMDB; null when unknown. */
+	budget: integer('budget'),
+	// Nullable + runtime default (read as []) so drizzle-kit never has to
+	// reconcile a JSON DDL default.
+	castPeople: jsonb('cast_people')
+		.$type<CastMember[]>()
+		.$default(() => []),
 	// Runtime $default, not a DB default: drizzle-kit introspects empty-array
 	// DDL defaults as '{""}' and re-proposes the same ALTERs on every push.
-	castMembers: text('cast_members')
-		.array()
-		.notNull()
-		.$default(() => []),
 	genres: text('genres')
 		.array()
 		.notNull()
@@ -41,6 +48,8 @@ export const movie = pgTable('movie', {
 	hue2: smallint('hue2').notNull(),
 	posterUrl: text('poster_url'),
 	backdropUrl: text('backdrop_url'),
+	tmdbId: integer('tmdb_id'),
+	metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true }),
 	addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -55,12 +64,11 @@ export const series = pgTable('series', {
 	creator: text('creator').notNull().default(''),
 	rating: real('rating').notNull().default(0),
 	maturity: text('maturity').notNull().default('TV-14'),
+	castPeople: jsonb('cast_people')
+		.$type<CastMember[]>()
+		.$default(() => []),
 	// Runtime $default, not a DB default: drizzle-kit introspects empty-array
 	// DDL defaults as '{""}' and re-proposes the same ALTERs on every push.
-	castMembers: text('cast_members')
-		.array()
-		.notNull()
-		.$default(() => []),
 	genres: text('genres')
 		.array()
 		.notNull()
@@ -69,6 +77,8 @@ export const series = pgTable('series', {
 	hue2: smallint('hue2').notNull(),
 	posterUrl: text('poster_url'),
 	backdropUrl: text('backdrop_url'),
+	tmdbId: integer('tmdb_id'),
+	metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true }),
 	addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -80,7 +90,8 @@ export const season = pgTable(
 			.notNull()
 			.references(() => series.id, { onDelete: 'cascade' }),
 		number: integer('number').notNull(),
-		year: integer('year').notNull()
+		year: integer('year').notNull(),
+		posterUrl: text('poster_url')
 	},
 	(t) => [unique().on(t.seriesId, t.number)]
 );
@@ -100,7 +111,10 @@ export const episode = pgTable(
 		number: integer('number').notNull(),
 		title: text('title').notNull(),
 		synopsis: text('synopsis').notNull().default(''),
-		runtimeMinutes: integer('runtime_minutes').notNull().default(0)
+		runtimeMinutes: integer('runtime_minutes').notNull().default(0),
+		stillUrl: text('still_url'),
+		// Set once a TMDB season fetch has processed this episode (matched or not).
+		metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true })
 	},
 	(t) => [unique().on(t.seriesId, t.slug)]
 );

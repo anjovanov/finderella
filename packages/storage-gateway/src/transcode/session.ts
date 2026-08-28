@@ -2,19 +2,24 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { hlsArgs } from './ffmpeg.js';
+import { isHdrTransfer, probeColorTransfer } from '../probe.js';
+import { hlsArgs, type TranscodeQuality } from './ffmpeg.js';
 import { parseInitTimescales, patchSegmentTfdt } from './mp4-patch.js';
 
 const MAX_AHEAD_SEGMENTS = 8;
 const SEGMENT_WAIT_TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 200;
 const IDLE_REAP_MS = 120_000;
+/** How long start() watches a fresh ffmpeg for an immediate failure. */
+const EARLY_EXIT_GRACE_MS = 1_500;
+const STDERR_TAIL_CHARS = 4_000;
 
 export interface TranscodeOptions {
 	sessionId: string;
 	absPath: string;
 	segmentSeconds: number;
 	durationMs: number;
+	quality: TranscodeQuality;
 	ffmpegBin: string;
 	log: (message: string) => void;
 	/** Called when the session self-reaps (idle) so the owner can drop it. */
@@ -24,7 +29,9 @@ export interface TranscodeOptions {
 /**
  * One HLS transcode session: an ffmpeg process writing 4s fmp4 segments to a
  * per-session temp dir. A segment is "ready" once it appears in ffmpeg's own
- * playlist (files exist before they're finalized). Requesting a segment
+ * playlist (files exist before they're finalized) — which is why hlsArgs uses
+ * the `event` playlist type: `vod` writes that playlist only on exit, so
+ * nothing would ever be ready. Requesting a segment
  * outside the produced window kills and restarts ffmpeg at that point —
  * that's how seeking works; the hub and browser never know.
  */
@@ -34,6 +41,7 @@ export class TranscodeSession {
 	#proc: ChildProcess | null = null;
 	#procError: string | null = null;
 	#startSegment = 0;
+	#hdr = false;
 	#stopped = false;
 	#lastAccess = Date.now();
 	#reapTimer: NodeJS.Timeout;
@@ -59,12 +67,27 @@ export class TranscodeSession {
 		return Math.ceil(this.#opts.durationMs / 1000 / this.#opts.segmentSeconds);
 	}
 
+	/**
+	 * Launch ffmpeg. Resolves once the process has survived a short grace
+	 * period, so an input ffmpeg rejects outright (unreadable file, unknown
+	 * codec) fails the hub's session.start request with ffmpeg's own stderr
+	 * instead of surfacing 30s later as a segment timeout.
+	 */
 	async start(startSegment = 0): Promise<void> {
 		await mkdir(this.dir, { recursive: true });
-		this.#launch(startSegment);
+		// One cheap probe per session: HDR sources need tone-mapping on every run.
+		this.#hdr = isHdrTransfer(await probeColorTransfer(this.#opts.absPath));
+		if (this.#hdr) this.#opts.log(`tone-mapping HDR source (${this.#opts.sessionId})`);
+		const exited = this.#launch(startSegment);
+		await Promise.race([
+			exited,
+			new Promise((resolveWait) => setTimeout(resolveWait, EARLY_EXIT_GRACE_MS))
+		]);
+		if (this.#procError) throw new Error(this.#procError);
 	}
 
-	#launch(startSegment: number): void {
+	/** Spawn a new ffmpeg run; the returned promise settles when it exits. */
+	#launch(startSegment: number): Promise<void> {
 		this.#killProc();
 		this.#startSegment = startSegment;
 		this.#procError = null;
@@ -75,26 +98,40 @@ export class TranscodeSession {
 			absPath: this.#opts.absPath,
 			dir: this.dir,
 			startSegment,
-			segmentSeconds: this.#opts.segmentSeconds
+			segmentSeconds: this.#opts.segmentSeconds,
+			quality: this.#opts.quality,
+			hdr: this.#hdr
 		});
 		this.#opts.log(`ffmpeg starting at segment ${startSegment} (${this.#opts.sessionId})`);
 		const proc = spawn(this.#opts.ffmpegBin, args, { stdio: ['ignore', 'ignore', 'pipe'] });
 		let stderr = '';
 		proc.stderr?.on('data', (chunk: Buffer) => {
-			stderr = (stderr + chunk.toString()).slice(-2000);
+			stderr = (stderr + chunk.toString()).slice(-STDERR_TAIL_CHARS);
 		});
-		proc.on('exit', (code) => {
-			if (this.#proc === proc) this.#proc = null;
-			if (code !== 0 && code !== null && !this.#stopped) {
-				this.#procError = stderr.trim() || `ffmpeg exited with code ${code}`;
-				this.#opts.log(`ffmpeg failed (${this.#opts.sessionId}): ${this.#procError}`);
-			}
-		});
-		proc.on('error', (err) => {
-			this.#procError = err.message;
-			if (this.#proc === proc) this.#proc = null;
+		const exited = new Promise<void>((resolveExit) => {
+			proc.on('exit', (code, signal) => {
+				// A run we killed ourselves (seek restart / stop) has already been
+				// detached from #proc; only the live run's exit is an error.
+				const isCurrent = this.#proc === proc;
+				if (isCurrent) this.#proc = null;
+				if (isCurrent && code !== 0 && !this.#stopped) {
+					this.#procError =
+						stderr.trim() ||
+						(code === null
+							? `ffmpeg killed by ${signal ?? 'signal'}`
+							: `ffmpeg exited with code ${code}`);
+					this.#opts.log(`ffmpeg failed (${this.#opts.sessionId}): ${this.#procError}`);
+				}
+				resolveExit();
+			});
+			proc.on('error', (err) => {
+				this.#procError = err.message;
+				if (this.#proc === proc) this.#proc = null;
+				resolveExit();
+			});
 		});
 		this.#proc = proc;
+		return exited;
 	}
 
 	async #playlistSegments(): Promise<Set<number>> {

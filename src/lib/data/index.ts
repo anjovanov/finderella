@@ -3,11 +3,6 @@ import type { Genre, MediaItem } from './types';
 export * from './types';
 export * from './hrefs';
 
-// The mock titles remain only as the dev seed corpus (scripts/seed.ts) —
-// pages read the catalog from the database via src/lib/server/catalog.ts.
-export { movies } from './movies';
-export { series } from './series';
-
 /** Pure ranking/filtering helpers shared by page loads (DB rows in, rows out). */
 
 export function topRated(items: MediaItem[], limit = 12): MediaItem[] {

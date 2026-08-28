@@ -11,6 +11,17 @@
 	const byline = $derived(
 		item.kind === 'movie' ? `Directed by ${item.director}` : `Created by ${item.creator}`
 	);
+	// "$200M" rather than a wall of zeros.
+	const budgetLabel = $derived(
+		item.kind === 'movie' && item.budget
+			? new Intl.NumberFormat('en-US', {
+					style: 'currency',
+					currency: 'USD',
+					notation: 'compact',
+					maximumFractionDigits: 1
+				}).format(item.budget)
+			: null
+	);
 </script>
 
 <section class="relative -mt-16">
@@ -31,7 +42,12 @@
 			{/if}
 			<MetaPills {item} />
 			<p class="text-muted-foreground">{item.synopsis}</p>
-			<p class="text-sm text-muted-foreground">{byline}</p>
+			<p class="text-sm text-muted-foreground">
+				{byline}
+				{#if budgetLabel}
+					<span aria-hidden="true">·</span> Budget {budgetLabel}
+				{/if}
+			</p>
 			<div class="mt-1 flex gap-3">
 				<Button href={watchHref(item)} size="lg">
 					<HugeiconsIcon icon={PlayIcon} data-icon="inline-start" />

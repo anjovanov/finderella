@@ -13,6 +13,7 @@
 		PauseIcon,
 		PlayIcon,
 		PlayListIcon,
+		Settings02Icon,
 		SubtitleIcon,
 		Tick02Icon,
 		VolumeHighIcon,
@@ -21,8 +22,13 @@
 	} from '@hugeicons/core-free-icons';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
-	import { SUBTITLE_TRACKS, type SubtitleTrack } from '$lib/data/playback';
-	import type { Series } from '$lib/data';
+	import type { Series, SubtitleTrack } from '$lib/data';
+	import {
+		availableQualities,
+		MAX_TRANSCODE_WIDTH,
+		resolutionLabel,
+		type QualityId
+	} from '$lib/playback-quality';
 	import EpisodesPanel from './episodes-panel.svelte';
 
 	let {
@@ -33,7 +39,11 @@
 		videoKind = 'file',
 		startAt = 0,
 		onProgress,
-		tracks = SUBTITLE_TRACKS,
+		onError,
+		tracks = [],
+		quality = 'original',
+		sourceWidth = null,
+		onQualityChange,
 		nextHref,
 		show,
 		currentEpisodeId
@@ -49,7 +59,19 @@
 		startAt?: number;
 		/** Playback position reports (every timeupdate, ~4 Hz — throttle upstream). */
 		onProgress?: (positionSeconds: number, durationSeconds: number) => void;
+		/**
+		 * Unrecoverable playback failure (codec the browser can't decode, the
+		 * device's transcoder erroring, the file failing to load). Without this
+		 * the player would just buffer forever.
+		 */
+		onError?: (message: string) => void;
 		tracks?: SubtitleTrack[];
+		/** Current ladder rung; the quality menu only renders when `onQualityChange` is given. */
+		quality?: QualityId;
+		/** Probed width of the source file; hides rungs above it and labels Auto. */
+		sourceWidth?: number | null;
+		/** Viewer picked a rung — the page restarts the session at the current position. */
+		onQualityChange?: (quality: QualityId) => void;
 		nextHref?: string;
 		/** When set (with `currentEpisodeId`), shows the "More episodes" control — series only. */
 		show?: Series;
@@ -117,7 +139,9 @@
 	// Attach the source and start playback whenever the player mounts or is
 	// re-sourced — arriving from a Play button, switching episodes, or
 	// autoplay-next. HLS goes through hls.js (MSE drives the same native
-	// element the custom controls already target); Safari plays m3u8 natively.
+	// element the custom controls already target). hls.js is used wherever MSE
+	// exists; the browser's native HLS only where it doesn't (Safari/iOS). Edge
+	// advertises native HLS in canPlayType but can't parse our fMP4 playlists.
 	// A cold page load may be blocked by the browser's autoplay policy (no
 	// user gesture on the document yet); the promise rejects and the user
 	// presses play.
@@ -129,32 +153,91 @@
 
 		const resumeAt = startAt > 0 ? startAt : null;
 
-		if (kind === 'hls' && !el.canPlayType('application/vnd.apple.mpegurl')) {
+		const applyResume = () => {
+			if (resumeAt !== null) el.currentTime = resumeAt;
+		};
+		const onMediaError = () => {
+			onError?.(
+				el.error?.message
+					? `The browser could not play this file (${el.error.message}).`
+					: 'The browser could not play this file.'
+			);
+		};
+		const playNative = () => {
+			el.src = src;
+			el.addEventListener('loadedmetadata', applyResume, { once: true });
+			el.addEventListener('error', onMediaError);
+			el.play().catch(() => {});
+		};
+		const stopNative = () => {
+			el.removeEventListener('loadedmetadata', applyResume);
+			el.removeEventListener('error', onMediaError);
+		};
+
+		if (kind === 'hls') {
 			let cancelled = false;
 			let hls: InstanceType<(typeof import('hls.js'))['default']> | null = null;
 			void import('hls.js').then(({ default: Hls }) => {
-				if (cancelled || !Hls.isSupported()) return;
+				if (cancelled) return;
+				if (!Hls.isSupported()) {
+					if (el.canPlayType('application/vnd.apple.mpegurl')) playNative();
+					else onError?.('This browser cannot play HLS streams.');
+					return;
+				}
 				hls = new Hls(resumeAt !== null ? { startPosition: resumeAt } : {});
 				hls.loadSource(src);
 				hls.attachMedia(el);
 				hls.on(Hls.Events.MANIFEST_PARSED, () => el.play().catch(() => {}));
+				// hls.js never recovers from a fatal error on its own; one media
+				// recovery attempt, then hand the reason to the page.
+				let recovered = false;
+				hls.on(Hls.Events.ERROR, (_event, data) => {
+					if (!data.fatal || cancelled) return;
+					if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) {
+						recovered = true;
+						hls?.recoverMediaError();
+						return;
+					}
+					onError?.(describeHlsError(data.details, data.response?.code, data.error?.message));
+				});
 			});
 			return () => {
 				cancelled = true;
 				hls?.destroy();
+				stopNative();
 				el.removeAttribute('src');
 				el.load();
 			};
 		}
 
-		el.src = src;
-		const applyResume = () => {
-			if (resumeAt !== null) el.currentTime = resumeAt;
-		};
-		el.addEventListener('loadedmetadata', applyResume, { once: true });
-		el.play().catch(() => {});
-		return () => el.removeEventListener('loadedmetadata', applyResume);
+		playNative();
+		return stopNative;
 	});
+
+	/** Turn an hls.js fatal error into something a viewer (and the hub log reader) can act on. */
+	function describeHlsError(details: string, httpStatus?: number, reason?: string): string {
+		switch (details) {
+			case 'bufferAddCodecError':
+			case 'bufferIncompatibleCodecsError':
+				return 'This browser cannot decode the transcoded stream (unsupported codec profile).';
+			case 'manifestLoadError':
+			case 'manifestLoadTimeOut':
+			case 'levelLoadError':
+			case 'levelLoadTimeOut':
+				return `The playlist could not be loaded${httpStatus ? ` (HTTP ${httpStatus})` : ''}.`;
+			case 'fragLoadError':
+			case 'fragLoadTimeOut':
+				return `The device's transcoder stopped delivering video${
+					httpStatus ? ` (HTTP ${httpStatus})` : ''
+				}; check the hub log for the ffmpeg error.`;
+			case 'fragParsingError':
+				return 'The transcoded segment was malformed; check the hub log for the ffmpeg error.';
+			case 'bufferStalledError':
+				return 'Playback stalled and could not resume.';
+			default:
+				return `Playback failed: ${details}${reason ? ` (${reason})` : ''}.`;
+		}
+	}
 
 	// Same-route navigation reuses this component instance; the effect above
 	// starts playback once the new episode's source is in.
@@ -167,16 +250,26 @@
 	// Episodes panel (series only). While open, player chrome is pinned visible
 	// even when the library marks the controls idle.
 	let episodesOpen = $state(false);
-	const chromeVisible = $derived(barVisible || episodesOpen);
+	let qualityOpen = $state(false);
+	const menuOpen = $derived(episodesOpen || qualityOpen);
+	const qualityOptions = $derived(availableQualities(sourceWidth));
+	// What "Original" resolves to for this file: the source itself when direct-playing,
+	// else the transcoder's output (source capped at the 4K ceiling).
+	const autoDescription = $derived.by(() => {
+		const delivery = videoKind === 'hls' ? 'transcoded' : 'direct play';
+		if (!sourceWidth) return delivery;
+		const width = videoKind === 'hls' ? Math.min(sourceWidth, MAX_TRANSCODE_WIDTH) : sourceWidth;
+		return `${resolutionLabel(width)} · ${delivery}`;
+	});
+	const chromeVisible = $derived(barVisible || menuOpen);
 
-	// Close on any pointerdown outside the panel and its trigger.
+	// Close on any pointerdown outside the open surface and its trigger.
 	$effect(() => {
-		if (!episodesOpen) return;
+		if (!menuOpen) return;
 		const onPointerDown = (event: PointerEvent) => {
 			const target = event.target as Element | null;
-			if (!target?.closest('.episodes-panel, .episodes-trigger')) {
-				episodesOpen = false;
-			}
+			if (!target?.closest('.episodes-panel, .episodes-trigger')) episodesOpen = false;
+			if (!target?.closest('.quality-menu, .quality-trigger')) qualityOpen = false;
 		};
 		document.addEventListener('pointerdown', onPointerDown, true);
 		return () => document.removeEventListener('pointerdown', onPointerDown, true);
@@ -196,8 +289,9 @@
 	function onkeydown(event: KeyboardEvent) {
 		// Escape closes the episodes panel even while one of its controls has focus.
 		// (In fullscreen the browser may consume Escape to exit fullscreen first.)
-		if (event.key === 'Escape' && episodesOpen) {
+		if (event.key === 'Escape' && menuOpen) {
 			episodesOpen = false;
+			qualityOpen = false;
 			return;
 		}
 		const target = event.target as HTMLElement | null;
@@ -252,14 +346,13 @@
 	class={[
 		'player-root fixed inset-0 z-50 flex flex-col bg-black',
 		!chromeVisible && 'cursor-none',
-		episodesOpen && 'menu-open'
+		menuOpen && 'menu-open'
 	]}
 >
 	<div class="min-h-0 flex-1">
 		<video-player>
 			<media-container bind:this={containerEl}>
-				<!-- src is attached programmatically (file/HLS) by the source effect;
-				     an English captions track is included in `tracks` at runtime. -->
+				<!-- src is attached programmatically (file/HLS) by the source effect. -->
 				<video
 					bind:this={videoEl}
 					slot="media"
@@ -423,17 +516,32 @@
 								</media-volume-slider>
 							</div>
 
+							{#if onQualityChange}
+								<button
+									type="button"
+									class="ctrl-button quality-trigger"
+									aria-haspopup="menu"
+									aria-expanded={qualityOpen}
+									aria-label="Video quality"
+									onclick={() => (qualityOpen = !qualityOpen)}
+								>
+									<HugeiconsIcon icon={Settings02Icon} class="size-6" />
+								</button>
+							{/if}
+
 							<media-cast-button class="ctrl-button" aria-label="Cast">
 								<HugeiconsIcon icon={CastIcon} class="size-6" />
 							</media-cast-button>
 
-							<media-captions-button
-								class="ctrl-button"
-								menu-for="captions-menu"
-								aria-label="Subtitles"
-							>
-								<HugeiconsIcon icon={SubtitleIcon} class="size-6" />
-							</media-captions-button>
+							{#if tracks.length > 0}
+								<media-captions-button
+									class="ctrl-button"
+									menu-for="captions-menu"
+									aria-label="Subtitles"
+								>
+									<HugeiconsIcon icon={SubtitleIcon} class="size-6" />
+								</media-captions-button>
+							{/if}
 
 							<button
 								type="button"
@@ -463,18 +571,47 @@
 					<EpisodesPanel {show} {currentEpisodeId} onclose={() => (episodesOpen = false)} />
 				{/if}
 
-				<media-menu id="captions-menu" class="captions-menu">
-					<media-captions-radio-group>
-						<template>
-							<media-menu-radio-item class="menu-item">
-								<span data-part="label"></span>
-								<media-menu-item-indicator class="menu-check">
-									<HugeiconsIcon icon={Tick02Icon} class="size-4" />
-								</media-menu-item-indicator>
-							</media-menu-radio-item>
-						</template>
-					</media-captions-radio-group>
-				</media-menu>
+				{#if qualityOpen && onQualityChange}
+					<div class="quality-menu captions-menu" role="menu" aria-label="Video quality">
+						{#each qualityOptions as option (option.id)}
+							<button
+								type="button"
+								role="menuitemradio"
+								aria-checked={option.id === quality}
+								class="menu-item w-full"
+								onclick={() => {
+									qualityOpen = false;
+									onQualityChange(option.id);
+								}}
+							>
+								<span>
+									{option.label}
+									{#if option.id === 'original'}
+										<span class="text-white/50">· {autoDescription}</span>
+									{/if}
+								</span>
+								{#if option.id === quality}
+									<HugeiconsIcon icon={Tick02Icon} class="size-4 text-primary" />
+								{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+
+				{#if tracks.length > 0}
+					<media-menu id="captions-menu" class="captions-menu">
+						<media-captions-radio-group>
+							<template>
+								<media-menu-radio-item class="menu-item">
+									<span data-part="label"></span>
+									<media-menu-item-indicator class="menu-check">
+										<HugeiconsIcon icon={Tick02Icon} class="size-4" />
+									</media-menu-item-indicator>
+								</media-menu-radio-item>
+							</template>
+						</media-captions-radio-group>
+					</media-menu>
+				{/if}
 			</media-container>
 		</video-player>
 	</div>
@@ -784,7 +921,19 @@
 		overflow: visible;
 	}
 
-	/* ---------- captions menu ---------- */
+	/* ---------- captions / quality menus ---------- */
+
+	/* Same surface as the library's captions menu, but positioned by us: above
+	   the two-row control bar, right-aligned; inside <media-container> so it's
+	   visible in fullscreen. */
+	.player-root :global(.quality-menu) {
+		position: absolute;
+		right: 1rem;
+		bottom: 7.5rem;
+		z-index: 10;
+		display: flex;
+		flex-direction: column;
+	}
 
 	.player-root :global(.captions-menu) {
 		min-width: 10rem;

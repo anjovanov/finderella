@@ -63,6 +63,97 @@
 		{/if}
 	</section>
 
+	<!-- Catalog housekeeping -->
+	<section class="rounded-2xl border border-border bg-card p-6">
+		<h2 class="text-lg font-medium">Catalog</h2>
+		<p class="mt-1 text-sm text-muted-foreground">
+			{#if data.orphans.movies === 0 && data.orphans.series === 0}
+				Every title in the catalog is backed by a media file.
+			{:else}
+				{data.orphans.movies}
+				{data.orphans.movies === 1 ? 'movie' : 'movies'} and {data.orphans.series} series have no media
+				files (placeholder titles, or files from a removed library). Titles are also pruned automatically
+				when a scan finishes.
+			{/if}
+		</p>
+		<form
+			method="POST"
+			action="?/pruneCatalog"
+			class="mt-4"
+			use:enhance
+			onsubmit={(e) => {
+				if (!confirm('Remove every title that has no media file? Their watch history goes too.')) {
+					e.preventDefault();
+				}
+			}}
+		>
+			<Button
+				type="submit"
+				variant="secondary"
+				size="sm"
+				disabled={data.orphans.movies === 0 && data.orphans.series === 0}
+			>
+				Remove titles without files
+			</Button>
+		</form>
+		{#if form && 'pruned' in form && form.pruned}
+			<p class="mt-3 text-xs text-muted-foreground">
+				Removed {form.pruned.movies} movies and {form.pruned.series} series ({form.pruned.episodes} episodes).
+			</p>
+		{/if}
+	</section>
+
+	<!-- Metadata -->
+	<section class="rounded-2xl border border-border bg-card p-6">
+		<h2 class="text-lg font-medium">Metadata</h2>
+		<p class="mt-1 text-sm text-muted-foreground">
+			{#if !data.metadata.configured}
+				Set <span class="font-mono">TMDB_API_KEY</span> in the hub's
+				<span class="font-mono">.env</span> to fetch posters, synopses, genres, cast and ratings for scanned
+				titles automatically.
+			{:else if data.metadata.running}
+				Fetching metadata from TMDB… ({data.metadata.pending.movies} movies,
+				{data.metadata.pending.series} series, {data.metadata.pending.episodes} episodes pending)
+			{:else if data.metadata.pending.movies + data.metadata.pending.series + data.metadata.pending.episodes > 0}
+				TMDB configured · {data.metadata.pending.movies} movies, {data.metadata.pending.series} series
+				and {data.metadata.pending.episodes} episodes are waiting for metadata (fetched after the next
+				scan, or refresh now).
+			{:else}
+				TMDB configured · every title has been looked up.
+			{/if}
+		</p>
+		<form
+			method="POST"
+			action="?/refreshMetadata"
+			class="mt-4"
+			use:enhance={() =>
+				async ({ update }) => {
+					await update();
+					setTimeout(() => invalidateAll(), 3000);
+				}}
+		>
+			<Button
+				type="submit"
+				variant="secondary"
+				size="sm"
+				disabled={!data.metadata.configured || data.metadata.running}
+			>
+				Refresh all metadata
+			</Button>
+		</form>
+		{#if form && 'refreshing' in form && form.refreshing}
+			<p class="mt-3 text-xs text-muted-foreground">
+				Refreshing every title in the background; unmatched titles are searched again.
+			</p>
+		{/if}
+		<p class="mt-4 text-xs text-muted-foreground">
+			Metadata and artwork provided by
+			<a href="https://www.themoviedb.org" class="underline" rel="noreferrer" target="_blank"
+				>TMDB</a
+			>. This product uses the TMDB API but is not endorsed or certified by TMDB.
+		</p>
+	</section>
+
 	<!-- Devices -->
 	{#if data.gateways.length === 0}
 		<p class="text-sm text-muted-foreground">No devices paired yet.</p>

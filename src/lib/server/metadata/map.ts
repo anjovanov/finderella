@@ -1,0 +1,143 @@
+import { GENRES, type Genre, type Maturity } from '$lib/data/types';
+
+/** Pure TMDB → catalog mapping helpers (unit-tested; no I/O). */
+
+/**
+ * TMDB genre names → the fixed GENRES tuple the UI filters on. Unlisted names
+ * (Animation, Family, Western, Music, Reality, …) are dropped rather than
+ * widening the tuple.
+ */
+const GENRE_MAP: Record<string, Genre[]> = {
+	action: ['Action'],
+	adventure: ['Action'],
+	'action & adventure': ['Action'],
+	'science fiction': ['Sci-Fi'],
+	'sci-fi & fantasy': ['Sci-Fi', 'Fantasy'],
+	fantasy: ['Fantasy'],
+	drama: ['Drama'],
+	thriller: ['Thriller'],
+	comedy: ['Comedy'],
+	horror: ['Horror'],
+	mystery: ['Mystery'],
+	romance: ['Romance'],
+	documentary: ['Documentary'],
+	crime: ['Thriller'],
+	war: ['Drama'],
+	'war & politics': ['Drama'],
+	history: ['Drama'],
+	soap: ['Drama']
+};
+
+export function mapGenres(names: Iterable<string>): Genre[] {
+	const out: Genre[] = [];
+	for (const name of names) {
+		for (const genre of GENRE_MAP[name.trim().toLowerCase()] ?? []) {
+			if (!out.includes(genre) && (GENRES as readonly string[]).includes(genre)) out.push(genre);
+		}
+	}
+	return out;
+}
+
+const MOVIE_CERTS: Record<string, Maturity> = {
+	G: 'G',
+	PG: 'PG',
+	'PG-13': 'PG-13',
+	R: 'R',
+	'NC-17': 'R'
+};
+
+/** US theatrical certification (type 3) preferred, else the first US one. */
+export function movieMaturity(
+	releaseDates:
+		| {
+				results: {
+					iso_3166_1: string;
+					release_dates: { certification?: string | null; type?: number | null }[];
+				}[];
+		  }
+		| null
+		| undefined
+): Maturity | undefined {
+	const us = releaseDates?.results.find((r) => r.iso_3166_1 === 'US');
+	if (!us) return undefined;
+	const certified = us.release_dates.filter((d) => d.certification?.trim());
+	const pick = certified.find((d) => d.type === 3) ?? certified[0];
+	return pick?.certification ? MOVIE_CERTS[pick.certification.trim().toUpperCase()] : undefined;
+}
+
+const TV_RATINGS: Record<string, Maturity> = {
+	'TV-Y': 'G',
+	'TV-Y7': 'G',
+	'TV-G': 'G',
+	'TV-PG': 'PG',
+	'TV-14': 'TV-14',
+	'TV-MA': 'TV-MA'
+};
+
+export function tvMaturity(
+	contentRatings: { results: { iso_3166_1: string; rating?: string | null }[] } | null | undefined
+): Maturity | undefined {
+	const us = contentRatings?.results.find((r) => r.iso_3166_1 === 'US' && r.rating?.trim());
+	return us?.rating ? TV_RATINGS[us.rating.trim().toUpperCase()] : undefined;
+}
+
+/** Diacritics-insensitive, punctuation-free key for comparing titles. */
+export function normalizeTitle(title: string): string {
+	return title
+		.normalize('NFD')
+		.replace(/\p{M}/gu, '')
+		.toLowerCase()
+		.replace(/&/g, ' and ')
+		.replace(/[^a-z0-9]+/g, ' ')
+		.trim();
+}
+
+export function yearOf(date: string | null | undefined): number | undefined {
+	const match = /^(\d{4})/.exec(date ?? '');
+	return match ? Number(match[1]) : undefined;
+}
+
+export interface MatchCandidate {
+	id: number;
+	titles: (string | null | undefined)[];
+	year?: number;
+	popularity?: number | null;
+}
+
+/**
+ * Score search results against the filename-derived title/year: an exact
+ * normalized title is worth most, a year within ±1 (release dates straddle
+ * new year across regions) next, popularity only breaks ties. Nothing that
+ * matches on either axis → no match (better an empty poster than the wrong one).
+ */
+export function pickBestMatch<T extends MatchCandidate>(
+	candidates: T[],
+	title: string,
+	year?: number
+): T | undefined {
+	const wanted = normalizeTitle(title);
+	if (!wanted) return undefined;
+	let best: { candidate: T; score: number } | undefined;
+	for (const candidate of candidates) {
+		const names = candidate.titles.filter((t): t is string => Boolean(t)).map(normalizeTitle);
+		let score = 0;
+		if (names.includes(wanted)) score += 2;
+		else if (names.some((n) => n.startsWith(wanted) || wanted.startsWith(n))) score += 1;
+		if (
+			year !== undefined &&
+			candidate.year !== undefined &&
+			Math.abs(candidate.year - year) <= 1
+		) {
+			score += 1;
+		}
+		if (score === 0) continue;
+		if (
+			!best ||
+			score > best.score ||
+			(score === best.score && (candidate.popularity ?? 0) > (best.candidate.popularity ?? 0))
+		) {
+			best = { candidate, score };
+		}
+	}
+	return best?.candidate;
+}

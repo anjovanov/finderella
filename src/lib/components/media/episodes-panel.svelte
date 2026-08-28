@@ -78,7 +78,9 @@
 		{#each season.episodes as episode (episode.id)}
 			<EpisodeCard
 				{episode}
+				season={season.number}
 				item={show}
+				imageUrl={episode.stillUrl ?? season.posterUrl}
 				active={episode.id === currentEpisodeId}
 				onNavigate={onclose}
 			/>

@@ -5,10 +5,15 @@
  * loads must be side-effect free.)
  */
 
+import type { QualityId } from './playback-quality';
+
 export interface PlaybackDescriptor {
-	mode: 'direct' | 'demo' | 'hls';
+	mode: 'direct' | 'hls';
 	src: string;
-	sessionId: string | null;
+	sessionId: string;
+	quality: QualityId;
+	/** Probed frame size of the file being played (null when scanned without ffprobe). */
+	source: { width: number | null; height: number | null };
 }
 
 export interface PlaybackTarget {
@@ -17,6 +22,8 @@ export interface PlaybackTarget {
 	episodeSlug?: string;
 	/** Resume offset — pre-warms transcoding at the right position. */
 	startSeconds?: number;
+	/** Ladder rung; 'original' (default) = direct play when possible, else source-res transcode. */
+	quality?: QualityId;
 }
 
 export async function startPlayback(

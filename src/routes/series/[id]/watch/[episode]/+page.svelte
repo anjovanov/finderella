@@ -8,6 +8,7 @@
 		stopPlayback,
 		type PlaybackDescriptor
 	} from '$lib/playback-client';
+	import { loadStoredQuality, storeQuality, type QualityId } from '$lib/playback-quality';
 
 	let { data } = $props();
 
@@ -18,20 +19,39 @@
 	let playback: PlaybackDescriptor | null = $state(null);
 	let playbackError: string | null = $state(null);
 	let reporter: ReturnType<typeof createProgressReporter> | null = null;
+	let sessionId: string | null = null;
+
+	// Quality is a session-level choice: switching restarts playback at the
+	// current position (the effect below re-runs on `quality`).
+	let quality: QualityId = $state(loadStoredQuality());
+	let playbackStartAt = $state(0);
+	let lastPosition = 0;
+	let restartAt: number | null = null;
+
+	function changeQuality(next: QualityId) {
+		if (next === quality) return;
+		storeQuality(next);
+		restartAt = lastPosition;
+		quality = next;
+	}
 
 	// Re-runs per episode (same route component instance is reused on
 	// episode→episode navigation): stops the old session, starts a new one.
 	$effect(() => {
 		const slug = data.show.id;
 		const episodeSlug = data.episode.id;
+		const chosenQuality = quality;
+		const startSeconds = restartAt ?? data.resumeFrom;
+		restartAt = null;
+		playbackStartAt = startSeconds;
 		playback = null;
 		playbackError = null;
 		const controller = new AbortController();
-		let sessionId: string | null = null;
+		sessionId = null;
 		reporter = createProgressReporter({ kind: 'series', slug, episodeSlug });
 
 		startPlayback(
-			{ kind: 'series', slug, episodeSlug, startSeconds: data.resumeFrom },
+			{ kind: 'series', slug, episodeSlug, startSeconds, quality: chosenQuality },
 			controller.signal
 		)
 			.then((descriptor) => {
@@ -54,6 +74,16 @@
 			stopPlayback(sessionId);
 		};
 	});
+
+	// The player can't buffer its way out of a fatal error: drop the session
+	// and show the reason in the same panel /api/playback/start failures use.
+	function onPlaybackError(message: string) {
+		reporter?.flush();
+		stopPlayback(sessionId);
+		sessionId = null;
+		playback = null;
+		playbackError = message;
+	}
 </script>
 
 <svelte:head>
@@ -67,8 +97,15 @@
 		backHref={mediaHref(data.show)}
 		videoSrc={playback.src}
 		videoKind={playback.mode === 'hls' ? 'hls' : 'file'}
-		startAt={data.resumeFrom}
-		onProgress={(position, duration) => reporter?.onProgress(position, duration)}
+		startAt={playbackStartAt}
+		onProgress={(position, duration) => {
+			lastPosition = position;
+			reporter?.onProgress(position, duration);
+		}}
+		onError={onPlaybackError}
+		{quality}
+		sourceWidth={playback.source.width}
+		onQualityChange={changeQuality}
 		nextHref={data.nextEpisodeId ? episodeWatchHref(data.show.id, data.nextEpisodeId) : undefined}
 		show={data.show}
 		currentEpisodeId={data.episode.id}

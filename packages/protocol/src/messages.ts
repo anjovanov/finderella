@@ -154,7 +154,15 @@ export const SessionStartMessage = base.extend({
 	relPath: z.string().min(1),
 	startSeconds: z.number().nonnegative(),
 	segmentSeconds: z.number().positive(),
-	durationMs: z.number().int().positive()
+	durationMs: z.number().int().positive(),
+	/** Transcode plan from the hub's quality ladder (src/lib/playback-quality.ts). */
+	quality: z.object({
+		maxWidth: z.number().int().positive(),
+		/** Absent = CRF only, no VBV ceiling. */
+		maxVideoKbps: z.number().int().positive().optional(),
+		audioKbps: z.number().int().positive(),
+		level: z.enum(['4.1', '5.2'])
+	})
 });
 export type SessionStartMessage = z.infer<typeof SessionStartMessage>;
 

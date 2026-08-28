@@ -1,46 +1,59 @@
 import { error, json, type RequestHandler } from '@sveltejs/kit';
 import { z } from 'zod';
-import { getVideoSrc } from '$lib/data/playback';
 import { registry } from '$lib/server/gateways/registry';
 import { SEGMENT_SECONDS } from '$lib/server/streaming/hls-playlist';
 import { sessionManager } from '$lib/server/streaming/session-manager';
 import { pickEpisodeSource, pickMovieSource } from '$lib/server/streaming/source-picker';
+import { QUALITY_IDS, QUALITY_LADDER, transcodePlan } from '$lib/playback-quality';
 
 const StartRequest = z.object({
 	kind: z.enum(['movie', 'series']),
 	slug: z.string().min(1),
 	episodeSlug: z.string().min(1).optional(),
-	startSeconds: z.number().nonnegative().default(0)
+	startSeconds: z.number().nonnegative().default(0),
+	quality: z.enum(QUALITY_IDS).default('original')
 });
 
 /**
  * Create a playback session for a title and return what the player should
  * load. Modes:
- *  - direct: real file on an online gateway, browser-compatible → range proxy
- *  - demo:   no real source (seeded catalog / gateway offline with no alternative)
- *            → sample video, so the UI stays usable without media
- * HLS transcoding for non-direct-playable files arrives in Phase 3.
+ *  - direct: browser-compatible file on an online gateway → range proxy
+ *  - hls:    anything else → ffmpeg on the gateway, hub-synthesized playlists
+ * An explicit `quality` rung forces hls, capped to that rung (see
+ * $lib/playback-quality) — the way to fit a remote gateway's uplink.
+ * Error bodies are shown verbatim by the watch pages, so keep them readable.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = locals.user;
 	if (!user) error(401);
 	const parsed = StartRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'expected { kind, slug, episodeSlug? }');
-	const { kind, slug, episodeSlug, startSeconds } = parsed.data;
+	const { kind, slug, episodeSlug, startSeconds, quality } = parsed.data;
+	const rung = quality === 'original' ? undefined : QUALITY_LADDER[quality];
 	if (kind === 'series' && !episodeSlug) error(400, 'episodeSlug required for series');
 
-	const source =
+	const lookup =
 		kind === 'movie' ? await pickMovieSource(slug) : await pickEpisodeSource(slug, episodeSlug!);
-
-	if (!source) {
-		// No file on any online gateway — fall back to the demo sample so seeded
-		// titles remain playable in development.
-		return json({ mode: 'demo', src: getVideoSrc(episodeSlug ?? slug), sessionId: null });
+	if (!lookup.source) {
+		if (lookup.reason === 'offline') {
+			error(503, 'The device holding this title is offline right now.');
+		}
+		error(
+			404,
+			'No media file is linked to this title. Add it to a library on a device and rescan.'
+		);
 	}
+	const source = lookup.source;
 
-	if (source.directPlayable) {
-		const session = await sessionManager.start(user.id, source, 'direct');
-		return json({ mode: 'direct', src: `/api/stream/${session.id}/file`, sessionId: session.id });
+	if (source.directPlayable && !rung) {
+		const session = await sessionManager.start(user.id, source, 'direct', quality);
+		return json({
+			mode: 'direct',
+			src: `/api/stream/${session.id}/file`,
+			sessionId: session.id,
+			quality,
+			source: { width: source.file.width, height: source.file.height }
+		});
 	}
 
 	// HLS transcode path: ffmpeg runs on the gateway that owns the file.
@@ -58,7 +71,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		);
 	}
 
-	const session = await sessionManager.start(user.id, source, 'hls');
+	const session = await sessionManager.start(user.id, source, 'hls', quality);
+	const plan = transcodePlan(quality, source.file.width);
 	try {
 		await registry.request(
 			source.gatewayId,
@@ -69,7 +83,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				relPath: source.file.relPath,
 				startSeconds,
 				segmentSeconds: SEGMENT_SECONDS,
-				durationMs: source.file.durationMs
+				durationMs: source.file.durationMs,
+				quality: {
+					maxWidth: plan.maxWidth,
+					maxVideoKbps: plan.maxVideoKbps,
+					audioKbps: plan.audioKbps,
+					level: plan.level
+				}
 			},
 			{ timeoutMs: 15_000 }
 		);
@@ -80,6 +100,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	return json({
 		mode: 'hls',
 		src: `/api/stream/${session.id}/hls/master.m3u8`,
-		sessionId: session.id
+		sessionId: session.id,
+		quality,
+		source: { width: source.file.width, height: source.file.height }
 	});
 };

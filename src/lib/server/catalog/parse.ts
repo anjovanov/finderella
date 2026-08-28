@@ -26,6 +26,12 @@ const JUNK_TOKENS =
 	/\b(2160p|1080p|720p|480p|bluray|blu-ray|webrip|web-dl|webdl|web|hdtv|dvdrip|brrip|x264|x265|h264|h265|hevc|av1|aac|ac3|dts|hdr|hdr10|dv|remux|proper|repack|extended|unrated|multi|vostfr)\b.*$/i;
 
 const YEAR_RE = /[([\s._-]((19|20)\d{2})[)\]\s._-]?/;
+/**
+ * Season-pack markers in show folder names ("Show S01 S02 S03 Complete …",
+ * "Show Season 1-3", "Show Complete Series"). Only applied to show titles —
+ * "Season"/"Complete" can be legitimate words in movie titles.
+ */
+const SEASON_PACK_RE = /\b(?:s\d{1,2}|seasons?|complete)\b/i;
 const EPISODE_RE = /\bs(\d{1,2})[\s._-]*e(\d{1,3})\b|\b(\d{1,2})x(\d{2,3})\b/i;
 
 function stripExtension(name: string): string {
@@ -33,13 +39,18 @@ function stripExtension(name: string): string {
 }
 
 function cleanTitle(raw: string): string {
-	return raw
-		.replace(/[._]/g, ' ')
-		.replace(JUNK_TOKENS, '')
-		.replace(/[-\s]+$/g, '')
-		.replace(/^[-\s]+/g, '')
-		.replace(/\s{2,}/g, ' ')
-		.trim();
+	return (
+		raw
+			.replace(/[._]/g, ' ')
+			.replace(JUNK_TOKENS, '')
+			// Junk cut mid-bracket leaves "Title (" behind: drop empty pairs and
+			// unbalanced trailing openers / leading closers.
+			.replace(/[([{]\s*[)\]}]/g, '')
+			.replace(/[-\s([{]+$/g, '')
+			.replace(/^[-\s)\]}]+/g, '')
+			.replace(/\s{2,}/g, ' ')
+			.trim()
+	);
 }
 
 export function slugify(text: string): string {
@@ -84,11 +95,16 @@ export function parseEpisodePath(relPath: string): ParsedEpisode | null {
 	// falling back to whatever precedes the SxxEyy marker in the filename.
 	let showRaw = parts.length > 1 ? parts[0] : basename.slice(0, match.index);
 	let year: number | undefined;
+	let cutAt = showRaw.length;
 	const showYear = YEAR_RE.exec(showRaw);
 	if (showYear && typeof showYear.index === 'number') {
 		year = Number(showYear[1]);
-		showRaw = showRaw.slice(0, showYear.index);
+		cutAt = Math.min(cutAt, showYear.index);
 	}
+	// Cut season-pack markers too, but never at index 0 ("Complete Savages").
+	const seasonPack = SEASON_PACK_RE.exec(showRaw);
+	if (seasonPack && seasonPack.index > 0) cutAt = Math.min(cutAt, seasonPack.index);
+	showRaw = showRaw.slice(0, cutAt);
 	const showTitle = cleanTitle(showRaw);
 	if (!showTitle) return null;
 

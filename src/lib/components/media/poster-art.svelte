@@ -7,14 +7,21 @@
 		variant = 'poster',
 		showTitle = false,
 		hueShift = 0,
+		imageUrl,
 		class: className
 	}: {
 		item: MediaItem;
 		variant?: 'poster' | 'backdrop';
 		showTitle?: boolean;
 		hueShift?: number;
+		/** Overrides the item's own artwork (e.g. an episode still); falls back to it when unset. */
+		imageUrl?: string;
 		class?: string;
 	} = $props();
+
+	const src = $derived(
+		imageUrl ?? (variant === 'backdrop' ? item.backdropUrl : item.posterUrl) ?? null
+	);
 
 	const hue = $derived((item.theme.hue + hueShift) % 360);
 	const hue2 = $derived((item.theme.hue2 + hueShift) % 360);
@@ -35,10 +42,8 @@
 	)}
 	style:background
 >
-	{#if item.backdropUrl && variant === 'backdrop'}
-		<img src={item.backdropUrl} alt="" class="absolute inset-0 size-full object-cover" />
-	{:else if item.posterUrl && variant === 'poster'}
-		<img src={item.posterUrl} alt="" class="absolute inset-0 size-full object-cover" />
+	{#if src}
+		<img {src} alt="" loading="lazy" class="absolute inset-0 size-full object-cover" />
 	{/if}
 	<div
 		class="absolute inset-0"

@@ -142,6 +142,7 @@ program
 							absPath: abs,
 							segmentSeconds: message.segmentSeconds,
 							durationMs: message.durationMs,
+							quality: message.quality,
 							ffmpegBin: ffmpeg,
 							log,
 							onReap: () => sessions.delete(message.sessionId)
@@ -171,9 +172,10 @@ program
 						void session
 							.ensureAsset(message.name)
 							.then((absPath) => startTransfer(conn, message.id, absPath, 0, Infinity))
-							.catch((err: Error) =>
-								conn.send({ type: 'resp', re: message.id, ok: false, error: err.message })
-							);
+							.catch((err: Error) => {
+								log(`hls.get ${message.name} failed (${message.sessionId}): ${err.message}`);
+								conn.send({ type: 'resp', re: message.id, ok: false, error: err.message });
+							});
 						break;
 					}
 					case 'credit':

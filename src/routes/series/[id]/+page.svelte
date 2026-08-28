@@ -5,6 +5,7 @@
 	import DetailHero from '$lib/components/media/detail-hero.svelte';
 	import EpisodeCard from '$lib/components/media/episode-card.svelte';
 	import MediaRow from '$lib/components/media/media-row.svelte';
+	import CastRow from '$lib/components/media/cast-row.svelte';
 
 	let { data } = $props();
 </script>
@@ -36,7 +37,12 @@
 						     - half the button (1.125rem) = 5.25rem -->
 						<Carousel label="Season {season.number} episodes" arrowTop="top-[5.25rem]">
 							{#each season.episodes as episode (episode.id)}
-								<EpisodeCard {episode} item={data.show} />
+								<EpisodeCard
+									{episode}
+									season={season.number}
+									item={data.show}
+									imageUrl={episode.stillUrl ?? season.posterUrl}
+								/>
 							{/each}
 						</Carousel>
 					</div>
@@ -44,14 +50,9 @@
 			{/each}
 		</Tabs.Root>
 	</section>
-	<section class="flex page-gutter flex-col gap-3">
-		<h2 class="text-lg font-semibold tracking-tight">Cast</h2>
-		<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-			{#each data.show.cast as name (name)}
-				<span>{name}</span>
-			{/each}
-		</div>
-	</section>
+	{#if data.show.cast.length > 0}
+		<CastRow cast={data.show.cast} />
+	{/if}
 	{#if data.related.length > 0}
 		<div class="page-gutter">
 			<Separator />

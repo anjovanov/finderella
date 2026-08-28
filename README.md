@@ -24,12 +24,17 @@ Browser ──HTTPS──►  Hub (SvelteKit + Postgres, on your VPS)
 
 ## Features
 
-- Movies + series catalog with metadata parsed from filenames, deterministic
-  generated artwork, search, genre browsing
+- Movies + series catalog: titles parsed from filenames, then posters,
+  synopses, genres, cast and ratings fetched from TMDB (optional
+  `TMDB_API_KEY`; deterministic generated artwork otherwise), search, genre
+  browsing
 - Netflix-style player: custom controls, subtitles, episode browser, autoplay
   next with countdown, resume, continue-watching row
 - Direct play (byte-range proxy) and on-gateway HLS transcoding with instant
-  seeking (hub-synthesized VOD playlists)
+  seeking (hub-synthesized VOD playlists); a source-aware quality menu
+  (Original/2160p/1080p/720p/480p/360p) caps bitrate for gateways on slow
+  uplinks; 4K and HDR sources are transcoded (tone-mapped) to browser-safe
+  H.264
 - Multi-device: pool media from any number of gateways; per-device pairing tokens,
   revocable from the UI
 - Auth via Better Auth (email/password); every stream is session-authorized
@@ -72,9 +77,8 @@ Then add library folders on the devices page; scans run automatically.
 
 ```sh
 npm install
-cp .env.example .env    # point DATABASE_URL at a local Postgres
+cp .env.example .env    # point DATABASE_URL at a local Postgres; TMDB_API_KEY optional
 npm run db:push
-npm run seed            # demo catalog, browsable without any gateway
 npm run dev
 ```
 

@@ -8,6 +8,20 @@
       "when": 1787758464389,
       "tag": "0000_fearless_runaways",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787924019975,
+      "tag": "0001_secret_callisto",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787925830066,
+      "tag": "0002_watery_kinsey_walden",
+      "breakpoints": true
     }
   ]
 }

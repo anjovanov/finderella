@@ -2,6 +2,7 @@ import { error, type RequestHandler } from '@sveltejs/kit';
 import { registry } from '$lib/server/gateways/registry';
 import { buildMasterPlaylist, buildMediaPlaylist } from '$lib/server/streaming/hls-playlist';
 import { sessionManager } from '$lib/server/streaming/session-manager';
+import { QUALITY_LADDER, transcodePlan } from '$lib/playback-quality';
 
 const SEGMENT_RE = /^seg-\d+\.m4s$/;
 
@@ -20,7 +21,11 @@ export const GET: RequestHandler = async ({ params, request }) => {
 	const { file, gatewayId } = session.source;
 
 	if (asset === 'master.m3u8') {
-		return new Response(buildMasterPlaylist(file.bitrate), {
+		// A capped rung advertises its ceiling; auto advertises the source rate.
+		const rung = session.quality === 'original' ? undefined : QUALITY_LADDER[session.quality];
+		const bandwidth = rung ? (rung.maxVideoKbps + rung.audioKbps) * 1000 : file.bitrate;
+		const plan = transcodePlan(session.quality, file.width);
+		return new Response(buildMasterPlaylist(bandwidth, file.audioCodec !== null, plan.codec), {
 			headers: { 'content-type': 'application/vnd.apple.mpegurl', 'cache-control': 'no-store' }
 		});
 	}

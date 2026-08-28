@@ -13,7 +13,7 @@ import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
 import { gateway } from '$lib/server/db/schema';
-import { finalizeScan, ingestScanBatch } from '$lib/server/catalog/ingest';
+import { enqueueScanWork, finalizeScan, ingestScanBatch } from '$lib/server/catalog/ingest';
 import { log } from '$lib/server/log';
 import { registry, type ConnectedGateway } from './registry';
 
@@ -172,14 +172,16 @@ function handleMessage(
 			if (registered) registry.handleResp(registered, message);
 			return registered;
 		case 'scan.file':
-			void ingestScanBatch(message.libraryId, message.files).catch((err) =>
+			void enqueueScanWork(message.libraryId, () =>
+				ingestScanBatch(message.libraryId, message.files)
+			).catch((err) =>
 				log.error({ err, libraryId: message.libraryId }, 'scan batch ingest failed')
 			);
 			return registered;
 		case 'scan.done':
-			void finalizeScan(message.libraryId, message.stats).catch((err) =>
-				log.error({ err, libraryId: message.libraryId }, 'scan finalize failed')
-			);
+			void enqueueScanWork(message.libraryId, () =>
+				finalizeScan(message.libraryId, message.stats)
+			).catch((err) => log.error({ err, libraryId: message.libraryId }, 'scan finalize failed'));
 			return registered;
 	}
 }

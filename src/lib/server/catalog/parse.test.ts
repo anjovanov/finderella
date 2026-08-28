@@ -50,6 +50,47 @@ describe('parseEpisodePath', () => {
 		});
 	});
 
+	it('trims season-pack markers from show folder names', () => {
+		expect(
+			parseEpisodePath(
+				'Rick And Morty S01 S02 S03 Complete BluRay H264 5.1 BONE/SEASON 1/Rick And Morty S01E01 720p BluRay 5.1 BONE.mp4'
+			)
+		).toEqual({
+			showTitle: 'Rick And Morty',
+			season: 1,
+			episode: 1,
+			episodeTitle: undefined,
+			year: undefined
+		});
+		expect(parseEpisodePath('Show Season 1-3 Complete/Season 2/Show S02E03.mkv')).toMatchObject({
+			showTitle: 'Show',
+			season: 2,
+			episode: 3
+		});
+	});
+
+	it('keeps the year when a season marker follows it in the folder name', () => {
+		expect(
+			parseEpisodePath(
+				"Silo (2023) Season 1 S01 (1080p ATVP WEB-DL x265 HEVC 10bit EAC3 Atmos 5.1 t3nzin)/Silo (2023) - S01E05 - The Janitor's Boy (1080p ATVP WEB-DL x265 t3nzin).mkv"
+			)
+		).toEqual({
+			showTitle: 'Silo',
+			season: 1,
+			episode: 5,
+			episodeTitle: "The Janitor's Boy",
+			year: 2023
+		});
+	});
+
+	it('does not strip dangling brackets into an empty title or cut leading marker words', () => {
+		expect(parseEpisodePath('Complete Savages/S01E01 - Pilot.mkv')).toMatchObject({
+			showTitle: 'Complete Savages',
+			episodeTitle: 'Pilot'
+		});
+		expect(parseEpisodePath('Show/S01E02 - Title [1080p].mkv')?.episodeTitle).toBe('Title');
+	});
+
 	it('returns null when no episode marker exists', () => {
 		expect(parseEpisodePath('Random File.mkv')).toBeNull();
 	});

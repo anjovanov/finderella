@@ -1,7 +1,16 @@
 import { desc, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { episode, movie, season, series } from '$lib/server/db/schema';
-import type { Episode, Genre, Maturity, MediaItem, Movie, Season, Series } from '$lib/data/types';
+import {
+	GENRES,
+	type Episode,
+	type Genre,
+	type Maturity,
+	type MediaItem,
+	type Movie,
+	type Season,
+	type Series
+} from '$lib/data/types';
 
 /**
  * Catalog reads. Every function returns the exact shapes in
@@ -14,6 +23,11 @@ type SeriesRow = typeof series.$inferSelect;
 type SeasonRow = typeof season.$inferSelect & { episodes: EpisodeRow[] };
 type EpisodeRow = typeof episode.$inferSelect;
 
+/** DB genres are free text; only the fixed tuple reaches the UI's filters. */
+function knownGenres(names: string[]): Genre[] {
+	return names.filter((g): g is Genre => (GENRES as readonly string[]).includes(g));
+}
+
 function rowToMovie(row: MovieRow): Movie {
 	return {
 		kind: 'movie',
@@ -24,10 +38,11 @@ function rowToMovie(row: MovieRow): Movie {
 		year: row.year,
 		runtimeMinutes: row.runtimeMinutes,
 		director: row.director,
+		budget: row.budget ?? undefined,
 		rating: row.rating,
 		maturity: row.maturity as Maturity,
-		cast: row.castMembers,
-		genres: row.genres as Genre[],
+		cast: row.castPeople ?? [],
+		genres: knownGenres(row.genres),
 		theme: { hue: row.hue, hue2: row.hue2 },
 		posterUrl: row.posterUrl ?? undefined,
 		backdropUrl: row.backdropUrl ?? undefined
@@ -40,7 +55,8 @@ function rowToEpisode(row: EpisodeRow): Episode {
 		number: row.number,
 		title: row.title,
 		synopsis: row.synopsis,
-		runtimeMinutes: row.runtimeMinutes
+		runtimeMinutes: row.runtimeMinutes,
+		stillUrl: row.stillUrl ?? undefined
 	};
 }
 
@@ -50,6 +66,7 @@ function rowToSeries(row: SeriesRow & { seasons: SeasonRow[] }): Series {
 		.map((s) => ({
 			number: s.number,
 			year: s.year,
+			posterUrl: s.posterUrl ?? undefined,
 			episodes: s.episodes.toSorted((a, b) => a.number - b.number).map(rowToEpisode)
 		}));
 	return {
@@ -63,8 +80,8 @@ function rowToSeries(row: SeriesRow & { seasons: SeasonRow[] }): Series {
 		creator: row.creator,
 		rating: row.rating,
 		maturity: row.maturity as Maturity,
-		cast: row.castMembers,
-		genres: row.genres as Genre[],
+		cast: row.castPeople ?? [],
+		genres: knownGenres(row.genres),
 		theme: { hue: row.hue, hue2: row.hue2 },
 		posterUrl: row.posterUrl ?? undefined,
 		backdropUrl: row.backdropUrl ?? undefined,

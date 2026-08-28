@@ -4,12 +4,14 @@ import { playbackSession } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
 import { log } from '$lib/server/log';
 import type { PlayableSource } from './source-picker';
+import type { QualityId } from '$lib/playback-quality';
 
 export interface HotSession {
 	id: string;
 	userId: string;
 	source: PlayableSource;
 	mode: 'direct' | 'hls';
+	quality: QualityId;
 	createdAt: number;
 	lastAccessAt: number;
 	lastPersistedAt: number;
@@ -28,14 +30,20 @@ class SessionManager {
 	#sessions = new Map<string, HotSession>();
 	#reaper: NodeJS.Timeout | null = null;
 
-	async start(userId: string, source: PlayableSource, mode: 'direct' | 'hls'): Promise<HotSession> {
+	async start(
+		userId: string,
+		source: PlayableSource,
+		mode: 'direct' | 'hls',
+		quality: QualityId = 'original'
+	): Promise<HotSession> {
 		const [row] = await db
 			.insert(playbackSession)
 			.values({
 				userId,
 				mediaFileId: source.file.id,
 				gatewayId: source.gatewayId,
-				mode
+				mode,
+				quality
 			})
 			.returning({ id: playbackSession.id });
 		const now = Date.now();
@@ -44,13 +52,17 @@ class SessionManager {
 			userId,
 			source,
 			mode,
+			quality,
 			createdAt: now,
 			lastAccessAt: now,
 			lastPersistedAt: now
 		};
 		this.#sessions.set(session.id, session);
 		this.#ensureReaper();
-		log.info({ sessionId: session.id, mode, relPath: source.file.relPath }, 'playback started');
+		log.info(
+			{ sessionId: session.id, mode, quality, relPath: source.file.relPath },
+			'playback started'
+		);
 		return session;
 	}
 
