@@ -25,3 +25,5 @@
 **Cosmetics**: cast headshots 112px; tile hover zoom 1.015 (episode play badge 1.05).
 
 **Progress**: a thin progress line under movie/series/episode cards (series = latest watched episode; full bar when finished), fed by `withProgress` in the browsing loaders.
+
+**Resume**: the series **Play** button now targets the viewer's next-in-line episode instead of S1E1 — the most recently watched episode if unfinished, otherwise the one after it — and reads `Resume S2E4`; unwatched shows (and shows whose last episode is finished) keep **Play** → S1E1. Applies to the detail hero and the home banner. `applyProgress` stamps `lastWatchedEpisodeId` on series; the pure pick lives in `src/lib/data/episodes.ts` (`playTarget`, also `flattenEpisodes` shared with the watch loader). `watchHref` no longer throws on a series without episodes (button disabled).

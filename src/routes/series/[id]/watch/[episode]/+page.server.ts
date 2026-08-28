@@ -1,4 +1,5 @@
 import { error } from '@sveltejs/kit';
+import { flattenEpisodes } from '$lib/data';
 import { getSeriesBySlug } from '$lib/server/catalog';
 import { episodeResumePosition, withProgress } from '$lib/server/progress';
 import type { PageServerLoad } from './$types';
@@ -10,9 +11,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	// so it needs the per-episode progress like the detail page does.
 	await withProgress(locals.user!.id, [show]);
 
-	const flat = show.seasons.flatMap((season) =>
-		season.episodes.map((episode) => ({ season, episode }))
-	);
+	const flat = flattenEpisodes(show);
 	const index = flat.findIndex(({ episode }) => episode.id === params.episode);
 	if (index === -1) error(404, 'Episode not found');
 

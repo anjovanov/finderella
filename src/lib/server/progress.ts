@@ -134,8 +134,8 @@ export interface ProgressOverlay {
 	movies: Map<string, number>;
 	/** episode slug → fraction */
 	episodes: Map<string, number>;
-	/** series slug → fraction of the most recently watched episode */
-	series: Map<string, number>;
+	/** series slug → the most recently watched episode and its fraction */
+	series: Map<string, { fraction: number; episodeSlug: string }>;
 }
 
 /** Everything one viewer has watched, keyed by public slug (a user's rows are few). */
@@ -173,7 +173,9 @@ export async function loadProgress(userId: string): Promise<ProgressOverlay> {
 		if (fraction === undefined) continue;
 		overlay.episodes.set(row.episodeSlug, fraction);
 		// Rows are newest-first: the first hit per series is the latest episode.
-		if (!overlay.series.has(row.seriesSlug)) overlay.series.set(row.seriesSlug, fraction);
+		if (!overlay.series.has(row.seriesSlug)) {
+			overlay.series.set(row.seriesSlug, { fraction, episodeSlug: row.episodeSlug });
+		}
 	}
 	return overlay;
 }
@@ -185,7 +187,9 @@ export function applyProgress<T extends MediaItem>(items: T[], overlay: Progress
 			item.progress = overlay.movies.get(item.id);
 			continue;
 		}
-		item.progress = overlay.series.get(item.id);
+		const latest = overlay.series.get(item.id);
+		item.progress = latest?.fraction;
+		item.lastWatchedEpisodeId = latest?.episodeSlug;
 		for (const season of item.seasons) {
 			for (const ep of season.episodes) ep.progress = overlay.episodes.get(ep.id);
 		}

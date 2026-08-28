@@ -1,4 +1,5 @@
 import { resolve } from '$app/paths';
+import { playTarget } from './episodes';
 import type { MediaItem } from './types';
 
 /**
@@ -14,11 +15,14 @@ export function mediaHref(item: MediaItem): string {
 		: resolve('/series/[id]', { id: item.id });
 }
 
-/** Link target for playing a media item (series start at their first episode). */
+/**
+ * Link target for playing a media item. Series go to the viewer's next-in-line
+ * episode (see `playTarget`); a series with no episodes falls back to its detail page.
+ */
 export function watchHref(item: MediaItem): string {
-	return item.kind === 'movie'
-		? resolve('/movies/[id]/watch', { id: item.id })
-		: episodeWatchHref(item.id, item.seasons[0].episodes[0].id);
+	if (item.kind === 'movie') return resolve('/movies/[id]/watch', { id: item.id });
+	const target = playTarget(item);
+	return target ? episodeWatchHref(item.id, target.episode.id) : mediaHref(item);
 }
 
 /** Link target for playing a specific series episode. */

@@ -2,11 +2,18 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { PlayIcon } from '@hugeicons/core-free-icons';
 	import { Button } from '$lib/components/ui/button';
-	import { watchHref, type MediaItem } from '$lib/data';
+	import { episodeLabel, playTarget, watchHref, type MediaItem } from '$lib/data';
 	import MetaPills from './meta-pills.svelte';
 	import PosterArt from './poster-art.svelte';
 
 	let { item }: { item: MediaItem } = $props();
+
+	// Series resume the viewer's next-in-line episode ("Resume S2E4"); movies just play.
+	const target = $derived(item.kind === 'series' ? playTarget(item) : undefined);
+	const playLabel = $derived(
+		target?.resume ? `Resume ${episodeLabel(target.season, target.episode.number)}` : 'Play'
+	);
+	const canPlay = $derived(item.kind === 'movie' || target !== undefined);
 
 	const byline = $derived(
 		item.kind === 'movie' ? `Directed by ${item.director}` : `Created by ${item.creator}`
@@ -49,9 +56,9 @@
 				{/if}
 			</p>
 			<div class="mt-1 flex gap-3">
-				<Button href={watchHref(item)} size="lg">
+				<Button href={watchHref(item)} size="lg" disabled={!canPlay}>
 					<HugeiconsIcon icon={PlayIcon} data-icon="inline-start" />
-					Play
+					{playLabel}
 				</Button>
 			</div>
 		</div>

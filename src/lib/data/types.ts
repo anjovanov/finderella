@@ -56,6 +56,8 @@ export interface Series extends MediaBase {
 	creator: string;
 	endYear?: number;
 	seasons: Season[];
+	/** Slug of the viewer's most recently watched episode; drives the Play/Resume target. */
+	lastWatchedEpisodeId?: string;
 }
 
 export interface Season {
