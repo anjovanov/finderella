@@ -1,17 +1,22 @@
 import { resolve } from '$app/paths';
 import { byGenre, topRated } from '$lib/data';
 import { featured, listMovies, listSeries, recentlyAdded } from '$lib/server/catalog';
-import { continueWatching } from '$lib/server/progress';
+import { applyProgress, continueWatching, loadProgress } from '$lib/server/progress';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const [hero, movies, series, recent, watching] = await Promise.all([
+	const userId = locals.user!.id;
+	const [hero, movies, series, recent, watching, progress] = await Promise.all([
 		featured(),
 		listMovies(),
 		listSeries(),
 		recentlyAdded(),
-		continueWatching(locals.user!.id)
+		continueWatching(userId),
+		loadProgress(userId)
 	]);
+	for (const list of [movies, series, recent, watching, hero ? [hero] : []]) {
+		applyProgress(list, progress);
+	}
 	const allItems = [...movies, ...series];
 	return {
 		hero,

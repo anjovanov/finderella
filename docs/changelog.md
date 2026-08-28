@@ -23,3 +23,5 @@
 - 4K: transcoder ceiling raised to 3840 wide with H.264 level 5.2 above 1080p (level/CODECS decided by `transcodePlan` in `src/lib/playback-quality.ts`); HDR (PQ/HLG) sources are tone-mapped to BT.709. Master playlist omits the audio codec for silent files.
 
 **Cosmetics**: cast headshots 112px; tile hover zoom 1.015 (episode play badge 1.05).
+
+**Progress**: a thin progress line under movie/series/episode cards (series = latest watched episode; full bar when finished), fed by `withProgress` in the browsing loaders.

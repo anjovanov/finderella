@@ -2,15 +2,8 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { episode, movie, series, watchProgress } from '$lib/server/db/schema';
 import { getMovieBySlug, getSeriesBySlug } from '$lib/server/catalog';
+import { inProgress, progressFraction } from '$lib/data/progress';
 import type { MediaItem } from '$lib/data/types';
-
-/** Positions inside these bounds count as "in progress" for resume/rows. */
-const MIN_RESUME_SECONDS = 30;
-const FINISHED_FRACTION = 0.95;
-
-function inProgress(position: number, duration: number): boolean {
-	return position >= MIN_RESUME_SECONDS && duration > 0 && position < duration * FINISHED_FRACTION;
-}
 
 export async function saveProgress(input: {
 	userId: string;
@@ -134,4 +127,72 @@ export async function continueWatching(userId: string, limit = 12): Promise<Medi
 		if (items.length >= limit) break;
 	}
 	return items;
+}
+
+export interface ProgressOverlay {
+	/** movie slug → fraction */
+	movies: Map<string, number>;
+	/** episode slug → fraction */
+	episodes: Map<string, number>;
+	/** series slug → fraction of the most recently watched episode */
+	series: Map<string, number>;
+}
+
+/** Everything one viewer has watched, keyed by public slug (a user's rows are few). */
+export async function loadProgress(userId: string): Promise<ProgressOverlay> {
+	const [movieRows, episodeRows] = await Promise.all([
+		db
+			.select({
+				slug: movie.slug,
+				position: watchProgress.positionSeconds,
+				duration: watchProgress.durationSeconds
+			})
+			.from(watchProgress)
+			.innerJoin(movie, eq(watchProgress.movieId, movie.id))
+			.where(eq(watchProgress.userId, userId)),
+		db
+			.select({
+				episodeSlug: episode.slug,
+				seriesSlug: series.slug,
+				position: watchProgress.positionSeconds,
+				duration: watchProgress.durationSeconds
+			})
+			.from(watchProgress)
+			.innerJoin(episode, eq(watchProgress.episodeId, episode.id))
+			.innerJoin(series, eq(episode.seriesId, series.id))
+			.where(eq(watchProgress.userId, userId))
+			.orderBy(desc(watchProgress.updatedAt))
+	]);
+	const overlay: ProgressOverlay = { movies: new Map(), episodes: new Map(), series: new Map() };
+	for (const row of movieRows) {
+		const fraction = progressFraction(row.position, row.duration);
+		if (fraction !== undefined) overlay.movies.set(row.slug, fraction);
+	}
+	for (const row of episodeRows) {
+		const fraction = progressFraction(row.position, row.duration);
+		if (fraction === undefined) continue;
+		overlay.episodes.set(row.episodeSlug, fraction);
+		// Rows are newest-first: the first hit per series is the latest episode.
+		if (!overlay.series.has(row.seriesSlug)) overlay.series.set(row.seriesSlug, fraction);
+	}
+	return overlay;
+}
+
+/** Stamp `progress` onto catalog items (and their episodes) for the cards. */
+export function applyProgress<T extends MediaItem>(items: T[], overlay: ProgressOverlay): T[] {
+	for (const item of items) {
+		if (item.kind === 'movie') {
+			item.progress = overlay.movies.get(item.id);
+			continue;
+		}
+		item.progress = overlay.series.get(item.id);
+		for (const season of item.seasons) {
+			for (const ep of season.episodes) ep.progress = overlay.episodes.get(ep.id);
+		}
+	}
+	return items;
+}
+
+export async function withProgress<T extends MediaItem>(userId: string, items: T[]): Promise<T[]> {
+	return applyProgress(items, await loadProgress(userId));
 }

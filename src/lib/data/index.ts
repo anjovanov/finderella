@@ -2,6 +2,7 @@ import type { Genre, MediaItem } from './types';
 
 export * from './types';
 export * from './hrefs';
+export * from './progress';
 
 /** Pure ranking/filtering helpers shared by page loads (DB rows in, rows out). */
 

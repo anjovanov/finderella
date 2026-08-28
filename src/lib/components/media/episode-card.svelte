@@ -3,6 +3,7 @@
 	import { PlayIcon } from '@hugeicons/core-free-icons';
 	import { episodeWatchHref, type Episode, type Series } from '$lib/data';
 	import PosterArt from './poster-art.svelte';
+	import ProgressLine from './progress-line.svelte';
 
 	let {
 		episode,
@@ -60,6 +61,7 @@
 		</span>
 	</a>
 	<!-- eslint-enable svelte/no-navigation-without-resolve -->
+	<ProgressLine fraction={episode.progress} />
 	<div class="flex flex-col gap-1">
 		<div class="flex items-baseline justify-between gap-2">
 			<span class="truncate text-sm font-medium">

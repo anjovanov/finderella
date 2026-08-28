@@ -4,6 +4,7 @@
 	import { cn } from '$lib/utils.js';
 	import { mediaHref, type MediaItem } from '$lib/data';
 	import PosterArt from './poster-art.svelte';
+	import ProgressLine from './progress-line.svelte';
 
 	let {
 		item,
@@ -37,6 +38,7 @@
 			{item.rating.toFixed(1)}
 		</span>
 	</div>
+	<ProgressLine fraction={item.progress} />
 	<div class="flex flex-col">
 		<span class="truncate text-sm font-medium group-hover:text-primary">{item.title}</span>
 		<span class="text-xs text-muted-foreground">

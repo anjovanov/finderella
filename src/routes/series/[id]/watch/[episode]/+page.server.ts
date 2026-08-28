@@ -1,11 +1,14 @@
 import { error } from '@sveltejs/kit';
 import { getSeriesBySlug } from '$lib/server/catalog';
-import { episodeResumePosition } from '$lib/server/progress';
+import { episodeResumePosition, withProgress } from '$lib/server/progress';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const show = await getSeriesBySlug(params.id);
 	if (!show) error(404, 'Series not found');
+	// The player's "More episodes" panel renders EpisodeCards from this `show`,
+	// so it needs the per-episode progress like the detail page does.
+	await withProgress(locals.user!.id, [show]);
 
 	const flat = show.seasons.flatMap((season) =>
 		season.episodes.map((episode) => ({ season, episode }))

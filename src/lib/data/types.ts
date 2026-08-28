@@ -31,6 +31,8 @@ interface MediaBase {
 	theme: { hue: number; hue2: number };
 	posterUrl?: string;
 	backdropUrl?: string;
+	/** 0–1 of the viewer's last playback (series: their latest episode); unset = nothing to show. */
+	progress?: number;
 }
 
 export interface CastMember {
@@ -72,6 +74,8 @@ export interface Episode {
 	runtimeMinutes: number;
 	/** Episode still (landscape). */
 	stillUrl?: string;
+	/** 0–1 of the viewer's last playback of this episode. */
+	progress?: number;
 }
 
 export type MediaItem = Movie | Series;
