@@ -25,8 +25,7 @@ Thumbs.db
 .claude/settings.local.json
 
 # Local media test assets (43MB+ videos don't belong in git)
-test/*.mp4
-test/*.mkv
+test/*
 
 # Logs
 *.log
