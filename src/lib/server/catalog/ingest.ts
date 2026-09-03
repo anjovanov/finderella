@@ -3,7 +3,7 @@ import type { ProbedFile } from '@finderella/protocol';
 import { db } from '$lib/server/db';
 import { episode, library, mediaFile, movie, season, series } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
-import { parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
+import { isSampleFile, parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
 import { pruneCatalog } from './prune';
 import { enrichPending, isTmdbConfigured } from '$lib/server/metadata';
 
@@ -132,6 +132,12 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 	for (const rawFile of files) {
 		// Belt-and-braces: bigint columns reject fractional values.
 		const file = { ...rawFile, mtimeMs: Math.round(rawFile.mtimeMs) };
+		// Release-folder sample clips would otherwise become a "sample" movie or
+		// a second copy of an episode. Any earlier row goes `missing` at finalize.
+		if (isSampleFile(file.relPath, file.durationMs)) {
+			log.debug({ relPath: file.relPath, libraryId }, 'skipping sample clip');
+			continue;
+		}
 		try {
 			let movieId: string | null = null;
 			let episodeId: string | null = null;

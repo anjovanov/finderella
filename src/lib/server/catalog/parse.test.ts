@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
+import { isSampleFile, parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
 
 describe('parseMoviePath', () => {
 	it('parses "Title (Year)" naming', () => {
@@ -19,6 +19,73 @@ describe('parseMoviePath', () => {
 	it('handles nested folders and no year', () => {
 		expect(parseMoviePath('Some Movie (2020)/Some Movie (2020).mkv').year).toBe(2020);
 		expect(parseMoviePath('Plain Title.mp4')).toEqual({ title: 'Plain Title' });
+	});
+
+	it('prefers a bracketed year, then the last plausible year before the junk', () => {
+		expect(parseMoviePath('Blade Runner 2049 (2017).mkv')).toEqual({
+			title: 'Blade Runner 2049',
+			year: 2017
+		});
+		expect(parseMoviePath('Blade.Runner.2049.2017.1080p.BluRay.x264-GRP.mkv')).toEqual({
+			title: 'Blade Runner 2049',
+			year: 2017
+		});
+		expect(parseMoviePath('2001 A Space Odyssey (1968).mkv')).toEqual({
+			title: '2001 A Space Odyssey',
+			year: 1968
+		});
+		expect(parseMoviePath('2012 (2009).mkv')).toEqual({ title: '2012', year: 2009 });
+		// A year after the release junk still counts when nothing precedes it.
+		expect(parseMoviePath('Movie.1080p.x264.2019.mkv')).toEqual({ title: 'Movie', year: 2019 });
+	});
+
+	it('rejects numbers that cannot be a release year', () => {
+		// 2049 is part of the title, not a year; next year is still a valid label.
+		expect(parseMoviePath('Blade Runner 2049.mkv')).toEqual({ title: 'Blade Runner 2049' });
+		const next = new Date().getFullYear() + 1;
+		expect(parseMoviePath(`Upcoming (${next}).mkv`)).toEqual({ title: 'Upcoming', year: next });
+		expect(parseMoviePath(`Far Off (${next + 1}).mkv`)).toEqual({ title: `Far Off (${next + 1})` });
+		expect(parseMoviePath('1917 (2019).mkv')).toEqual({ title: '1917', year: 2019 });
+		expect(parseMoviePath('1917.mkv')).toEqual({ title: '1917' });
+	});
+
+	it('falls back to the nearest folder with a year when the file has none', () => {
+		expect(parseMoviePath('Inception (2010)/movie.mkv')).toEqual({
+			title: 'Inception',
+			year: 2010
+		});
+		expect(parseMoviePath('Inception (2010)/Inception.mkv')).toEqual({
+			title: 'Inception',
+			year: 2010
+		});
+		expect(parseMoviePath('Nolan/Inception (2010) [1080p] [YTS.MX]/Inception.mkv')).toEqual({
+			title: 'Inception',
+			year: 2010
+		});
+		// The file wins whenever it carries a year itself.
+		expect(parseMoviePath('Inception (2010)/Inception.2011.1080p.mp4').year).toBe(2011);
+		// No year anywhere: the filename title stands.
+		expect(parseMoviePath('Christopher Nolan/Inception.mkv')).toEqual({ title: 'Inception' });
+	});
+});
+
+describe('isSampleFile', () => {
+	it('skips short clips whose name or folder says sample', () => {
+		expect(isSampleFile('Inception (2010)/Sample/sample.mkv')).toBe(true);
+		expect(isSampleFile('Inception (2010)/inception-sample.mkv', 60_000)).toBe(true);
+		expect(isSampleFile('Inception.2010.sample.1080p.mkv')).toBe(true);
+		expect(isSampleFile('Breaking Bad S01E06/Samples/clip.mkv', 45_000)).toBe(true);
+	});
+
+	it('keeps feature-length titles that happen to be called Sample', () => {
+		expect(isSampleFile('Sample (2020)/sample.mkv', 2 * 3_600_000)).toBe(false);
+		expect(isSampleFile('Sample.mkv', 100 * 60_000)).toBe(false);
+		expect(isSampleFile('Sample S01E01.mkv', 25 * 60_000)).toBe(false);
+	});
+
+	it('leaves ordinary files alone', () => {
+		expect(isSampleFile('Inception (2010)/Inception (2010).mkv')).toBe(false);
+		expect(isSampleFile('Samples of Life (2019).mkv', 90 * 60_000)).toBe(false);
 	});
 });
 
@@ -101,6 +168,31 @@ describe('parseEpisodePath', () => {
 			episodeTitle: 'Pilot (2008)',
 			year: undefined
 		});
+	});
+
+	it('takes the episode marker from the nearest folder when the file has none', () => {
+		expect(parseEpisodePath('Breaking Bad S01E04/video.mkv')).toMatchObject({
+			showTitle: 'Breaking Bad',
+			season: 1,
+			episode: 4,
+			episodeTitle: undefined
+		});
+		expect(parseEpisodePath('Breaking Bad S01E05 - Gray Matter/Gray Matter.mkv')).toMatchObject({
+			showTitle: 'Breaking Bad',
+			season: 1,
+			episode: 5,
+			episodeTitle: 'Gray Matter'
+		});
+		expect(
+			parseEpisodePath('Breaking Bad (2008)/Season 1/Breaking Bad S01E01 - Pilot/video.mkv')
+		).toEqual({
+			showTitle: 'Breaking Bad',
+			season: 1,
+			episode: 1,
+			episodeTitle: 'Pilot',
+			year: 2008
+		});
+		expect(parseEpisodePath('Breaking Bad/random.mkv')).toBeNull();
 	});
 
 	it('parses a loose release file in the library root', () => {

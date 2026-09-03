@@ -6,6 +6,9 @@
 
 - Parser: single-episode release folders (`American Horror Story S12E02 Rockabye REPACK 1080p …/`) no longer become the show title — the folder name is cut at the episode marker like it already was at season-pack markers. A year in the filename prefix (`Invincible.2021.S04E01`) is used when the show folder has none.
 - TMDB matching never accepts a year-only hit any more: `Silo` (mtime year 2026) had matched _Love of Silom_ and `Invincible` had matched _BAKI-DOU: The Invincible Samurai_. A candidate needs a title match; the year is a bonus. Original titles that normalize to nothing (Thai, Japanese, …) are ignored — an empty string was a "prefix" of every query, which is how those two slipped through. When the year-filtered search yields nothing acceptable, the search is retried without the year (the ingest year is only the file's mtime when the filename carries none, and TMDB's year filter hid the real show).
+- Parser, folder fallbacks: a movie file without a year takes title + year from the nearest folder that has one (`Inception (2010)/movie.mkv`); an episode file without an `SxxEyy` marker takes it from the nearest folder (`Breaking Bad S01E05 - Gray Matter/video.mkv` → S1E5 "Gray Matter"). Previously the first was a movie called "movie" and the second was skipped.
+- Parser, year rule: a bracketed year wins, otherwise the last plausible year (1888..next year) before the release junk. `Blade Runner 2049 (2017)` is no longer "Blade Runner" from 2049, and `2001 A Space Odyssey (1968)` gets its year.
+- Ingest skips release-folder sample clips (`Sample/…`, `*-sample.mkv`) when they probe under 10 minutes; a full-length title actually named "Sample" is kept.
 - **Refresh all metadata** now re-matches from scratch instead of re-fetching the stored `tmdb_id`, so a wrong match can be corrected from the UI. It searches by the slug-derived scan title (`scanTitleFromSlug`) because the stored title may already be the wrong show's.
 
 ## 2026-08-28
