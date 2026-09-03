@@ -11,6 +11,8 @@
 - Ingest skips release-folder sample clips (`Sample/…`, `*-sample.mkv`) when they probe under 10 minutes; a full-length title actually named "Sample" is kept.
 - **Refresh all metadata** now re-matches from scratch instead of re-fetching the stored `tmdb_id`, so a wrong match can be corrected from the UI. It searches by the slug-derived scan title (`scanTitleFromSlug`) because the stored title may already be the wrong show's.
 
+**UI**: the series page opens on the season the Play/Resume button targets (the resume point, else the lowest season on disk) instead of always "Season 1" — a show with only S3 on disk used to render its pills with nothing selected.
+
 ## 2026-08-28
 
 **Catalog**

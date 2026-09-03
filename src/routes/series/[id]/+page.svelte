@@ -6,8 +6,16 @@
 	import EpisodeCard from '$lib/components/media/episode-card.svelte';
 	import MediaRow from '$lib/components/media/media-row.svelte';
 	import CastRow from '$lib/components/media/cast-row.svelte';
+	import { playTarget } from '$lib/data';
 
 	let { data } = $props();
+
+	// Open on the season the hero's Play/Resume button targets: the resume
+	// point for a partly watched show, else the lowest season on disk (which
+	// is not always 1).
+	const defaultSeason = $derived(
+		String(playTarget(data.show)?.season ?? data.show.seasons[0]?.number)
+	);
 </script>
 
 <svelte:head>
@@ -18,7 +26,7 @@
 
 <div class="flex flex-col gap-8 py-8">
 	<section class="flex flex-col">
-		<Tabs.Root value="1">
+		<Tabs.Root value={defaultSeason}>
 			<div class="flex page-gutter flex-col gap-4">
 				<h2 class="text-lg font-semibold tracking-tight">Episodes</h2>
 				<Tabs.List class="h-11">
