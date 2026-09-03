@@ -5,9 +5,10 @@ import {
 	normalizeTitle,
 	pickBestMatch,
 	pickTrailer,
+	scanTitleFromSlug,
 	tvMaturity,
-	yearOf,
-	type TrailerCandidate
+	type TrailerCandidate,
+	yearOf
 } from './map';
 
 describe('mapGenres', () => {
@@ -89,6 +90,32 @@ describe('pickBestMatch', () => {
 		expect(pickBestMatch(results, 'Silo', 2023)).toBeUndefined();
 		expect(pickBestMatch(results, '***')).toBeUndefined();
 	});
+
+	it('never matches on year alone', () => {
+		// The ingest year may be a guess (file mtime); a same-year unrelated show is not a hit.
+		const sameYear = [{ id: 9, titles: ['Love of Silom'], year: 2026, popularity: 5 }];
+		expect(pickBestMatch(sameYear, 'Silo', 2026)).toBeUndefined();
+	});
+
+	it('ignores original titles that normalize to nothing', () => {
+		// Thai/Japanese originals strip to '' — which is a prefix of every title.
+		const foreign = [
+			{ id: 9, titles: ['Love of Silom', 'รักสีลม'], year: 2026, popularity: 5 },
+			{ id: 8, titles: ['BAKI-DOU: The Invincible Samurai', 'バキ道'], year: 2026, popularity: 9 }
+		];
+		expect(pickBestMatch(foreign, 'Silo', 2026)).toBeUndefined();
+		expect(pickBestMatch(foreign, 'Invincible', 2026)).toBeUndefined();
+		expect(pickBestMatch(results, 'Silo', 2010)).toBeUndefined();
+	});
+
+	it('uses the year to split exact-title candidates', () => {
+		const remakes = [
+			{ id: 1, titles: ['Invincible'], year: 2021, popularity: 90 },
+			{ id: 2, titles: ['Invincible'], year: 2026, popularity: 10 }
+		];
+		expect(pickBestMatch(remakes, 'Invincible', 2026)?.id).toBe(2);
+		expect(pickBestMatch(remakes, 'Invincible')?.id).toBe(1);
+	});
 });
 
 describe('pickTrailer', () => {
@@ -123,5 +150,19 @@ describe('pickTrailer', () => {
 		expect(pickTrailer([yt('c', 'Clip'), yt('b', 'Behind the Scenes')])).toBeUndefined();
 		expect(pickTrailer([])).toBeUndefined();
 		expect(pickTrailer(undefined)).toBeUndefined();
+	});
+});
+
+describe('scanTitleFromSlug', () => {
+	it("recovers the scan title and drops a movie slug's year tail", () => {
+		expect(scanTitleFromSlug('avatar-fire-and-ash-2025', 'movie')).toBe('avatar fire and ash');
+		expect(scanTitleFromSlug('blade-runner-2049', 'movie')).toBe('blade runner 2049');
+		expect(scanTitleFromSlug('2012-2009', 'movie')).toBe('2012');
+		expect(scanTitleFromSlug('1917', 'movie')).toBe('1917');
+	});
+
+	it('keeps series slugs whole', () => {
+		expect(scanTitleFromSlug('rick-and-morty', 'series')).toBe('rick and morty');
+		expect(scanTitleFromSlug('the-4400', 'series')).toBe('the 4400');
 	});
 });

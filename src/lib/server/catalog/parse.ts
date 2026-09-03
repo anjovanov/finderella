@@ -93,7 +93,8 @@ export function parseEpisodePath(relPath: string): ParsedEpisode | null {
 
 	// Show title: prefer the top-level folder ("Show Name/Season 01/…"),
 	// falling back to whatever precedes the SxxEyy marker in the filename.
-	let showRaw = parts.length > 1 ? parts[0] : basename.slice(0, match.index);
+	const prefix = basename.slice(0, match.index);
+	let showRaw = parts.length > 1 ? parts[0] : prefix;
 	let year: number | undefined;
 	let cutAt = showRaw.length;
 	const showYear = YEAR_RE.exec(showRaw);
@@ -104,9 +105,20 @@ export function parseEpisodePath(relPath: string): ParsedEpisode | null {
 	// Cut season-pack markers too, but never at index 0 ("Complete Savages").
 	const seasonPack = SEASON_PACK_RE.exec(showRaw);
 	if (seasonPack && seasonPack.index > 0) cutAt = Math.min(cutAt, seasonPack.index);
+	// Single-episode release folders carry the full marker
+	// ("Show S12E02 Title 1080p WEB-DL…/Show S12E02 ….mkv").
+	const folderMarker = EPISODE_RE.exec(showRaw);
+	if (folderMarker && folderMarker.index > 0) cutAt = Math.min(cutAt, folderMarker.index);
 	showRaw = showRaw.slice(0, cutAt);
 	const showTitle = cleanTitle(showRaw);
 	if (!showTitle) return null;
+
+	// Year not on the folder: try the filename before the marker
+	// ("Show.2021.S04E01…"). Never after it — episode titles contain numbers.
+	if (year === undefined && parts.length > 1) {
+		const prefixYear = YEAR_RE.exec(prefix);
+		if (prefixYear) year = Number(prefixYear[1]);
+	}
 
 	const afterMarker = basename.slice(match.index + match[0].length);
 	const episodeTitle = cleanTitle(afterMarker) || undefined;

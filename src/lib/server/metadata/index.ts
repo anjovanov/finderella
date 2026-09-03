@@ -3,7 +3,16 @@ import { db } from '$lib/server/db';
 import { episode, movie, season, series } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import type { CastMember } from '$lib/data/types';
-import { mapGenres, movieMaturity, pickBestMatch, pickTrailer, tvMaturity, yearOf } from './map';
+import {
+	mapGenres,
+	movieMaturity,
+	pickBestMatch,
+	pickTrailer,
+	scanTitleFromSlug,
+	tvMaturity,
+	yearOf,
+	type MatchCandidate
+} from './map';
 import {
 	getMovie,
 	getTv,
@@ -50,6 +59,25 @@ function castFrom(credits: MovieDetails['credits'] | TvDetails['credits']): Cast
 let running = false;
 let queued: { force: boolean } | null = null;
 
+/**
+ * Search with the year first (it disambiguates remakes), then without: the
+ * ingest year is only a guess (file mtime) when the filename carried none, and
+ * TMDB's year filter then hides the real title entirely.
+ */
+async function findTmdbId<T>(
+	search: (query: string, year?: number) => Promise<T[]>,
+	toCandidate: (r: T) => MatchCandidate,
+	title: string,
+	year?: number
+): Promise<number | null> {
+	const pick = (results: T[]) => pickBestMatch(results.map(toCandidate), title, year)?.id ?? null;
+	if (year !== undefined) {
+		const withYear = pick(await search(title, year));
+		if (withYear !== null) return withYear;
+	}
+	return pick(await search(title));
+}
+
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 async function workPool(tasks: (() => Promise<void>)[]): Promise<void> {
@@ -95,21 +123,20 @@ export async function enrichMovie(movieId: string, opts: { force?: boolean } = {
 	const row = await db.query.movie.findFirst({ where: eq(movie.id, movieId) });
 	if (!row || (!opts.force && row.metadataUpdatedAt)) return;
 
-	let tmdbId = row.tmdbId;
+	// A forced refresh re-matches from scratch so a wrong match can be corrected.
+	let tmdbId = opts.force ? null : row.tmdbId;
 	if (!tmdbId) {
-		let results = await searchMovie(row.title, row.year);
-		if (results.length === 0) results = await searchMovie(row.title);
-		const best = pickBestMatch(
-			results.map((r) => ({
+		tmdbId = await findTmdbId(
+			searchMovie,
+			(r) => ({
 				id: r.id,
 				titles: [r.title, r.original_title],
 				year: yearOf(r.release_date),
 				popularity: r.popularity
-			})),
-			row.title,
+			}),
+			opts.force ? scanTitleFromSlug(row.slug, 'movie') : row.title,
 			row.year
 		);
-		tmdbId = best?.id ?? null;
 	}
 	const details = tmdbId ? await getMovie(tmdbId) : null;
 	if (!details) {
@@ -201,21 +228,19 @@ export async function enrichSeries(
 	}
 	if (!opts.force && row.metadataUpdatedAt) return;
 
-	let tmdbId = row.tmdbId;
+	let tmdbId = opts.force ? null : row.tmdbId;
 	if (!tmdbId) {
-		let results = await searchTv(row.title, row.year);
-		if (results.length === 0) results = await searchTv(row.title);
-		const best = pickBestMatch(
-			results.map((r) => ({
+		tmdbId = await findTmdbId(
+			searchTv,
+			(r) => ({
 				id: r.id,
 				titles: [r.name, r.original_name],
 				year: yearOf(r.first_air_date),
 				popularity: r.popularity
-			})),
-			row.title,
+			}),
+			opts.force ? scanTitleFromSlug(row.slug, 'series') : row.title,
 			row.year
 		);
-		tmdbId = best?.id ?? null;
 	}
 	const details = tmdbId ? await getTv(tmdbId) : null;
 	if (!details) {

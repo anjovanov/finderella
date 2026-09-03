@@ -136,9 +136,11 @@ export interface MatchCandidate {
 
 /**
  * Score search results against the filename-derived title/year: an exact
- * normalized title is worth most, a year within ±1 (release dates straddle
- * new year across regions) next, popularity only breaks ties. Nothing that
- * matches on either axis → no match (better an empty poster than the wrong one).
+ * normalized title is worth most, a prefix overlap less, a year within ±1
+ * (release dates straddle new year across regions) is a bonus on top, and
+ * popularity only breaks ties. The title must match — a year alone proves
+ * nothing, and the ingest year is often just the file's mtime (better an
+ * empty poster than the wrong one).
  */
 export function pickBestMatch<T extends MatchCandidate>(
 	candidates: T[],
@@ -149,10 +151,15 @@ export function pickBestMatch<T extends MatchCandidate>(
 	if (!wanted) return undefined;
 	let best: { candidate: T; score: number } | undefined;
 	for (const candidate of candidates) {
-		const names = candidate.titles.filter((t): t is string => Boolean(t)).map(normalizeTitle);
+		// Non-Latin original titles normalize to '' — and '' is a prefix of everything.
+		const names = candidate.titles
+			.filter((t): t is string => Boolean(t))
+			.map(normalizeTitle)
+			.filter(Boolean);
 		let score = 0;
 		if (names.includes(wanted)) score += 2;
 		else if (names.some((n) => n.startsWith(wanted) || wanted.startsWith(n))) score += 1;
+		if (score === 0) continue;
 		if (
 			year !== undefined &&
 			candidate.year !== undefined &&
@@ -160,7 +167,6 @@ export function pickBestMatch<T extends MatchCandidate>(
 		) {
 			score += 1;
 		}
-		if (score === 0) continue;
 		if (
 			!best ||
 			score > best.score ||
@@ -170,4 +176,23 @@ export function pickBestMatch<T extends MatchCandidate>(
 		}
 	}
 	return best?.candidate;
+}
+
+/**
+ * The filename-derived title, recovered from the slug (the ingest key, which
+ * enrichment never rewrites). A forced refresh re-searches from this rather
+ * than the stored title, which a previous wrong match may have overwritten.
+ * Movie slugs end in the scan year when one was parsed; only a plausible
+ * release-year tail is dropped ("blade-runner-2049" keeps its 2049) and never
+ * the whole slug.
+ */
+export function scanTitleFromSlug(slug: string, kind: 'movie' | 'series'): string {
+	const words = slug.split('-').filter(Boolean);
+	if (kind === 'movie' && words.length > 1) {
+		const tail = Number(words.at(-1));
+		if (/^\d{4}$/.test(words.at(-1)!) && tail >= 1888 && tail <= new Date().getFullYear() + 2) {
+			words.pop();
+		}
+	}
+	return words.join(' ');
 }

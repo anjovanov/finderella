@@ -69,6 +69,50 @@ describe('parseEpisodePath', () => {
 		});
 	});
 
+	it('trims a full episode marker from single-episode release folders', () => {
+		expect(
+			parseEpisodePath(
+				'American Horror Story S12E02 Rockabye REPACK 1080p AMZN WEB-DL DDP5 1 H 264-FLUX[TGx]/American Horror Story S12E02 Rockabye REPACK 1080p AMZN WEB-DL DDP5 1 H 264-FLUX.mkv'
+			)
+		).toEqual({
+			showTitle: 'American Horror Story',
+			season: 12,
+			episode: 2,
+			episodeTitle: 'Rockabye',
+			year: undefined
+		});
+	});
+
+	it('falls back to a year in the filename prefix when the folder has none', () => {
+		expect(
+			parseEpisodePath('Invincible S04/Invincible.2021.S04E01.1080p.WEB.h264-ETHEL[EZTVx.to].mkv')
+		).toEqual({
+			showTitle: 'Invincible',
+			season: 4,
+			episode: 1,
+			episodeTitle: undefined,
+			year: 2021
+		});
+		// Folder year wins over the filename.
+		expect(parseEpisodePath('Show (2010)/Show.2011.S01E01.mkv')?.year).toBe(2010);
+		// Never read a year from after the marker: that is the episode title.
+		expect(parseEpisodePath('Show/S01E01 - Pilot (2008).mkv')).toMatchObject({
+			showTitle: 'Show',
+			episodeTitle: 'Pilot (2008)',
+			year: undefined
+		});
+	});
+
+	it('parses a loose release file in the library root', () => {
+		expect(parseEpisodePath('Silo.S03E09.1080p.HEVC.x265-MeGusta[EZTVx.to].mkv')).toEqual({
+			showTitle: 'Silo',
+			season: 3,
+			episode: 9,
+			episodeTitle: undefined,
+			year: undefined
+		});
+	});
+
 	it('keeps the year when a season marker follows it in the folder name', () => {
 		expect(
 			parseEpisodePath(

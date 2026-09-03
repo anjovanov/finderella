@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-04
+
+**Catalog / metadata** — fixes found with the `test/finderella-storage` sample library (three of four shows were wrong):
+
+- Parser: single-episode release folders (`American Horror Story S12E02 Rockabye REPACK 1080p …/`) no longer become the show title — the folder name is cut at the episode marker like it already was at season-pack markers. A year in the filename prefix (`Invincible.2021.S04E01`) is used when the show folder has none.
+- TMDB matching never accepts a year-only hit any more: `Silo` (mtime year 2026) had matched _Love of Silom_ and `Invincible` had matched _BAKI-DOU: The Invincible Samurai_. A candidate needs a title match; the year is a bonus. Original titles that normalize to nothing (Thai, Japanese, …) are ignored — an empty string was a "prefix" of every query, which is how those two slipped through. When the year-filtered search yields nothing acceptable, the search is retried without the year (the ingest year is only the file's mtime when the filename carries none, and TMDB's year filter hid the real show).
+- **Refresh all metadata** now re-matches from scratch instead of re-fetching the stored `tmdb_id`, so a wrong match can be corrected from the UI. It searches by the slug-derived scan title (`scanTitleFromSlug`) because the stored title may already be the wrong show's.
+
 ## 2026-08-28
 
 **Catalog**
