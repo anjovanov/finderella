@@ -9,14 +9,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!show) error(404, 'Series not found');
 	// The player's "More episodes" panel renders EpisodeCards from this `show`,
 	// so it needs the per-episode progress like the detail page does.
-	await withProgress(locals.user!.id, [show]);
+	await withProgress(locals.user?.id ?? null, [show]);
 
 	const flat = flattenEpisodes(show);
 	const index = flat.findIndex(({ episode }) => episode.id === params.episode);
 	if (index === -1) error(404, 'Episode not found');
 
 	const { season, episode } = flat[index];
-	const resumeFrom = (await episodeResumePosition(locals.user!.id, params.id, episode.id)) ?? 0;
+	const resumeFrom =
+		(await episodeResumePosition(locals.user?.id ?? null, params.id, episode.id)) ?? 0;
 	return {
 		show,
 		season,

@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		movie.genres.length > 0
 			? byGenre(movie.genres[0], await listAllItems()).filter((i) => i.id !== movie.id)
 			: [];
-	const progress = await loadProgress(locals.user!.id);
+	const progress = await loadProgress(locals.user?.id ?? null);
 	applyProgress([movie, ...related], progress);
 	return { movie, related };
 };

@@ -10,14 +10,23 @@ export const load: PageServerLoad = async () => {
 		countOrphans(),
 		metadataStatus()
 	]);
-	return { settings: { allowRegistration: settings.allowRegistration }, orphans, metadata };
+	return {
+		settings: {
+			allowRegistration: settings.allowRegistration,
+			requireLogin: settings.requireLogin
+		},
+		orphans,
+		metadata
+	};
 };
 
 export const actions: Actions = {
 	updateSettings: async (event) => {
 		const formData = await event.request.formData();
+		// Both switches live in one form, so both values arrive together.
 		const allowRegistration = formData.get('allowRegistration')?.toString() === 'true';
-		await updateSiteSettings({ allowRegistration });
+		const requireLogin = formData.get('requireLogin')?.toString() === 'true';
+		await updateSiteSettings({ allowRegistration, requireLogin });
 		return { saved: true };
 	},
 

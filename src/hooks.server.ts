@@ -2,6 +2,7 @@ import { error, redirect, type Handle, type ServerInit } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { isAdmin } from '$lib/auth-roles';
+import { loginRequired } from '$lib/server/site-settings';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Bridge the gateway WebSocket handler out of the SvelteKit bundle so the
@@ -27,8 +28,15 @@ export const init: ServerInit = async () => {
 // playback-session capability id and is short-circuited before session lookup.
 const PUBLIC_PREFIXES = ['/login', '/register', '/api/auth', '/api/gateway/pair'];
 
+// Paths that need a session even when the admin has opened the hub to guests.
+const ACCOUNT_PREFIXES = ['/settings', '/logout', '/admin'];
+
+function matchesPrefix(pathname: string, prefixes: string[]): boolean {
+	return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 function isPublic(pathname: string): boolean {
-	return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+	return matchesPrefix(pathname, PUBLIC_PREFIXES);
 }
 
 /** Everything under /admin (pages, their data requests and form actions) is admin-only. */
@@ -52,7 +60,15 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	}
 
 	if (!event.locals.user && !isPublic(event.url.pathname)) {
-		redirect(303, '/login');
+		// Site settings decide whether guests may browse; account pages never.
+		const needsAccount =
+			matchesPrefix(event.url.pathname, ACCOUNT_PREFIXES) || (await loginRequired());
+		if (needsAccount) {
+			// fetch() callers (player, progress) get a readable 401 body instead
+			// of following a redirect into the login page's HTML.
+			if (event.url.pathname.startsWith('/api/')) error(401, 'Sign in to continue.');
+			redirect(303, '/login');
+		}
 	}
 
 	// Non-admins never reach /admin form actions or API-style requests. Page

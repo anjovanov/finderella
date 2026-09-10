@@ -13,7 +13,8 @@ const ProgressRequest = z.object({
 /** Watch-position updates: throttled POSTs from the player + a pagehide beacon. */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = locals.user;
-	if (!user) error(401);
+	// Guests (public access mode) have nowhere to store a position.
+	if (!user) return json({ ok: false });
 	const parsed = ProgressRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'invalid progress payload');
 	const saved = await saveProgress({ userId: user.id, ...parsed.data });

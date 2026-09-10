@@ -68,7 +68,11 @@ export async function saveProgress(input: {
 }
 
 /** Saved resume position (seconds) for a movie, if it's worth resuming. */
-export async function movieResumePosition(userId: string, slug: string): Promise<number | null> {
+export async function movieResumePosition(
+	userId: string | null,
+	slug: string
+): Promise<number | null> {
+	if (!userId) return null;
 	const row = await db.query.movie.findFirst({ where: eq(movie.slug, slug) });
 	if (!row) return null;
 	const progress = await db.query.watchProgress.findFirst({
@@ -80,10 +84,11 @@ export async function movieResumePosition(userId: string, slug: string): Promise
 
 /** Saved resume position (seconds) for one episode, if it's worth resuming. */
 export async function episodeResumePosition(
-	userId: string,
+	userId: string | null,
 	seriesSlug: string,
 	episodeSlug: string
 ): Promise<number | null> {
+	if (!userId) return null;
 	const seriesRow = await db.query.series.findFirst({ where: eq(series.slug, seriesSlug) });
 	if (!seriesRow) return null;
 	const episodeRow = await db.query.episode.findFirst({
@@ -101,7 +106,8 @@ export async function episodeResumePosition(
  * "Continue watching" row: most recently watched in-progress titles, one entry
  * per movie/series, newest first.
  */
-export async function continueWatching(userId: string, limit = 12): Promise<MediaItem[]> {
+export async function continueWatching(userId: string | null, limit = 12): Promise<MediaItem[]> {
+	if (!userId) return [];
 	const rows = await db.query.watchProgress.findMany({
 		where: eq(watchProgress.userId, userId),
 		orderBy: [desc(watchProgress.updatedAt)],
@@ -138,8 +144,13 @@ export interface ProgressOverlay {
 	series: Map<string, { fraction: number; episodeSlug: string }>;
 }
 
-/** Everything one viewer has watched, keyed by public slug (a user's rows are few). */
-export async function loadProgress(userId: string): Promise<ProgressOverlay> {
+export function emptyProgress(): ProgressOverlay {
+	return { movies: new Map(), episodes: new Map(), series: new Map() };
+}
+
+/** Everything one viewer has watched, keyed by public slug (a user's rows are few). Guests (null) get an empty overlay. */
+export async function loadProgress(userId: string | null): Promise<ProgressOverlay> {
+	if (!userId) return emptyProgress();
 	const [movieRows, episodeRows] = await Promise.all([
 		db
 			.select({
@@ -197,6 +208,9 @@ export function applyProgress<T extends MediaItem>(items: T[], overlay: Progress
 	return items;
 }
 
-export async function withProgress<T extends MediaItem>(userId: string, items: T[]): Promise<T[]> {
+export async function withProgress<T extends MediaItem>(
+	userId: string | null,
+	items: T[]
+): Promise<T[]> {
 	return applyProgress(items, await loadProgress(userId));
 }

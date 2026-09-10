@@ -5,7 +5,7 @@ import { applyProgress, continueWatching, loadProgress } from '$lib/server/progr
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const userId = locals.user!.id;
+	const userId = locals.user?.id ?? null;
 	const [hero, movies, series, recent, watching, progress] = await Promise.all([
 		featured(),
 		listMovies(),

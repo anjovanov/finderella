@@ -11,6 +11,12 @@
 
 	let settingsForm = $state<HTMLFormElement | null>(null);
 	let allowRegistration = $derived(data.settings.allowRegistration);
+	let requireLogin = $derived(data.settings.requireLogin);
+
+	async function submitSettings() {
+		await tick(); // let the hidden inputs pick up the new switch state
+		settingsForm?.requestSubmit();
+	}
 	let saving = $state(false);
 </script>
 
@@ -26,8 +32,8 @@
 <!-- Accounts -->
 <Card.Root>
 	<Card.Header>
-		<Card.Title>Accounts</Card.Title>
-		<Card.Description>Who can create an account on this server.</Card.Description>
+		<Card.Title>Access</Card.Title>
+		<Card.Description>Who can use this server, and who can create an account.</Card.Description>
 	</Card.Header>
 	<Card.Content>
 		<form
@@ -42,11 +48,28 @@
 				};
 			}}
 		>
+			<input type="hidden" name="requireLogin" value={requireLogin ? 'true' : 'false'} />
 			<input type="hidden" name="allowRegistration" value={allowRegistration ? 'true' : 'false'} />
 			<Field.Group>
 				<Field.Field orientation="horizontal">
 					<Field.Content>
-						<Field.Label for="allow-registration">Open registration</Field.Label>
+						<Field.Label for="require-login">Require an account to access</Field.Label>
+						<Field.Description>
+							When on, visitors must sign in before they can see or play anything. When off, anyone
+							who can reach this server can browse and watch as a guest; watch history and resume
+							positions are only kept for signed-in users.
+						</Field.Description>
+					</Field.Content>
+					<Switch
+						id="require-login"
+						bind:checked={requireLogin}
+						disabled={saving}
+						onCheckedChange={submitSettings}
+					/>
+				</Field.Field>
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label for="allow-registration">Allow visitors to register</Field.Label>
 						<Field.Description>
 							Anyone who can reach this server may sign up at <span class="font-mono"
 								>/register</span
@@ -58,10 +81,7 @@
 						id="allow-registration"
 						bind:checked={allowRegistration}
 						disabled={saving}
-						onCheckedChange={async () => {
-							await tick();
-							settingsForm?.requestSubmit();
-						}}
+						onCheckedChange={submitSettings}
 					/>
 				</Field.Field>
 			</Field.Group>

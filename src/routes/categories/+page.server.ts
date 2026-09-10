@@ -4,7 +4,7 @@ import { withProgress } from '$lib/server/progress';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const items = await withProgress(locals.user!.id, await listAllItems());
+	const items = await withProgress(locals.user?.id ?? null, await listAllItems());
 	return {
 		categories: allGenres(items).map((genre) => ({ genre, items: byGenre(genre, items) }))
 	};

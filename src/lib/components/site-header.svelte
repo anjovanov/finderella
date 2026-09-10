@@ -26,7 +26,8 @@
 		isAdmin: boolean;
 	}
 
-	let { user }: { user: HeaderUser } = $props();
+	/** null = a guest browsing a public hub. */
+	let { user }: { user: HeaderUser | null } = $props();
 
 	// `path` is compared against page.url.pathname (resolve() yields relative
 	// hrefs during SSR, so hrefs can't be used for the active check).
@@ -46,16 +47,16 @@
 	let logoutForm = $state<HTMLFormElement | null>(null);
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-	const initials = $derived(
-		user.name
+	const initials = $derived.by(() => {
+		if (!user) return '';
+		const fromName = user.name
 			.split(/\s+/)
 			.filter(Boolean)
 			.slice(0, 2)
 			.map((part) => part[0]?.toUpperCase() ?? '')
-			.join('') ||
-			user.email[0]?.toUpperCase() ||
-			'?'
-	);
+			.join('');
+		return fromName || user.email[0]?.toUpperCase() || '?';
+	});
 
 	function isActive(path: string): boolean {
 		return path === '/'
@@ -100,15 +101,17 @@
 <header
 	class="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
 >
-	<!-- Submitted from the user menu (desktop) and the mobile sheet. -->
-	<form
-		bind:this={logoutForm}
-		id={logoutFormId}
-		method="POST"
-		action={resolve('/logout')}
-		use:enhance
-		class="hidden"
-	></form>
+	{#if user}
+		<!-- Submitted from the user menu (desktop) and the mobile sheet. -->
+		<form
+			bind:this={logoutForm}
+			id={logoutFormId}
+			method="POST"
+			action={resolve('/logout')}
+			use:enhance
+			class="hidden"
+		></form>
+	{/if}
 
 	<div class="flex h-16 page-gutter items-center gap-6">
 		<a href={resolve('/')} class="text-lg font-bold tracking-[0.25em] text-primary">FINDERELLA</a>
@@ -135,60 +138,66 @@
 			</NavigationMenu.List>
 		</NavigationMenu.Root>
 
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger>
-				{#snippet child({ props })}
-					<!-- ml-auto pushes the menu to the far right; it must live on the
-					     rendered button (a class on Trigger would be overridden here). -->
-					<button
-						{...props}
-						type="button"
-						aria-label="Account menu"
-						class="ml-auto hidden shrink-0 rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 md:block"
-					>
-						<Avatar.Root>
-							{#if user.image}
-								<Avatar.Image src={user.image} alt={user.name} />
-							{/if}
-							<Avatar.Fallback class="bg-primary/15 text-xs font-semibold text-primary">
-								{initials}
-							</Avatar.Fallback>
-						</Avatar.Root>
-					</button>
-				{/snippet}
-			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end" class="min-w-56">
-				<DropdownMenu.Label class="flex flex-col gap-0.5">
-					<span class="truncate text-sm font-medium text-foreground">{user.name}</span>
-					<span class="truncate">{user.email}</span>
-				</DropdownMenu.Label>
-				<DropdownMenu.Separator />
-				<DropdownMenu.Group>
-					<DropdownMenu.Item>
-						{#snippet child({ props })}
-							<a href={resolve('/settings')} {...props}>
-								<HugeiconsIcon icon={Settings01Icon} />
-								Settings
-							</a>
-						{/snippet}
-					</DropdownMenu.Item>
-					{#if user.isAdmin}
+		{#if user}
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<!-- ml-auto pushes the menu to the far right; it must live on the
+						     rendered button (a class on Trigger would be overridden here). -->
+						<button
+							{...props}
+							type="button"
+							aria-label="Account menu"
+							class="ml-auto hidden shrink-0 rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 md:block"
+						>
+							<Avatar.Root>
+								{#if user.image}
+									<Avatar.Image src={user.image} alt={user.name} />
+								{/if}
+								<Avatar.Fallback class="bg-primary/15 text-xs font-semibold text-primary">
+									{initials}
+								</Avatar.Fallback>
+							</Avatar.Root>
+						</button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end" class="min-w-56">
+					<DropdownMenu.Label class="flex flex-col gap-0.5">
+						<span class="truncate text-sm font-medium text-foreground">{user.name}</span>
+						<span class="truncate">{user.email}</span>
+					</DropdownMenu.Label>
+					<DropdownMenu.Separator />
+					<DropdownMenu.Group>
 						<DropdownMenu.Item>
 							{#snippet child({ props })}
-								<a href={resolve('/admin')} {...props}>
-									<HugeiconsIcon icon={DashboardSquare01Icon} />
-									Admin dashboard
+								<a href={resolve('/settings')} {...props}>
+									<HugeiconsIcon icon={Settings01Icon} />
+									Settings
 								</a>
 							{/snippet}
 						</DropdownMenu.Item>
-					{/if}
-					<DropdownMenu.Item variant="destructive" onSelect={() => logoutForm?.requestSubmit()}>
-						<HugeiconsIcon icon={Logout01Icon} />
-						Sign out
-					</DropdownMenu.Item>
-				</DropdownMenu.Group>
-			</DropdownMenu.Content>
-		</DropdownMenu.Root>
+						{#if user.isAdmin}
+							<DropdownMenu.Item>
+								{#snippet child({ props })}
+									<a href={resolve('/admin')} {...props}>
+										<HugeiconsIcon icon={DashboardSquare01Icon} />
+										Admin dashboard
+									</a>
+								{/snippet}
+							</DropdownMenu.Item>
+						{/if}
+						<DropdownMenu.Item variant="destructive" onSelect={() => logoutForm?.requestSubmit()}>
+							<HugeiconsIcon icon={Logout01Icon} />
+							Sign out
+						</DropdownMenu.Item>
+					</DropdownMenu.Group>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		{:else}
+			<Button href={resolve('/login')} size="sm" class="ml-auto hidden shrink-0 md:inline-flex">
+				Sign in
+			</Button>
+		{/if}
 
 		<Sheet.Root bind:open={mobileOpen}>
 			<Sheet.Trigger class="ml-auto md:hidden">
@@ -201,7 +210,9 @@
 			<Sheet.Content side="right">
 				<Sheet.Header>
 					<Sheet.Title class="tracking-[0.25em] text-primary">FINDERELLA</Sheet.Title>
-					<Sheet.Description class="truncate">{user.email}</Sheet.Description>
+					<Sheet.Description class="truncate">
+						{user ? user.email : 'Browsing as a guest'}
+					</Sheet.Description>
 				</Sheet.Header>
 				<div class="flex flex-col gap-2 px-4">
 					<form class="relative" onsubmit={submitSearch}>
@@ -225,34 +236,44 @@
 							{link.label}
 						</a>
 					{/each}
-					<a
-						href={resolve('/settings')}
-						onclick={() => (mobileOpen = false)}
-						class={cn(
-							'rounded-4xl px-3.5 py-2 text-sm font-medium transition-colors',
-							isActive('/settings')
-								? 'bg-accent text-foreground'
-								: 'text-muted-foreground hover:text-foreground'
-						)}
-					>
-						Settings
-					</a>
-					{#if user.isAdmin}
+					{#if user}
 						<a
-							href={resolve('/admin')}
+							href={resolve('/settings')}
 							onclick={() => (mobileOpen = false)}
-							class="rounded-4xl px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+							class={cn(
+								'rounded-4xl px-3.5 py-2 text-sm font-medium transition-colors',
+								isActive('/settings')
+									? 'bg-accent text-foreground'
+									: 'text-muted-foreground hover:text-foreground'
+							)}
 						>
-							Admin dashboard
+							Settings
+						</a>
+						{#if user.isAdmin}
+							<a
+								href={resolve('/admin')}
+								onclick={() => (mobileOpen = false)}
+								class="rounded-4xl px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+							>
+								Admin dashboard
+							</a>
+						{/if}
+						<button
+							type="submit"
+							form={logoutFormId}
+							class="rounded-4xl px-3.5 py-2 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+						>
+							Sign out
+						</button>
+					{:else}
+						<a
+							href={resolve('/login')}
+							onclick={() => (mobileOpen = false)}
+							class="rounded-4xl px-3.5 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+						>
+							Sign in
 						</a>
 					{/if}
-					<button
-						type="submit"
-						form={logoutFormId}
-						class="rounded-4xl px-3.5 py-2 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
-					>
-						Sign out
-					</button>
 				</div>
 			</Sheet.Content>
 		</Sheet.Root>

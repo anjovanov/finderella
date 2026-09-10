@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { registry } from '$lib/server/gateways/registry';
 import { SEGMENT_SECONDS } from '$lib/server/streaming/hls-playlist';
 import { sessionManager } from '$lib/server/streaming/session-manager';
+import { loginRequired } from '$lib/server/site-settings';
 import { pickEpisodeSource, pickMovieSource } from '$lib/server/streaming/source-picker';
 import { QUALITY_IDS, QUALITY_LADDER, transcodePlan } from '$lib/playback-quality';
 
@@ -24,8 +25,11 @@ const StartRequest = z.object({
  * Error bodies are shown verbatim by the watch pages, so keep them readable.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
-	const user = locals.user;
-	if (!user) error(401);
+	const user = locals.user ?? null;
+	// hooks.server.ts already answers 401 when an account is required; this is
+	// the defensive check for guest mode being switched off mid-session.
+	if (!user && (await loginRequired())) error(401, 'Sign in to watch.');
+	const viewerId = user?.id ?? null;
 	const parsed = StartRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'expected { kind, slug, episodeSlug? }');
 	const { kind, slug, episodeSlug, startSeconds, quality } = parsed.data;
@@ -46,7 +50,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const source = lookup.source;
 
 	if (source.directPlayable && !rung) {
-		const session = await sessionManager.start(user.id, source, 'direct', quality);
+		const session = await sessionManager.start(viewerId, source, 'direct', quality);
 		return json({
 			mode: 'direct',
 			src: `/api/stream/${session.id}/file`,
@@ -71,7 +75,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		);
 	}
 
-	const session = await sessionManager.start(user.id, source, 'hls', quality);
+	const session = await sessionManager.start(viewerId, source, 'hls', quality);
 	const plan = transcodePlan(quality, source.file.width);
 	try {
 		await registry.request(

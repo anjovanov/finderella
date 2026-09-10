@@ -2,6 +2,8 @@
 
 ## 2026-09-10
 
+**Public access (guest mode)** — a second switch under Admin → Site settings, **Require an account to access** (on by default), next to **Allow visitors to register**; the two are independent. When it is off, visitors browse and watch without signing in: the navbar shows a single **Sign in** button, `/settings`, `/logout` and `/admin` still require an account, guest playback sessions are stored with a `NULL` owner (migration `0005`), no watch history or resume positions are kept, and signing out lands on the home page instead of `/login`. Unauthenticated `/api/*` calls now get a readable `401` body instead of a redirect into the login page's HTML. The settings row is cached in-process for 5 s (cleared on update) because the auth hook reads it on every anonymous request.
+
 **Accounts & admin dashboard** — the hub now has two kinds of users:
 
 - **Roles** via the Better Auth `admin()` plugin (`user.role`, `banned`, …; migration `0004`). The first account created on an empty hub is the administrator; everyone after that is a normal user who can only sign in and watch. Existing installs get their oldest account promoted at boot (`ensureAdminExists`) so nobody is locked out.

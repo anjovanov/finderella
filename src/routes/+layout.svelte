@@ -6,15 +6,17 @@
 
 	let { data, children } = $props();
 
-	// The admin area brings its own sidebar chrome; login/register have no
-	// user, so the navbar disappears there too. Error pages keep it.
+	// The admin area brings its own sidebar chrome and the auth pages stand
+	// alone; everywhere else the navbar shows (guests included, on a public
+	// hub). Error pages keep it.
 	const inAdmin = $derived(page.route.id?.startsWith('/admin') ?? false);
-	const showHeader = $derived(!!data.user && (page.error !== null || !inAdmin));
+	const authPage = $derived(page.route.id === '/login' || page.route.id === '/register');
+	const showHeader = $derived(!authPage && (page.error !== null || !inAdmin));
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-{#if showHeader && data.user}
+{#if showHeader}
 	<SiteHeader user={data.user} />
 {/if}
 {#if inAdmin && !page.error}

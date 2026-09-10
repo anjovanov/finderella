@@ -14,9 +14,8 @@ export const playbackStatus = pgEnum('playback_status', ['active', 'stopped', 'e
  */
 export const playbackSession = pgTable('playback_session', {
 	id: uuid('id').primaryKey().defaultRandom(),
-	userId: text('user_id')
-		.notNull()
-		.references(() => user.id, { onDelete: 'cascade' }),
+	// null = a guest viewer (public access mode); the row is still reaped normally.
+	userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
 	mediaFileId: uuid('media_file_id')
 		.notNull()
 		.references(() => mediaFile.id, { onDelete: 'cascade' }),

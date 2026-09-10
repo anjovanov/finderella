@@ -8,7 +8,8 @@ import type { QualityId } from '$lib/playback-quality';
 
 export interface HotSession {
 	id: string;
-	userId: string;
+	/** null for a guest viewer (public access mode). */
+	userId: string | null;
 	source: PlayableSource;
 	mode: 'direct' | 'hls';
 	quality: QualityId;
@@ -31,7 +32,7 @@ class SessionManager {
 	#reaper: NodeJS.Timeout | null = null;
 
 	async start(
-		userId: string,
+		userId: string | null,
 		source: PlayableSource,
 		mode: 'direct' | 'hls',
 		quality: QualityId = 'original'
