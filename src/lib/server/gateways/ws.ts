@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
-import { eq } from 'drizzle-orm';
+import { asc, eq, like } from 'drizzle-orm';
 import { WebSocketServer, type WebSocket } from 'ws';
 import {
 	DEFAULT_LIMITS,
@@ -12,7 +12,8 @@ import {
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
-import { gateway } from '$lib/server/db/schema';
+import { gateway, user } from '$lib/server/db/schema';
+import { ADMIN_ROLE } from '$lib/auth-roles';
 import { enqueueScanWork, finalizeScan, ingestScanBatch } from '$lib/server/catalog/ingest';
 import { log } from '$lib/server/log';
 import { registry, type ConnectedGateway } from './registry';
@@ -63,7 +64,13 @@ async function authenticate(token: string | null): Promise<GatewayRow | null> {
 
 	// Dev convenience: a shared token that self-registers a real gateway row.
 	if (dev && env.GATEWAY_DEV_TOKEN && token === env.GATEWAY_DEV_TOKEN) {
-		const anyUser = await db.query.user.findFirst({ columns: { id: true } });
+		// Prefer an admin as the "pairing" user; any account will do.
+		const anyUser =
+			(await db.query.user.findFirst({
+				columns: { id: true },
+				where: like(user.role, `%${ADMIN_ROLE}%`),
+				orderBy: [asc(user.createdAt)]
+			})) ?? (await db.query.user.findFirst({ columns: { id: true } }));
 		if (!anyUser) {
 			log.warn('GATEWAY_DEV_TOKEN used but no user exists yet — sign up first');
 			return null;

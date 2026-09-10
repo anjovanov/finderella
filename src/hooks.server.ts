@@ -1,6 +1,7 @@
-import { redirect, type Handle, type ServerInit } from '@sveltejs/kit';
+import { error, redirect, type Handle, type ServerInit } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
+import { isAdmin } from '$lib/auth-roles';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Bridge the gateway WebSocket handler out of the SvelteKit bundle so the
@@ -16,15 +17,23 @@ export const init: ServerInit = async () => {
 	// Pick up titles that were scanned before TMDB_API_KEY was configured.
 	const { enrichPending } = await import('$lib/server/metadata');
 	void enrichPending().catch(() => {});
+	// Installs that predate roles: make sure someone can reach /admin.
+	const { ensureAdminExists } = await import('$lib/server/users');
+	await ensureAdminExists().catch(() => {});
 };
 
 // Paths reachable without a session. /api/auth/* is Better Auth's own surface;
 // /api/gateway/pair authenticates by claim code; /api/stream/* (Phase 2) by
 // playback-session capability id and is short-circuited before session lookup.
-const PUBLIC_PREFIXES = ['/login', '/api/auth', '/api/gateway/pair'];
+const PUBLIC_PREFIXES = ['/login', '/register', '/api/auth', '/api/gateway/pair'];
 
 function isPublic(pathname: string): boolean {
 	return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/** Everything under /admin (pages, their data requests and form actions) is admin-only. */
+function isAdminArea(pathname: string): boolean {
+	return pathname === '/admin' || pathname.startsWith('/admin/');
 }
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
@@ -44,6 +53,19 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 
 	if (!event.locals.user && !isPublic(event.url.pathname)) {
 		redirect(303, '/login');
+	}
+
+	// Non-admins never reach /admin form actions or API-style requests. Page
+	// requests fall through to src/routes/admin/+layout.server.ts, whose 403
+	// renders the app's own error page (an error thrown here would render
+	// SvelteKit's bare fallback page instead).
+	if (
+		isAdminArea(event.url.pathname) &&
+		!isAdmin(event.locals.user) &&
+		event.request.method !== 'GET' &&
+		event.request.method !== 'HEAD'
+	) {
+		error(403, 'This area is for administrators only.');
 	}
 
 	return svelteKitHandler({ event, resolve, auth, building });

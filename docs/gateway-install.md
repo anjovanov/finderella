@@ -63,7 +63,7 @@ gives you the bare `finderella-storage-gateway` command on this machine too.
 
 ## 2. Generate a pairing code (hub)
 
-In the Finderella web UI, open **Settings → Devices** (`/settings/devices`),
+In the Finderella web UI, open **Admin → Devices** (`/admin/devices`, administrators only),
 enter a device name, and click **Generate code**. Codes are single-use and
 expire after 10 minutes.
 

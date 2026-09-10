@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import HeroBanner from '$lib/components/media/hero-banner.svelte';
 	import MediaRow from '$lib/components/media/media-row.svelte';
 
@@ -20,10 +21,13 @@
 	{/each}
 	{#if !data.hero && data.rows.length === 0}
 		<p class="page-gutter py-16 text-center text-muted-foreground">
-			Your library is empty. Pair a device and add a media folder in
-			<a href={resolve('/settings/devices')} class="text-primary hover:underline"
-				>Settings → Devices</a
-			>.
+			{#if page.data.user?.isAdmin}
+				Your library is empty. Pair a device and add a media folder in
+				<a href={resolve('/admin/devices')} class="text-primary hover:underline">Admin → Devices</a
+				>.
+			{:else}
+				Nothing to watch yet. Ask an administrator to pair a device and add a media folder.
+			{/if}
 		</p>
 	{/if}
 </div>

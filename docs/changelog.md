@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-10
+
+**Accounts & admin dashboard** — the hub now has two kinds of users:
+
+- **Roles** via the Better Auth `admin()` plugin (`user.role`, `banned`, …; migration `0004`). The first account created on an empty hub is the administrator; everyone after that is a normal user who can only sign in and watch. Existing installs get their oldest account promoted at boot (`ensureAdminExists`) so nobody is locked out.
+- **`/admin/*`** replaces `/settings/devices`: a shadcn-svelte sidebar layout (no horizontal navbar) with **Overview** (device/library/title/user counts), **Devices** (the old page, minus catalog/metadata housekeeping), **Users** (list, create, promote/demote, ban/unban, delete — you can't change your own role or remove the last admin; deleting a user hands their paired devices to you first, since `gateway.paired_by_user_id` has no cascade) and **Site settings** (an "Open registration" switch backed by the new `site_settings` table, plus the catalog prune and TMDB refresh that used to live on the devices page). Non-admins get a 403 page; non-GET requests under `/admin` are refused in `hooks.server.ts`.
+- **`/login` and `/register`** are separate pages built on the shadcn-svelte `login-01` / `signup-01` blocks. The navbar no longer renders when logged out. Closed registration is enforced inside Better Auth (`hooks.before` on `/sign-up/email`), so the raw `/api/auth/sign-up/email` endpoint is covered too; it stays open while the hub has no users.
+- **Navbar user menu**: avatar dropdown, pinned to the far right, with **Settings**, **Admin dashboard** (admins only) and **Sign out** (`POST /logout`); the gear icon is gone.
+- **`/settings`** for every signed-in user: display name, email address (updated directly — the hub sends no verification mail) and password (current password required; other sessions are revoked). Sign-up now asks only for email + password (the display name starts as the mailbox part), and password fields everywhere have a show/hide toggle (`src/lib/components/password-input.svelte`; the eye/eye-off swap is an `{#if}` because `HugeiconsIcon` ignores `icon` prop changes after mount). The admin sidebar has no sign-out (use the navbar menu) and its collapse button sits flush against the sidebar. Form labels sit closer to their inputs (`Field` gap 3 → 2). The empty-library hint on Home points admins to Admin → Devices and tells everyone else to ask an administrator.
+
 ## 2026-09-04
 
 **Catalog / metadata** — fixes found with the `test/finderella-storage` sample library (three of four shows were wrong):

@@ -13,7 +13,7 @@ const PairRequest = z.object({
 
 /**
  * Gateway pairing (public route — the gateway has no session). The user generates
- * a short-lived claim code in /settings/devices; the gateway presents it once
+ * a short-lived claim code in /admin/devices; the gateway presents it once
  * and receives its long-lived bearer token. Only the sha256 of the token is
  * stored.
  */
