@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CastMember } from '$lib/data';
 	import Carousel from './carousel.svelte';
+	import LoadedImage from './loaded-image.svelte';
 
 	let { cast, title = 'Cast' }: { cast: CastMember[]; title?: string } = $props();
 
@@ -24,10 +25,10 @@
 					class="flex size-28 items-center justify-center overflow-hidden rounded-full bg-muted text-xl font-semibold text-muted-foreground ring-1 ring-border"
 				>
 					{#if member.photoUrl}
-						<img
+						<!-- The muted circle is the placeholder until the headshot is fully in. -->
+						<LoadedImage
 							src={member.photoUrl}
 							alt={member.name}
-							loading="lazy"
 							class="size-full object-cover object-top"
 						/>
 					{:else}

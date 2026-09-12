@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-13
+
+**Smoother artwork loading** — posters, backdrops, episode stills and cast headshots no longer paint progressively (the blurry/white first pass of TMDB's progressive JPEGs over the old gradient). Every artwork box is now a flat gray placeholder with the title and year centered in it until the image has fully arrived, then the image fades in over 100 ms (`LoadedImage`, `src/lib/components/media/loaded-image.svelte`). Titles without any artwork keep the gray box permanently; the per-title hue-gradient art is retired (the hues stay in the database).
+
 ## 2026-09-12
 
 **Watchlist, Continue-watching dismissal, Mark as watched** (migration `0006`: `watchlist` table, `watch_progress.dismissed_at`) — for signed-in viewers:

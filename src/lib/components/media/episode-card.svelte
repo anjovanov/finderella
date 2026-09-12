@@ -41,7 +41,7 @@
 			active ? 'ring-2 ring-primary' : 'ring-1 ring-border'
 		]}
 	>
-		<PosterArt {item} variant="backdrop" hueShift={episode.number * 24} {imageUrl} />
+		<PosterArt {item} variant="backdrop" {imageUrl} />
 		<!-- Always-visible badge; pops slightly when the card is hovered. `scale`
 		     (not translate) so it can't collide with press/translate animations. -->
 		<span
