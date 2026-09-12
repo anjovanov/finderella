@@ -130,7 +130,7 @@
 						<NavigationMenu.Link
 							href={link.href}
 							active={isActive(link.path)}
-							class="rounded-4xl px-3.5 py-1.5 font-medium text-muted-foreground hover:text-foreground data-active:bg-accent data-active:text-foreground"
+							class="rounded-4xl px-3.5 py-1.5 text-base font-medium text-muted-foreground hover:text-foreground data-active:bg-accent data-active:text-foreground"
 						>
 							{link.label}
 						</NavigationMenu.Link>

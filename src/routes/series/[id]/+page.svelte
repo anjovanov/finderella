@@ -29,7 +29,7 @@
 		<Tabs.Root value={defaultSeason}>
 			<div class="flex page-gutter flex-col gap-4">
 				<h2 class="text-lg font-semibold tracking-tight">Episodes</h2>
-				<Tabs.List class="h-11">
+				<Tabs.List class="-ml-[3px] h-11">
 					{#each data.show.seasons as season (season.number)}
 						<Tabs.Trigger value={String(season.number)} class="px-4 text-base">
 							Season {season.number}

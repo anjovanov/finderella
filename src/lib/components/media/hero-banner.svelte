@@ -17,7 +17,12 @@
 </script>
 
 <section class="relative -mt-16 min-h-[70vh] w-full">
-	<PosterArt {item} variant="backdrop" class="absolute inset-0 aspect-auto size-full" />
+	<!-- Crop anchored to the top edge like the detail hero (the fade hides the bottom). -->
+	<PosterArt
+		{item}
+		variant="backdrop"
+		class="absolute inset-0 aspect-auto size-full [&>img]:object-top"
+	/>
 	<div class="absolute inset-0 hero-fade-b"></div>
 	<div class="absolute inset-0 hero-fade-l"></div>
 	<div
@@ -32,9 +37,15 @@
 		{/if}
 		<MetaPills {item} size="md" />
 		<p class="line-clamp-2 max-w-2xl text-lg text-muted-foreground">{item.synopsis}</p>
-		<div class="mt-2 flex gap-3">
-			<Button href={watchHref(item)} size="lg" disabled={!canPlay}>
-				<HugeiconsIcon icon={PlayIcon} data-icon="inline-start" />
+		<div class="mt-2 flex items-center gap-3">
+			<!-- Same footprint as the detail hero's primary button. -->
+			<Button
+				href={watchHref(item)}
+				size="lg"
+				disabled={!canPlay}
+				class="h-11 min-w-72 px-8 text-base font-semibold"
+			>
+				<HugeiconsIcon icon={PlayIcon} data-icon="inline-start" class="size-6" />
 				{playLabel}
 			</Button>
 			<Button href={mediaHref(item)} variant="secondary" size="lg">

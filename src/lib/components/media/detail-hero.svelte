@@ -10,18 +10,41 @@
 		Video01Icon
 	} from '@hugeicons/core-free-icons';
 	import { Button } from '$lib/components/ui/button';
-	import { episodeLabel, flattenEpisodes, playTarget, watchHref, type MediaItem } from '$lib/data';
+	import {
+		episodeLabel,
+		flattenEpisodes,
+		formatClock,
+		formatDurationShort,
+		playTarget,
+		watchHref,
+		type MediaItem
+	} from '$lib/data';
 	import { markAsWatched, setWatchlist } from '$lib/watchlist-client';
 	import MetaPills from './meta-pills.svelte';
 	import PosterArt from './poster-art.svelte';
+	import ProgressLine from './progress-line.svelte';
 	import TrailerDialog from './trailer-dialog.svelte';
 
-	let { item }: { item: MediaItem } = $props();
+	let {
+		item,
+		resume = null
+	}: {
+		item: MediaItem;
+		/** Movies: the viewer's saved position while it's worth resuming (null otherwise). */
+		resume?: { positionSeconds: number; durationSeconds: number } | null;
+	} = $props();
 
-	// Series resume the viewer's next-in-line episode ("Resume S2E4"); movies just play.
+	// Series resume the viewer's next-in-line episode ("Resume S2E4"); movies
+	// resume at their saved position ("Resume at 1:02:03").
 	const target = $derived(item.kind === 'series' ? playTarget(item) : undefined);
 	const playLabel = $derived(
-		target?.resume ? `Resume ${episodeLabel(target.season, target.episode.number)}` : 'Play'
+		item.kind === 'movie'
+			? resume
+				? `Resume at ${formatClock(resume.positionSeconds)}`
+				: 'Play'
+			: target?.resume
+				? `Resume ${episodeLabel(target.season, target.episode.number)}`
+				: 'Play'
 	);
 	const canPlay = $derived(item.kind === 'movie' || target !== undefined);
 	let trailerOpen = $state(false);
@@ -36,6 +59,14 @@
 		return flat.length > 0 && flat.every(({ episode }) => episode.progress === 1);
 	});
 	let marking = $state(false);
+	// Under the poster: "1h 2m watched · 28m left", or "Watched" once finished.
+	const watchLine = $derived.by(() => {
+		if (item.kind !== 'movie') return null;
+		if (fullyWatched) return 'Watched';
+		if (!resume) return null;
+		const left = Math.max(0, resume.durationSeconds - resume.positionSeconds);
+		return `${formatDurationShort(resume.positionSeconds)} watched · ${formatDurationShort(left)} left`;
+	});
 
 	async function toggleWatchlist() {
 		const next = !inWatchlist;
@@ -76,15 +107,26 @@
 </script>
 
 <section class="relative -mt-16">
-	<div class="absolute inset-0 max-h-[28rem] overflow-hidden">
-		<PosterArt {item} variant="backdrop" class="aspect-auto size-full opacity-60" />
+	<!-- Taller box = the bottom fade starts lower and more backdrop shows. -->
+	<div class="absolute inset-0 max-h-[36rem] overflow-hidden">
+		<!-- The box is shorter than the full-width image: anchor the crop to the
+		     top so heads/titles survive; the bottom is hidden by the fade anyway. -->
+		<PosterArt
+			{item}
+			variant="backdrop"
+			class="aspect-auto size-full opacity-60 [&>img]:object-top"
+		/>
 		<div class="absolute inset-0 hero-fade-b"></div>
 	</div>
 	<div class="relative flex page-gutter flex-col gap-6 pt-40 pb-8 sm:flex-row sm:items-end">
-		<div
-			class="w-56 shrink-0 overflow-hidden rounded-xl shadow-2xl ring-1 ring-border sm:w-72 lg:w-80"
-		>
-			<PosterArt {item} showTitle />
+		<div class="flex w-56 shrink-0 flex-col gap-2 sm:w-72 lg:w-80">
+			<div class="overflow-hidden rounded-xl shadow-2xl ring-1 ring-border">
+				<PosterArt {item} showTitle />
+			</div>
+			{#if watchLine}
+				<ProgressLine fraction={item.progress} />
+				<p class="text-xs text-muted-foreground">{watchLine}</p>
+			{/if}
 		</div>
 		<div class="flex max-w-2xl flex-col gap-3">
 			<h1 class="text-3xl font-bold tracking-tight text-balance sm:text-5xl">{item.title}</h1>

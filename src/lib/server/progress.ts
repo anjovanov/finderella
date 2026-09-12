@@ -71,11 +71,16 @@ export async function saveProgress(input: {
 	return true;
 }
 
-/** Saved resume position (seconds) for a movie, if it's worth resuming. */
-export async function movieResumePosition(
+export interface WatchState {
+	positionSeconds: number;
+	durationSeconds: number;
+}
+
+/** A movie's saved position + duration, only while it's worth resuming (else null). */
+export async function movieWatchState(
 	userId: string | null,
 	slug: string
-): Promise<number | null> {
+): Promise<WatchState | null> {
 	if (!userId) return null;
 	const row = await db.query.movie.findFirst({ where: eq(movie.slug, slug) });
 	if (!row) return null;
@@ -83,7 +88,15 @@ export async function movieResumePosition(
 		where: and(eq(watchProgress.userId, userId), eq(watchProgress.movieId, row.id))
 	});
 	if (!progress || !inProgress(progress.positionSeconds, progress.durationSeconds)) return null;
-	return progress.positionSeconds;
+	return { positionSeconds: progress.positionSeconds, durationSeconds: progress.durationSeconds };
+}
+
+/** Saved resume position (seconds) for a movie, if it's worth resuming. */
+export async function movieResumePosition(
+	userId: string | null,
+	slug: string
+): Promise<number | null> {
+	return (await movieWatchState(userId, slug))?.positionSeconds ?? null;
 }
 
 /** Saved resume position (seconds) for one episode, if it's worth resuming. */

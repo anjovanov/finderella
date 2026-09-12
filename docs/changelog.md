@@ -8,6 +8,8 @@
 - **Remove from Continue watching**: the ⋮ menu on the home row's cards hides a title from that row without touching its progress (bars and resume positions stay); playing it again brings it back. For a series, every episode row is dismissed at once.
 - **Mark as watched**: a button on movie and series pages that writes a finished position for the movie (file duration, else runtime) or for every episode of the show. It is one-way — the button turns into a disabled **Watched** once everything is at 100 %. For a series the last episode is stamped as the most recent one, so the hero's Play button reads "Play" instead of "Resume S1E1".
 
+**Movie pages show where you left off** — a progress line and "1h 2m watched · 2h 15m left" under the poster (or "Watched"), and the Play button reads **Resume at 1:02:03**.
+
 **Movie pages show the source resolution** — a `1080p` / `4K` / `720p` … pill among the meta pills, derived from the tallest active file's probed width (the same `resolutionLabel` the player's quality menu uses). Series pages don't show one.
 
 **Bigger Play/Resume button** on detail pages: the primary action now sits on its own line at `h-14` with a larger label and icon, with Watchlist / Mark as watched / Watch trailer as a row of secondary buttons underneath.

@@ -11,7 +11,7 @@
 	<title>{data.movie.title} · Finderella</title>
 </svelte:head>
 
-<DetailHero item={data.movie} />
+<DetailHero item={data.movie} resume={data.resume} />
 
 <div class="flex flex-col gap-8 py-8">
 	{#if data.movie.cast.length > 0}
