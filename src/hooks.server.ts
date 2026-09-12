@@ -29,7 +29,7 @@ export const init: ServerInit = async () => {
 const PUBLIC_PREFIXES = ['/login', '/register', '/api/auth', '/api/gateway/pair'];
 
 // Paths that need a session even when the admin has opened the hub to guests.
-const ACCOUNT_PREFIXES = ['/settings', '/logout', '/admin'];
+const ACCOUNT_PREFIXES = ['/settings', '/logout', '/admin', '/watchlist'];
 
 function matchesPrefix(pathname: string, prefixes: string[]): boolean {
 	return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));

@@ -45,7 +45,9 @@ export const watchProgress = pgTable(
 		seriesId: uuid('series_id').references(() => series.id, { onDelete: 'cascade' }),
 		positionSeconds: real('position_seconds').notNull(),
 		durationSeconds: real('duration_seconds').notNull(),
-		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+		// Set when the viewer removed the title from "Continue watching"; cleared by the next playback.
+		dismissedAt: timestamp('dismissed_at', { withTimezone: true })
 	},
 	(t) => [
 		uniqueIndex('watch_progress_user_movie')

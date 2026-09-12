@@ -17,7 +17,13 @@
 
 <div class="flex flex-col gap-10 py-8">
 	{#each data.rows as row (row.title)}
-		<MediaRow title={row.title} items={row.items} href={row.href} variant="backdrop" />
+		<MediaRow
+			title={row.title}
+			items={row.items}
+			href={row.href}
+			variant="backdrop"
+			continueWatching={row.continueWatching}
+		/>
 	{/each}
 	{#if !data.hero && data.rows.length === 0}
 		<p class="page-gutter py-16 text-center text-muted-foreground">

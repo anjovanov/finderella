@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-12
+
+**Watchlist, Continue-watching dismissal, Mark as watched** (migration `0006`: `watchlist` table, `watch_progress.dismissed_at`) — for signed-in viewers:
+
+- **Watchlist**: every poster/backdrop card has a ⋮ button in its top-left corner (visible on hover/focus, always on touch screens) with **Add to Watchlist** / **Add Show to Watchlist** (and the matching Remove). Detail pages get a **Watchlist** / **In watchlist** toggle next to Play. The new **`/watchlist`** page is a library grid (genre filter, search, sorts) that defaults to **Recently added**, and the navbar has a **Watchlist** link left of the avatar (also in the mobile sheet). Membership rides on the same per-viewer overlay as watch progress (`applyProgress` stamps `inWatchlist`), so no loader had to change. Guests never see the menu or the buttons; `/watchlist` needs an account even in guest mode.
+- **Remove from Continue watching**: the ⋮ menu on the home row's cards hides a title from that row without touching its progress (bars and resume positions stay); playing it again brings it back. For a series, every episode row is dismissed at once.
+- **Mark as watched**: a button on movie and series pages that writes a finished position for the movie (file duration, else runtime) or for every episode of the show. It is one-way — the button turns into a disabled **Watched** once everything is at 100 %. For a series the last episode is stamped as the most recent one, so the hero's Play button reads "Play" instead of "Resume S1E1".
+
+**Movie pages show the source resolution** — a `1080p` / `4K` / `720p` … pill among the meta pills, derived from the tallest active file's probed width (the same `resolutionLabel` the player's quality menu uses). Series pages don't show one.
+
+**Bigger Play/Resume button** on detail pages: the primary action now sits on its own line at `h-14` with a larger label and icon, with Watchlist / Mark as watched / Watch trailer as a row of secondary buttons underneath.
+
 ## 2026-09-10
 
 **Public access (guest mode)** — a second switch under Admin → Site settings, **Require an account to access** (on by default), next to **Allow visitors to register**; the two are independent. When it is off, visitors browse and watch without signing in: the navbar shows a single **Sign in** button, `/settings`, `/logout` and `/admin` still require an account, guest playback sessions are stored with a `NULL` owner (migration `0005`), no watch history or resume positions are kept, and signing out lands on the home page instead of `/login`. Unauthenticated `/api/*` calls now get a readable `401` body instead of a redirect into the login page's HTML. The settings row is cached in-process for 5 s (cleared on update) because the auth hook reads it on every anonymous request.

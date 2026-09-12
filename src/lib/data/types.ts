@@ -35,6 +35,8 @@ interface MediaBase {
 	trailerKey?: string;
 	/** 0–1 of the viewer's last playback (series: their latest episode); unset = nothing to show. */
 	progress?: number;
+	/** true when the signed-in viewer saved it to their watchlist; unset for guests. */
+	inWatchlist?: boolean;
 }
 
 export interface CastMember {
@@ -51,6 +53,9 @@ export interface Movie extends MediaBase {
 	director: string;
 	/** Production budget in USD, when known. */
 	budget?: number;
+	/** Frame size of the best available file (tallest); only the detail loader fills these. */
+	sourceWidth?: number;
+	sourceHeight?: number;
 }
 
 export interface Series extends MediaBase {

@@ -1,6 +1,6 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { episode, movie, season, series } from '$lib/server/db/schema';
+import { episode, mediaFile, movie, season, series } from '$lib/server/db/schema';
 import {
 	GENRES,
 	type Episode,
@@ -117,6 +117,50 @@ export async function listAllItems(): Promise<MediaItem[]> {
 export async function getMovieBySlug(slug: string): Promise<Movie | undefined> {
 	const row = await db.query.movie.findFirst({ where: eq(movie.slug, slug) });
 	return row ? rowToMovie(row) : undefined;
+}
+
+/**
+ * The best active file of a movie (tallest, then highest bitrate). `desc` on a
+ * nullable column would put NULLs first in Postgres, hence the explicit ordering.
+ */
+export async function bestMovieFile(
+	movieId: string
+): Promise<{ width: number | null; height: number | null; durationMs: number | null } | undefined> {
+	const [row] = await db
+		.select({ width: mediaFile.width, height: mediaFile.height, durationMs: mediaFile.durationMs })
+		.from(mediaFile)
+		.where(and(eq(mediaFile.movieId, movieId), eq(mediaFile.status, 'active')))
+		.orderBy(sql`${mediaFile.height} desc nulls last`, sql`${mediaFile.bitrate} desc nulls last`)
+		.limit(1);
+	return row;
+}
+
+/** Detail-page movie: `getMovieBySlug` plus the source resolution (one extra query). */
+export async function getMovieDetail(slug: string): Promise<Movie | undefined> {
+	const row = await db.query.movie.findFirst({ where: eq(movie.slug, slug) });
+	if (!row) return undefined;
+	const item = rowToMovie(row);
+	const file = await bestMovieFile(row.id);
+	if (file?.width && file.height) {
+		item.sourceWidth = file.width;
+		item.sourceHeight = file.height;
+	}
+	return item;
+}
+
+export async function getMoviesBySlugs(slugs: string[]): Promise<Movie[]> {
+	if (slugs.length === 0) return [];
+	const rows = await db.query.movie.findMany({ where: inArray(movie.slug, slugs) });
+	return rows.map(rowToMovie);
+}
+
+export async function getSeriesBySlugs(slugs: string[]): Promise<Series[]> {
+	if (slugs.length === 0) return [];
+	const rows = await db.query.series.findMany({
+		where: inArray(series.slug, slugs),
+		with: withSeasons
+	});
+	return rows.map(rowToSeries);
 }
 
 export async function getSeriesBySlug(slug: string): Promise<Series | undefined> {

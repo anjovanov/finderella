@@ -8,7 +8,8 @@
 		items,
 		href,
 		variant = 'poster',
-		size = 'md'
+		size = 'md',
+		continueWatching = false
 	}: {
 		title: string;
 		items: MediaItem[];
@@ -16,6 +17,8 @@
 		variant?: 'poster' | 'backdrop';
 		/** `lg` = roomier poster tiles (detail pages' "More like this"). */
 		size?: 'md' | 'lg';
+		/** The home "Continue watching" row: cards offer "Remove from Continue watching". */
+		continueWatching?: boolean;
 	} = $props();
 
 	// Center arrows on the artwork, not the whole tile (which includes the caption below).
@@ -41,7 +44,7 @@
 	</div>
 	<Carousel label={title} {arrowTop} class="-mt-3">
 		{#each items as item (item.id)}
-			<PosterCard {item} {variant} class={cardClass} />
+			<PosterCard {item} {variant} class={cardClass} menu={{ continueWatching }} />
 		{/each}
 	</Carousel>
 </section>

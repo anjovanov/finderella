@@ -1,8 +1,17 @@
 <script lang="ts">
+	import { invalidate, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { PlayIcon, Video01Icon } from '@hugeicons/core-free-icons';
+	import {
+		BookmarkAdd01Icon,
+		BookmarkCheck01Icon,
+		PlayIcon,
+		CheckmarkCircle02Icon,
+		Video01Icon
+	} from '@hugeicons/core-free-icons';
 	import { Button } from '$lib/components/ui/button';
-	import { episodeLabel, playTarget, watchHref, type MediaItem } from '$lib/data';
+	import { episodeLabel, flattenEpisodes, playTarget, watchHref, type MediaItem } from '$lib/data';
+	import { markAsWatched, setWatchlist } from '$lib/watchlist-client';
 	import MetaPills from './meta-pills.svelte';
 	import PosterArt from './poster-art.svelte';
 	import TrailerDialog from './trailer-dialog.svelte';
@@ -16,6 +25,39 @@
 	);
 	const canPlay = $derived(item.kind === 'movie' || target !== undefined);
 	let trailerOpen = $state(false);
+
+	// Watchlist / mark-as-watched need an account (guests browse public hubs).
+	const signedIn = $derived(page.data.user != null);
+	let watchlistOverride = $state<boolean | null>(null);
+	const inWatchlist = $derived(watchlistOverride ?? item.inWatchlist ?? false);
+	const fullyWatched = $derived.by(() => {
+		if (item.kind === 'movie') return item.progress === 1;
+		const flat = flattenEpisodes(item);
+		return flat.length > 0 && flat.every(({ episode }) => episode.progress === 1);
+	});
+	let marking = $state(false);
+
+	async function toggleWatchlist() {
+		const next = !inWatchlist;
+		watchlistOverride = next;
+		try {
+			await setWatchlist(item.kind, item.id, next);
+			await invalidate('app:watchlist');
+		} catch {
+			watchlistOverride = null;
+		}
+	}
+
+	async function markWatched() {
+		marking = true;
+		try {
+			await markAsWatched(item.kind, item.id);
+			// Re-runs the loader: progress bars fill and the Play label resets.
+			await invalidateAll();
+		} finally {
+			marking = false;
+		}
+	}
 
 	const byline = $derived(
 		item.kind === 'movie' ? `Directed by ${item.director}` : `Created by ${item.creator}`
@@ -57,17 +99,76 @@
 					<span aria-hidden="true">·</span> Budget {budgetLabel}
 				{/if}
 			</p>
-			<div class="mt-1 flex gap-3">
-				<Button href={watchHref(item)} size="lg" disabled={!canPlay}>
-					<HugeiconsIcon icon={PlayIcon} data-icon="inline-start" />
-					{playLabel}
-				</Button>
-				{#if item.trailerKey}
-					<Button variant="secondary" size="lg" onclick={() => (trailerOpen = true)}>
-						<HugeiconsIcon icon={Video01Icon} data-icon="inline-start" />
-						Watch trailer
+			<div class="mt-1 flex flex-col gap-3">
+				<!-- The primary action: oversized on purpose so it reads first. -->
+				<div>
+					<Button
+						href={watchHref(item)}
+						size="lg"
+						disabled={!canPlay}
+						class="h-11 min-w-72 px-8 text-base font-semibold"
+					>
+						<HugeiconsIcon icon={PlayIcon} data-icon="inline-start" class="size-6" />
+						{playLabel}
 					</Button>
-				{/if}
+				</div>
+				<div class="flex flex-wrap gap-2">
+					{#if signedIn}
+						<Button
+							variant="secondary"
+							size="lg"
+							class="text-muted-foreground hover:text-foreground"
+							aria-pressed={inWatchlist}
+							onclick={toggleWatchlist}
+						>
+							<!-- HugeiconsIcon draws its icon once on mount, hence the {#if}. -->
+							{#if inWatchlist}
+								<HugeiconsIcon
+									icon={BookmarkCheck01Icon}
+									data-icon="inline-start"
+									class="size-5 text-foreground"
+								/>
+								In watchlist
+							{:else}
+								<HugeiconsIcon
+									icon={BookmarkAdd01Icon}
+									data-icon="inline-start"
+									class="size-5 text-foreground"
+								/>
+								Watchlist
+							{/if}
+						</Button>
+						<Button
+							variant="secondary"
+							size="lg"
+							class="text-muted-foreground hover:text-foreground"
+							disabled={fullyWatched || marking || !canPlay}
+							onclick={markWatched}
+						>
+							<HugeiconsIcon
+								icon={CheckmarkCircle02Icon}
+								data-icon="inline-start"
+								class="size-5 text-foreground"
+							/>
+							{fullyWatched ? 'Watched' : 'Mark as watched'}
+						</Button>
+					{/if}
+					{#if item.trailerKey}
+						<Button
+							variant="secondary"
+							size="lg"
+							class="text-muted-foreground hover:text-foreground"
+							onclick={() => (trailerOpen = true)}
+						>
+							<HugeiconsIcon
+								icon={Video01Icon}
+								data-icon="inline-start"
+								class="size-5 text-foreground"
+							/>
+							Watch trailer
+						</Button>
+					{/if}
+				</div>
 			</div>
 		</div>
 	</div>

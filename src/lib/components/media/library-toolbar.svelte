@@ -2,21 +2,24 @@
 	import * as Select from '$lib/components/ui/select';
 	import type { Genre } from '$lib/data';
 
-	let {
-		genre = $bindable('all'),
-		sort = $bindable('title'),
-		genres
-	}: {
-		genre?: string;
-		sort?: string;
-		genres: Genre[];
-	} = $props();
-
-	const sortLabels: Record<string, string> = {
+	const DEFAULT_SORT_LABELS: Record<string, string> = {
 		title: 'Title A–Z',
 		year: 'Newest first',
 		rating: 'Top rated'
 	};
+
+	let {
+		genre = $bindable('all'),
+		sort = $bindable('title'),
+		genres,
+		sortLabels = DEFAULT_SORT_LABELS
+	}: {
+		genre?: string;
+		sort?: string;
+		genres: Genre[];
+		/** Sort value → menu label; keys must be handled by the page's comparator. */
+		sortLabels?: Record<string, string>;
+	} = $props();
 </script>
 
 <div class="flex flex-col gap-3 sm:flex-row sm:items-center">

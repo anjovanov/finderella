@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
+		Bookmark01Icon,
 		DashboardSquare01Icon,
 		Logout01Icon,
 		Menu01Icon,
@@ -37,7 +38,7 @@
 		{ href: resolve('/series'), path: '/series', label: 'Series' },
 		{ href: resolve('/categories'), path: '/categories', label: 'Categories' }
 	];
-	const libraryPaths = [resolve('/movies'), resolve('/series')];
+	const libraryPaths = [resolve('/movies'), resolve('/series'), resolve('/watchlist')];
 	const uid = $props.id();
 	const logoutFormId = `logout-${uid}`;
 
@@ -139,60 +140,78 @@
 		</NavigationMenu.Root>
 
 		{#if user}
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
-						<!-- ml-auto pushes the menu to the far right; it must live on the
-						     rendered button (a class on Trigger would be overridden here). -->
-						<button
-							{...props}
-							type="button"
-							aria-label="Account menu"
-							class="ml-auto hidden shrink-0 rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 md:block"
-						>
-							<Avatar.Root>
-								{#if user.image}
-									<Avatar.Image src={user.image} alt={user.name} />
-								{/if}
-								<Avatar.Fallback class="bg-primary/15 text-xs font-semibold text-primary">
-									{initials}
-								</Avatar.Fallback>
-							</Avatar.Root>
-						</button>
-					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end" class="min-w-56">
-					<DropdownMenu.Label class="flex flex-col gap-0.5">
-						<span class="truncate text-sm font-medium text-foreground">{user.name}</span>
-						<span class="truncate">{user.email}</span>
-					</DropdownMenu.Label>
-					<DropdownMenu.Separator />
-					<DropdownMenu.Group>
-						<DropdownMenu.Item>
-							{#snippet child({ props })}
-								<a href={resolve('/settings')} {...props}>
-									<HugeiconsIcon icon={Settings01Icon} />
-									Settings
-								</a>
-							{/snippet}
-						</DropdownMenu.Item>
-						{#if user.isAdmin}
+			<!-- ml-auto on this wrapper pushes Watchlist + avatar to the far right. -->
+			<div class="ml-auto hidden items-center gap-2 md:flex">
+				<Button
+					href={resolve('/watchlist')}
+					variant="ghost"
+					size="icon"
+					aria-label="Watchlist"
+					title="Watchlist"
+					class={cn(
+						'rounded-full',
+						isActive('/watchlist')
+							? 'bg-accent text-foreground'
+							: 'text-muted-foreground hover:text-foreground'
+					)}
+				>
+					<HugeiconsIcon icon={Bookmark01Icon} class="size-5" />
+				</Button>
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<!-- Utility classes must live on the rendered button (a class on
+						     Trigger would be overridden here). -->
+							<button
+								{...props}
+								type="button"
+								aria-label="Account menu"
+								class="shrink-0 rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+							>
+								<Avatar.Root>
+									{#if user.image}
+										<Avatar.Image src={user.image} alt={user.name} />
+									{/if}
+									<Avatar.Fallback class="bg-primary/15 text-xs font-semibold text-primary">
+										{initials}
+									</Avatar.Fallback>
+								</Avatar.Root>
+							</button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="min-w-56">
+						<DropdownMenu.Label class="flex flex-col gap-0.5">
+							<span class="truncate text-sm font-medium text-foreground">{user.name}</span>
+							<span class="truncate">{user.email}</span>
+						</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
 							<DropdownMenu.Item>
 								{#snippet child({ props })}
-									<a href={resolve('/admin')} {...props}>
-										<HugeiconsIcon icon={DashboardSquare01Icon} />
-										Admin dashboard
+									<a href={resolve('/settings')} {...props}>
+										<HugeiconsIcon icon={Settings01Icon} />
+										Settings
 									</a>
 								{/snippet}
 							</DropdownMenu.Item>
-						{/if}
-						<DropdownMenu.Item variant="destructive" onSelect={() => logoutForm?.requestSubmit()}>
-							<HugeiconsIcon icon={Logout01Icon} />
-							Sign out
-						</DropdownMenu.Item>
-					</DropdownMenu.Group>
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
+							{#if user.isAdmin}
+								<DropdownMenu.Item>
+									{#snippet child({ props })}
+										<a href={resolve('/admin')} {...props}>
+											<HugeiconsIcon icon={DashboardSquare01Icon} />
+											Admin dashboard
+										</a>
+									{/snippet}
+								</DropdownMenu.Item>
+							{/if}
+							<DropdownMenu.Item variant="destructive" onSelect={() => logoutForm?.requestSubmit()}>
+								<HugeiconsIcon icon={Logout01Icon} />
+								Sign out
+							</DropdownMenu.Item>
+						</DropdownMenu.Group>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+			</div>
 		{:else}
 			<Button href={resolve('/login')} size="sm" class="ml-auto hidden shrink-0 md:inline-flex">
 				Sign in
@@ -237,6 +256,18 @@
 						</a>
 					{/each}
 					{#if user}
+						<a
+							href={resolve('/watchlist')}
+							onclick={() => (mobileOpen = false)}
+							class={cn(
+								'rounded-4xl px-3.5 py-2 text-sm font-medium transition-colors',
+								isActive('/watchlist')
+									? 'bg-accent text-foreground'
+									: 'text-muted-foreground hover:text-foreground'
+							)}
+						>
+							Watchlist
+						</a>
 						<a
 							href={resolve('/settings')}
 							onclick={() => (mobileOpen = false)}
