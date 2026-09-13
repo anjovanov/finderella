@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { registry } from '$lib/server/gateways/registry';
 import { SEGMENT_SECONDS } from '$lib/server/streaming/hls-playlist';
 import { sessionManager } from '$lib/server/streaming/session-manager';
+import { listSubtitleTracks } from '$lib/server/streaming/subtitles';
 import { loginRequired } from '$lib/server/site-settings';
 import { pickEpisodeSource, pickMovieSource } from '$lib/server/streaming/source-picker';
 import { QUALITY_IDS, QUALITY_LADDER, transcodePlan } from '$lib/playback-quality';
@@ -56,7 +57,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			src: `/api/stream/${session.id}/file`,
 			sessionId: session.id,
 			quality,
-			source: { width: source.file.width, height: source.file.height }
+			source: { width: source.file.width, height: source.file.height },
+			subtitles: await listSubtitleTracks(source.file.id, session.id)
 		});
 	}
 
@@ -106,6 +108,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		src: `/api/stream/${session.id}/hls/master.m3u8`,
 		sessionId: session.id,
 		quality,
-		source: { width: source.file.width, height: source.file.height }
+		source: { width: source.file.width, height: source.file.height },
+		subtitles: await listSubtitleTracks(source.file.id, session.id)
 	});
 };

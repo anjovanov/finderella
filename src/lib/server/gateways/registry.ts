@@ -158,15 +158,21 @@ class GatewayRegistry {
 	openByteStream(
 		gatewayId: string,
 		message: Record<string, unknown> & { type: string },
-		signal?: AbortSignal
+		signal?: AbortSignal,
+		opts: { firstByteTimeoutMs?: number } = {}
 	): ReadableStream<Uint8Array> {
 		const gateway = this.#gateways.get(gatewayId);
 		if (!gateway) throw new Error(`gateway ${gatewayId} is offline`);
 		const id = gateway.nextId();
 		let finished = false;
+		// Guards against a gateway that never answers at all (e.g. one too old
+		// to know the message type — it logs and ignores). Cleared on the first
+		// frame or resp; steady-state streams have no idle timeout.
+		let firstByteTimer: NodeJS.Timeout | null = null;
 
 		const cleanup = () => {
 			finished = true;
+			if (firstByteTimer) clearTimeout(firstByteTimer);
 			gateway.pending.delete(id);
 		};
 
@@ -199,6 +205,10 @@ class GatewayRegistry {
 						},
 						onChunk: (payload, fin) => {
 							if (finished) return;
+							if (firstByteTimer) {
+								clearTimeout(firstByteTimer);
+								firstByteTimer = null;
+							}
 							if (payload.byteLength > 0) controller.enqueue(payload);
 							if (fin) {
 								cleanup();
@@ -207,6 +217,15 @@ class GatewayRegistry {
 						}
 					});
 					signal?.addEventListener('abort', cancelUpstream, { once: true });
+					if (opts.firstByteTimeoutMs) {
+						firstByteTimer = setTimeout(() => {
+							if (finished) return;
+							const err = new Error(`gateway did not answer ${message.type}`);
+							log.warn({ gatewayId, requestId: id, type: message.type }, err.message);
+							cancelUpstream();
+							controller.error(err);
+						}, opts.firstByteTimeoutMs);
+					}
 					gateway.socket.send(JSON.stringify({ ...message, id }));
 				},
 				pull: () => {

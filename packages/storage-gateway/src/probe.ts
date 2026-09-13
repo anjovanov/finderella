@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { GatewayCapabilities, ProbedFile } from '@finderella/protocol';
+import { embeddedSubtitles, type FfprobeSubtitleStream } from './subtitles/embedded.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -88,14 +89,18 @@ export async function detectTools(): Promise<ToolAvailability> {
 	}
 
 	return {
-		capabilities: { ffmpeg: resolvedFfmpeg !== null, ffmpegVersion, hwaccels },
+		capabilities: {
+			ffmpeg: resolvedFfmpeg !== null,
+			ffmpegVersion,
+			hwaccels,
+			// srt/vtt sidecars convert in-process; ass and embedded tracks need ffmpeg (checked per request).
+			subtitles: true
+		},
 		ffprobe: resolvedFfprobe !== null
 	};
 }
 
-interface FfprobeStream {
-	codec_type?: string;
-	codec_name?: string;
+interface FfprobeStream extends FfprobeSubtitleStream {
 	width?: number;
 	height?: number;
 }
@@ -138,7 +143,10 @@ export async function probeFile(
 	absPath: string
 ): Promise<
 	Partial<
-		Pick<ProbedFile, 'videoCodec' | 'audioCodec' | 'width' | 'height' | 'durationMs' | 'bitrate'>
+		Pick<
+			ProbedFile,
+			'videoCodec' | 'audioCodec' | 'width' | 'height' | 'durationMs' | 'bitrate' | 'subtitles'
+		>
 	>
 > {
 	const bin = resolvedFfprobe;
@@ -158,13 +166,15 @@ export async function probeFile(
 		const audio = parsed.streams?.find((s) => s.codec_type === 'audio');
 		const durationSec = Number(parsed.format?.duration);
 		const bitrate = Number(parsed.format?.bit_rate);
+		const subtitles = embeddedSubtitles(parsed.streams);
 		return {
 			videoCodec: video?.codec_name,
 			audioCodec: audio?.codec_name,
 			width: video?.width,
 			height: video?.height,
 			durationMs: Number.isFinite(durationSec) ? Math.round(durationSec * 1000) : undefined,
-			bitrate: Number.isFinite(bitrate) ? bitrate : undefined
+			bitrate: Number.isFinite(bitrate) ? bitrate : undefined,
+			subtitles: subtitles.length > 0 ? subtitles : undefined
 		};
 	} catch {
 		return {};

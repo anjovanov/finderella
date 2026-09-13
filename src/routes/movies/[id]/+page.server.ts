@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const userId = locals.user?.id ?? null;
 	const [progress, resume] = await Promise.all([
 		loadProgress(userId),
-		// Exact position for "Resume at 1:02:03" + the time-left line under the poster.
+		// Exact position for "Resume at 15m 25s" + the progress line under the poster.
 		movieWatchState(userId, params.id)
 	]);
 	applyProgress([movie, ...related], progress);

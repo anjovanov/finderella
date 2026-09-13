@@ -1,6 +1,8 @@
 import { relations } from 'drizzle-orm';
 import {
 	bigint,
+	boolean,
+	index,
 	integer,
 	jsonb,
 	pgEnum,
@@ -20,6 +22,8 @@ export interface GatewayCapabilitiesJson {
 	ffmpeg: boolean;
 	ffmpegVersion?: string;
 	hwaccels: string[];
+	/** Answers `subtitle.get`; absent/false on gateways that predate subtitles. */
+	subtitles?: boolean;
 }
 
 /** A paired storage gateway (a device that serves local files to the hub). */
@@ -104,6 +108,35 @@ export const mediaFile = pgTable(
 	(t) => [unique().on(t.libraryId, t.relPath)]
 );
 
+/**
+ * One subtitle track of a media file, found at scan time: a text stream
+ * inside the container (`embedded`, addressed by ffprobe's absolute stream
+ * index) or a sidecar file next to it (`sidecar`, library-relative path).
+ * Rows are replaced wholesale on every scan that reports the file.
+ */
+export const mediaSubtitle = pgTable(
+	'media_subtitle',
+	{
+		id: uuid('id').primaryKey().defaultRandom(),
+		mediaFileId: uuid('media_file_id')
+			.notNull()
+			.references(() => mediaFile.id, { onDelete: 'cascade' }),
+		source: text('source', { enum: ['embedded', 'sidecar'] }).notNull(),
+		streamIndex: integer('stream_index'),
+		relPath: text('rel_path'),
+		/** Codec name (embedded: subrip/ass/…) or file format (sidecar: srt/vtt/ass/ssa). */
+		format: text('format').notNull(),
+		/** ISO 639-1, null when unknown. */
+		language: text('language'),
+		title: text('title'),
+		isDefault: boolean('is_default').notNull().default(false),
+		forced: boolean('forced').notNull().default(false),
+		hearingImpaired: boolean('hearing_impaired').notNull().default(false),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(t) => [index('media_subtitle_file_idx').on(t.mediaFileId)]
+);
+
 export const gatewayRelations = relations(gateway, ({ many }) => ({
 	libraries: many(library)
 }));
@@ -113,9 +146,14 @@ export const libraryRelations = relations(library, ({ one, many }) => ({
 	files: many(mediaFile)
 }));
 
-export const mediaFileRelations = relations(mediaFile, ({ one }) => ({
+export const mediaFileRelations = relations(mediaFile, ({ one, many }) => ({
 	library: one(library, { fields: [mediaFile.libraryId], references: [library.id] }),
 	gateway: one(gateway, { fields: [mediaFile.gatewayId], references: [gateway.id] }),
 	movie: one(movie, { fields: [mediaFile.movieId], references: [movie.id] }),
-	episode: one(episode, { fields: [mediaFile.episodeId], references: [episode.id] })
+	episode: one(episode, { fields: [mediaFile.episodeId], references: [episode.id] }),
+	subtitles: many(mediaSubtitle)
+}));
+
+export const mediaSubtitleRelations = relations(mediaSubtitle, ({ one }) => ({
+	file: one(mediaFile, { fields: [mediaSubtitle.mediaFileId], references: [mediaFile.id] })
 }));

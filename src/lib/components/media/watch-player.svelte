@@ -21,14 +21,30 @@
 		VolumeOffIcon
 	} from '@hugeicons/core-free-icons';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import type { Series, SubtitleTrack } from '$lib/data';
+	import {
+		cueLine,
+		cueStyle,
+		DEFAULT_SUBTITLE_SETTINGS,
+		type SubtitleSettings
+	} from '$lib/data/subtitle-settings';
 	import {
 		availableQualities,
 		MAX_TRANSCODE_WIDTH,
 		resolutionLabel,
 		type QualityId
 	} from '$lib/playback-quality';
+	import {
+		loadSubtitlePreference,
+		pickSubtitleTrack,
+		preferenceForTrack,
+		preferenceFromLanguage,
+		saveSubtitleLanguage,
+		storeSubtitlePreference,
+		type SubtitlePreference
+	} from '$lib/subtitle-preference';
 	import EpisodesPanel from './episodes-panel.svelte';
 
 	let {
@@ -41,6 +57,7 @@
 		onProgress,
 		onError,
 		tracks = [],
+		subtitleSettings = DEFAULT_SUBTITLE_SETTINGS,
 		quality = 'original',
 		sourceWidth = null,
 		onQualityChange,
@@ -66,6 +83,8 @@
 		 */
 		onError?: (message: string) => void;
 		tracks?: SubtitleTrack[];
+		/** The viewer's subtitle language + cue styling (account settings, or defaults for guests). */
+		subtitleSettings?: SubtitleSettings;
 		/** Current ladder rung; the quality menu only renders when `onQualityChange` is given. */
 		quality?: QualityId;
 		/** Probed width of the source file; hides rungs above it and labels Auto. */
@@ -184,7 +203,13 @@
 					else onError?.('This browser cannot play HLS streams.');
 					return;
 				}
-				hls = new Hls(resumeAt !== null ? { startPosition: resumeAt } : {});
+				hls = new Hls({
+					...(resumeAt !== null ? { startPosition: resumeAt } : {}),
+					// libx264 passes broadcast CEA-608/708 caption data through; hls.js
+					// would surface it as phantom "English"/"Spanish" text tracks next
+					// to ours. Subtitles come only from our own <track> elements.
+					enableCEA708Captions: false
+				});
 				hls.loadSource(src);
 				hls.attachMedia(el);
 				hls.on(Hls.Events.MANIFEST_PARSED, () => el.play().catch(() => {}));
@@ -251,7 +276,8 @@
 	// even when the library marks the controls idle.
 	let episodesOpen = $state(false);
 	let qualityOpen = $state(false);
-	const menuOpen = $derived(episodesOpen || qualityOpen);
+	let subtitlesOpen = $state(false);
+	const menuOpen = $derived(episodesOpen || qualityOpen || subtitlesOpen);
 	const qualityOptions = $derived(availableQualities(sourceWidth));
 	// What "Original" resolves to for this file: the source itself when direct-playing,
 	// else the transcoder's output (source capped at the 4K ceiling).
@@ -270,6 +296,7 @@
 			const target = event.target as Element | null;
 			if (!target?.closest('.episodes-panel, .episodes-trigger')) episodesOpen = false;
 			if (!target?.closest('.quality-menu, .quality-trigger')) qualityOpen = false;
+			if (!target?.closest('.subtitles-menu, .subtitles-trigger')) subtitlesOpen = false;
 		};
 		document.addEventListener('pointerdown', onPointerDown, true);
 		return () => document.removeEventListener('pointerdown', onPointerDown, true);
@@ -292,6 +319,7 @@
 		if (event.key === 'Escape' && menuOpen) {
 			episodesOpen = false;
 			qualityOpen = false;
+			subtitlesOpen = false;
 			return;
 		}
 		const target = event.target as HTMLElement | null;
@@ -313,7 +341,105 @@
 		} else if (event.key === 'ArrowRight') {
 			event.preventDefault();
 			seekBy(10);
+		} else if ((event.key === 'c' || event.key === 'C') && tracks.length > 0) {
+			event.preventDefault();
+			toggleSubtitles();
 		}
+	}
+
+	// Subtitles. Our <track> elements are the only text tracks we manage (never
+	// video.textTracks by index — hls.js may add its own); the remembered
+	// language / "off" is re-applied whenever the track set changes (next
+	// episode, quality restart) and the choice is reported back from the DOM
+	// so the menu reflects whatever the browser actually shows.
+	let trackEls: Record<string, HTMLTrackElement> = $state({});
+	// Signed-in viewers' language lives in their account settings (the menu
+	// writes back to it); guests get this browser's remembered choice, else
+	// the defaults.
+	const accountSubtitles = $derived(page.data.user != null);
+	const subtitlePreference: SubtitlePreference = $derived(
+		accountSubtitles
+			? preferenceFromLanguage(subtitleSettings.language)
+			: (loadSubtitlePreference() ?? preferenceFromLanguage(subtitleSettings.language))
+	);
+	// Writable derived: re-picked from the preference when the track set changes,
+	// overridden by the viewer's choice in between.
+	let selectedTrackId: string | null = $derived(
+		pickSubtitleTrack(tracks, subtitlePreference)?.id ?? null
+	);
+	let failedTrackIds: string[] = $state([]);
+	let lastShownTrackId: string | null = null;
+
+	function applyTrackModes() {
+		for (const track of tracks) {
+			const el = trackEls[track.id];
+			if (!el) continue;
+			const mode = track.id === selectedTrackId ? 'showing' : 'disabled';
+			if (el.track.mode !== mode) el.track.mode = mode;
+		}
+	}
+	$effect(applyTrackModes);
+
+	$effect(() => {
+		const el = videoEl;
+		if (!el) return;
+		const onChange = () => {
+			const showing = tracks.find((track) => trackEls[track.id]?.track.mode === 'showing');
+			const id = showing?.id ?? null;
+			if (id !== selectedTrackId) selectedTrackId = id;
+		};
+		el.textTracks.addEventListener('change', onChange);
+		return () => el.textTracks.removeEventListener('change', onChange);
+	});
+
+	// Cue placement: WebVTT cues default to the very bottom edge. Each cue's
+	// `line` is set instead of styling ::-webkit-media-text-track-container —
+	// the property works in every engine and survives fullscreen. Negative =
+	// lines counted up from the bottom (-1 is the edge); the viewer's position
+	// setting picks how many.
+	function liftCues(cues: TextTrackCueList | null) {
+		if (!cues) return;
+		const line = cueLine(subtitleSettings.position);
+		for (const cue of cues) {
+			if (cue instanceof VTTCue && cue.line !== line) cue.line = line;
+		}
+	}
+	// Cues parsed before the track finished loading are lifted as they activate;
+	// `load` catches the whole list once the file is in.
+	function positionCues(el: HTMLTrackElement) {
+		const onLoad = () => liftCues(el.track.cues);
+		const onCueChange = () => liftCues(el.track.activeCues);
+		el.addEventListener('load', onLoad);
+		el.track.addEventListener('cuechange', onCueChange);
+		return () => {
+			el.removeEventListener('load', onLoad);
+			el.track.removeEventListener('cuechange', onCueChange);
+		};
+	}
+
+	function chooseTrack(track: SubtitleTrack | null) {
+		subtitlesOpen = false;
+		if (track) lastShownTrackId = track.id;
+		selectedTrackId = track?.id ?? null;
+		// A track with no language ("Track 1") is a one-off pick; it never
+		// overwrites the remembered language.
+		const preference = preferenceForTrack(track);
+		if (!preference) return;
+		storeSubtitlePreference(preference);
+		if (accountSubtitles) void saveSubtitleLanguage(preference);
+	}
+
+	function toggleSubtitles() {
+		if (selectedTrackId) {
+			chooseTrack(null);
+			return;
+		}
+		const fallback =
+			tracks.find((track) => track.id === lastShownTrackId) ??
+			pickSubtitleTrack(tracks, null) ??
+			tracks.find((track) => !track.forced) ??
+			tracks[0];
+		chooseTrack(fallback);
 	}
 
 	function syncTopBar(node: HTMLElement) {
@@ -348,6 +474,7 @@
 		!chromeVisible && 'cursor-none',
 		menuOpen && 'menu-open'
 	]}
+	style={cueStyle(subtitleSettings)}
 >
 	<div class="min-h-0 flex-1">
 		<video-player>
@@ -361,9 +488,19 @@
 					onended={onVideoEnded}
 					ontimeupdate={onTimeUpdate}
 					onloadstart={() => (remainingSeconds = null)}
+					onloadedmetadata={applyTrackModes}
 				>
-					{#each tracks as track (track.srclang)}
-						<track kind={track.kind} src={track.src} srclang={track.srclang} label={track.label} />
+					{#each tracks as track (track.id)}
+						<track
+							bind:this={trackEls[track.id]}
+							kind={track.kind}
+							src={track.src}
+							srclang={track.srclang}
+							label={track.label}
+							default={track.id === selectedTrackId}
+							onerror={() => (failedTrackIds = [...failedTrackIds, track.id])}
+							{@attach positionCues}
+						/>
 					{/each}
 				</video>
 
@@ -534,13 +671,17 @@
 							</media-cast-button>
 
 							{#if tracks.length > 0}
-								<media-captions-button
-									class="ctrl-button"
-									menu-for="captions-menu"
+								<button
+									type="button"
+									class="ctrl-button subtitles-trigger"
+									aria-haspopup="menu"
+									aria-expanded={subtitlesOpen}
 									aria-label="Subtitles"
+									data-active={selectedTrackId ? '' : undefined}
+									onclick={() => (subtitlesOpen = !subtitlesOpen)}
 								>
 									<HugeiconsIcon icon={SubtitleIcon} class="size-6" />
-								</media-captions-button>
+								</button>
 							{/if}
 
 							<button
@@ -598,19 +739,42 @@
 					</div>
 				{/if}
 
-				{#if tracks.length > 0}
-					<media-menu id="captions-menu" class="captions-menu">
-						<media-captions-radio-group>
-							<template>
-								<media-menu-radio-item class="menu-item">
-									<span data-part="label"></span>
-									<media-menu-item-indicator class="menu-check">
-										<HugeiconsIcon icon={Tick02Icon} class="size-4" />
-									</media-menu-item-indicator>
-								</media-menu-radio-item>
-							</template>
-						</media-captions-radio-group>
-					</media-menu>
+				{#if subtitlesOpen && tracks.length > 0}
+					<div class="subtitles-menu quality-menu captions-menu" role="menu" aria-label="Subtitles">
+						<button
+							type="button"
+							role="menuitemradio"
+							aria-checked={selectedTrackId === null}
+							class="menu-item w-full"
+							onclick={() => chooseTrack(null)}
+						>
+							<span>Off</span>
+							{#if selectedTrackId === null}
+								<HugeiconsIcon icon={Tick02Icon} class="size-4 text-primary" />
+							{/if}
+						</button>
+						{#each tracks as track (track.id)}
+							{@const failed = failedTrackIds.includes(track.id)}
+							<button
+								type="button"
+								role="menuitemradio"
+								aria-checked={selectedTrackId === track.id}
+								class="menu-item w-full"
+								disabled={failed}
+								onclick={() => chooseTrack(track)}
+							>
+								<span>
+									{track.label}
+									{#if failed}
+										<span class="text-white/50">· unavailable</span>
+									{/if}
+								</span>
+								{#if selectedTrackId === track.id}
+									<HugeiconsIcon icon={Tick02Icon} class="size-4 text-primary" />
+								{/if}
+							</button>
+						{/each}
+					</div>
 				{/if}
 			</media-container>
 		</video-player>
@@ -654,13 +818,21 @@
 		filter: brightness(1.001);
 	}
 
-	/* Lift native subtitle cues off the bottom edge (above the control bar).
-	   Chromium-only pseudo-element — same mechanism the packaged skin uses. */
+	/* Cue placement is done per cue (VTTCue.line, see positionCues); this only
+	   keeps Chromium's cue container above the video and in the app font. */
 	.player-root :global(video::-webkit-media-text-track-container) {
 		z-index: 1;
 		font-family: inherit;
-		translate: 0 -5.5rem;
-		transition: translate 0.3s ease-out;
+	}
+
+	/* Viewer's cue styling (settings → cueStyle() custom properties on .player-root;
+	   custom properties inherit into the video's cue shadow tree). */
+	.player-root :global(video::cue) {
+		color: var(--cue-color);
+		font-family: var(--cue-font);
+		font-size: var(--cue-size);
+		text-shadow: var(--cue-shadow);
+		background: var(--cue-background);
 	}
 
 	/* ---------- buffering ---------- */
@@ -933,6 +1105,16 @@
 		z-index: 10;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.player-root :global(.subtitles-menu) {
+		max-height: min(60vh, 24rem);
+		overflow-y: auto;
+	}
+
+	.player-root :global(.menu-item:disabled) {
+		cursor: default;
+		color: rgb(255 255 255 / 0.5);
 	}
 
 	.player-root :global(.captions-menu) {

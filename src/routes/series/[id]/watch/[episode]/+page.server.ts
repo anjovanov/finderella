@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { flattenEpisodes } from '$lib/data';
 import { getSeriesBySlug } from '$lib/server/catalog';
 import { episodeResumePosition, withProgress } from '$lib/server/progress';
+import { getSubtitleSettings } from '$lib/server/user-settings';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -16,13 +17,17 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	if (index === -1) error(404, 'Episode not found');
 
 	const { season, episode } = flat[index];
-	const resumeFrom =
-		(await episodeResumePosition(locals.user?.id ?? null, params.id, episode.id)) ?? 0;
+	const userId = locals.user?.id ?? null;
+	const [resumeFrom, subtitleSettings] = await Promise.all([
+		episodeResumePosition(userId, params.id, episode.id).then((position) => position ?? 0),
+		getSubtitleSettings(userId)
+	]);
 	return {
 		show,
 		season,
 		episode,
 		resumeFrom,
+		subtitleSettings,
 		// Playback source comes from POST /api/playback/start (client-side).
 		nextEpisodeId: flat[index + 1]?.episode.id
 	};

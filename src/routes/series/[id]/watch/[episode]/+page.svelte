@@ -106,6 +106,8 @@
 		{quality}
 		sourceWidth={playback.source.width}
 		onQualityChange={changeQuality}
+		tracks={playback.subtitles}
+		subtitleSettings={data.subtitleSettings}
 		nextHref={data.nextEpisodeId ? episodeWatchHref(data.show.id, data.nextEpisodeId) : undefined}
 		show={data.show}
 		currentEpisodeId={data.episode.id}

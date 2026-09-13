@@ -4,12 +4,20 @@ import { Command } from 'commander';
 import { DEFAULT_LIMITS } from '@finderella/protocol';
 import { GatewayConnection } from './connection.js';
 import { configPath, loadConfig, saveConfig } from './config.js';
-import { FileTransfer } from './file-reader.js';
+import { FileTransfer, type Transfer } from './file-reader.js';
 import { detectTools, ffmpegPath } from './probe.js';
 import { runScan } from './scanner.js';
+import { StreamTransfer } from './stream-transfer.js';
+import { ensureSubtitleVtt, tailSubtitle } from './subtitles/extract.js';
 import { TranscodeSession } from './transcode/session.js';
 
 const log = (message: string) => console.log(`[gateway] ${message}`);
+
+/** Resolve a hub-supplied library-relative path, or null when it escapes the root. */
+function resolveInRoot(root: string, relPath: string): string | null {
+	const abs = resolve(root, relPath);
+	return abs === root || abs.startsWith(root + sep) ? abs : null;
+}
 
 const program = new Command();
 
@@ -69,8 +77,11 @@ program
 		);
 		if (!tools.ffprobe) log('ffprobe NOT found — scans will lack codec/duration metadata');
 
-		const transfers = new Map<number, FileTransfer>();
+		const transfers = new Map<number, Transfer>();
 		const sessions = new Map<string, TranscodeSession>();
+		// Only file/HLS transfers count against maxConcurrentTransfers: a subtitle
+		// stream can idle for minutes and must never make segment fetches "busy".
+		let fileTransfers = 0;
 
 		const startTransfer = (
 			conn: GatewayConnection,
@@ -80,13 +91,17 @@ program
 			length: number
 		) => {
 			const limits = conn.limits ?? DEFAULT_LIMITS;
-			if (transfers.size >= limits.maxConcurrentTransfers) {
+			if (fileTransfers >= limits.maxConcurrentTransfers) {
 				conn.send({ type: 'resp', re: requestId, ok: false, error: 'device busy' });
 				return;
 			}
 			const transfer = new FileTransfer(conn, { requestId, absPath, offset, length }, limits);
 			transfers.set(requestId, transfer);
-			void transfer.run().finally(() => transfers.delete(requestId));
+			fileTransfers++;
+			void transfer.run().finally(() => {
+				transfers.delete(requestId);
+				fileTransfers--;
+			});
 		};
 
 		const connection = new GatewayConnection({
@@ -101,9 +116,8 @@ program
 						break;
 					case 'file.read': {
 						// Never read outside the library root, whatever the hub asks for.
-						const root = resolve(message.rootPath);
-						const abs = resolve(root, message.relPath);
-						if (abs !== root && !abs.startsWith(root + sep)) {
+						const abs = resolveInRoot(resolve(message.rootPath), message.relPath);
+						if (!abs) {
 							conn.send({
 								type: 'resp',
 								re: message.id,
@@ -113,6 +127,46 @@ program
 							break;
 						}
 						startTransfer(conn, message.id, abs, message.offset, message.length);
+						break;
+					}
+					case 'subtitle.get': {
+						const root = resolve(message.rootPath);
+						const absVideoPath = resolveInRoot(root, message.relPath);
+						const absSidecarPath = message.subtitlePath
+							? resolveInRoot(root, message.subtitlePath)
+							: undefined;
+						if (!absVideoPath || absSidecarPath === null) {
+							conn.send({
+								type: 'resp',
+								re: message.id,
+								ok: false,
+								error: 'path escapes library root'
+							});
+							break;
+						}
+						void ensureSubtitleVtt(
+							{
+								absVideoPath,
+								source: message.source,
+								streamIndex: message.streamIndex,
+								absSidecarPath
+							},
+							{ ffmpegBin: ffmpegPath(), log }
+						)
+							.then((handle) => {
+								if (handle.complete) {
+									startTransfer(conn, message.id, handle.path, 0, Infinity);
+									return;
+								}
+								// Still converting: stream the file as it grows.
+								const limits = conn.limits ?? DEFAULT_LIMITS;
+								const transfer = new StreamTransfer(conn, message.id, tailSubtitle(handle), limits);
+								transfers.set(message.id, transfer);
+								void transfer.run().finally(() => transfers.delete(message.id));
+							})
+							.catch((err: Error) => {
+								conn.send({ type: 'resp', re: message.id, ok: false, error: err.message });
+							});
 						break;
 					}
 					case 'session.start': {
@@ -126,9 +180,8 @@ program
 							conn.send({ type: 'resp', re: message.id, ok: false, error: 'device busy' });
 							break;
 						}
-						const root = resolve(message.rootPath);
-						const abs = resolve(root, message.relPath);
-						if (abs !== root && !abs.startsWith(root + sep)) {
+						const abs = resolveInRoot(resolve(message.rootPath), message.relPath);
+						if (!abs) {
 							conn.send({
 								type: 'resp',
 								re: message.id,

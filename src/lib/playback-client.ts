@@ -5,6 +5,7 @@
  * loads must be side-effect free.)
  */
 
+import type { SubtitleTrack } from './data/types';
 import type { QualityId } from './playback-quality';
 
 export interface PlaybackDescriptor {
@@ -14,6 +15,8 @@ export interface PlaybackDescriptor {
 	quality: QualityId;
 	/** Probed frame size of the file being played (null when scanned without ffprobe). */
 	source: { width: number | null; height: number | null };
+	/** Subtitle tracks of the file, served as WebVTT under this session. */
+	subtitles: SubtitleTrack[];
 }
 
 export interface PlaybackTarget {

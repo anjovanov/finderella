@@ -23,7 +23,9 @@ const base = z.object({
 export const GatewayCapabilities = z.object({
 	ffmpeg: z.boolean(),
 	ffmpegVersion: z.string().optional(),
-	hwaccels: z.array(z.string()).default([])
+	hwaccels: z.array(z.string()).default([]),
+	/** Answers `subtitle.get` (older gateways never do — the hub must not wait on them). */
+	subtitles: z.boolean().default(false)
 });
 export type GatewayCapabilities = z.infer<typeof GatewayCapabilities>;
 
@@ -180,6 +182,23 @@ export const HlsGetMessage = base.extend({
 });
 export type HlsGetMessage = z.infer<typeof HlsGetMessage>;
 
+/**
+ * Fetch one subtitle track as WebVTT — answered like `file.read` (credit-gated
+ * binary frames, FIN, then `resp`). `relPath` is the video; `streamIndex` is
+ * ffprobe's absolute stream index for an embedded track, `subtitlePath` the
+ * library-relative sidecar file. The gateway converts srt/ass/embedded text
+ * tracks to UTF-8 WebVTT (ffmpeg for everything but srt/vtt).
+ */
+export const SubtitleGetMessage = base.extend({
+	type: z.literal('subtitle.get'),
+	rootPath: z.string().min(1),
+	relPath: z.string().min(1),
+	source: z.enum(['embedded', 'sidecar']),
+	streamIndex: z.number().int().nonnegative().optional(),
+	subtitlePath: z.string().min(1).optional()
+});
+export type SubtitleGetMessage = z.infer<typeof SubtitleGetMessage>;
+
 export const HubMessage = z.discriminatedUnion('type', [
 	WelcomeMessage,
 	PongMessage,
@@ -189,7 +208,8 @@ export const HubMessage = z.discriminatedUnion('type', [
 	CancelMessage,
 	SessionStartMessage,
 	SessionStopMessage,
-	HlsGetMessage
+	HlsGetMessage,
+	SubtitleGetMessage
 ]);
 export type HubMessage = z.infer<typeof HubMessage>;
 

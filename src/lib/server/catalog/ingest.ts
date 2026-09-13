@@ -1,7 +1,15 @@
 import { and, eq, isNull, lt, or } from 'drizzle-orm';
-import type { ProbedFile } from '@finderella/protocol';
+import type { ProbedFile, SubtitleSource } from '@finderella/protocol';
 import { db } from '$lib/server/db';
-import { episode, library, mediaFile, movie, season, series } from '$lib/server/db/schema';
+import {
+	episode,
+	library,
+	mediaFile,
+	mediaSubtitle,
+	movie,
+	season,
+	series
+} from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import { isSampleFile, parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
 import { pruneCatalog } from './prune';
@@ -144,7 +152,7 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 			if (lib.kind === 'movie') movieId = await resolveMovieId(file);
 			else episodeId = await resolveEpisodeId(file);
 
-			await db
+			const [row] = await db
 				.insert(mediaFile)
 				.values({
 					libraryId,
@@ -182,11 +190,48 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 						episodeId,
 						updatedAt: now
 					}
-				});
+				})
+				.returning({ id: mediaFile.id });
+			// Gateways that predate subtitle discovery omit the field; keep their rows.
+			if (file.subtitles) await replaceSubtitles(row.id, file.subtitles);
 		} catch (err) {
 			log.error({ err, relPath: file.relPath, libraryId }, 'failed to ingest scanned file');
 		}
 	}
+}
+
+/** The scan is the source of truth for a file's tracks: swap the whole set. */
+async function replaceSubtitles(mediaFileId: string, subtitles: SubtitleSource[]): Promise<void> {
+	await db.transaction(async (tx) => {
+		await tx.delete(mediaSubtitle).where(eq(mediaSubtitle.mediaFileId, mediaFileId));
+		if (subtitles.length === 0) return;
+		await tx.insert(mediaSubtitle).values(
+			subtitles.map((track) =>
+				track.source === 'embedded'
+					? {
+							mediaFileId,
+							source: 'embedded' as const,
+							streamIndex: track.streamIndex,
+							format: track.codec,
+							language: track.language ?? null,
+							title: track.title ?? null,
+							isDefault: track.isDefault,
+							forced: track.forced,
+							hearingImpaired: track.hearingImpaired
+						}
+					: {
+							mediaFileId,
+							source: 'sidecar' as const,
+							relPath: track.relPath,
+							format: track.format,
+							language: track.language ?? null,
+							title: track.title ?? null,
+							forced: track.forced,
+							hearingImpaired: track.hearingImpaired
+						}
+			)
+		);
+	});
 }
 
 export async function finalizeScan(

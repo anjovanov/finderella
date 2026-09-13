@@ -13,8 +13,7 @@
 	import {
 		episodeLabel,
 		flattenEpisodes,
-		formatClock,
-		formatDurationShort,
+		formatDurationUnits,
 		playTarget,
 		watchHref,
 		type MediaItem
@@ -35,12 +34,12 @@
 	} = $props();
 
 	// Series resume the viewer's next-in-line episode ("Resume S2E4"); movies
-	// resume at their saved position ("Resume at 1:02:03").
+	// resume at their saved position ("Resume at 15m 25s").
 	const target = $derived(item.kind === 'series' ? playTarget(item) : undefined);
 	const playLabel = $derived(
 		item.kind === 'movie'
 			? resume
-				? `Resume at ${formatClock(resume.positionSeconds)}`
+				? `Resume at ${formatDurationUnits(resume.positionSeconds)}`
 				: 'Play'
 			: target?.resume
 				? `Resume ${episodeLabel(target.season, target.episode.number)}`
@@ -59,14 +58,8 @@
 		return flat.length > 0 && flat.every(({ episode }) => episode.progress === 1);
 	});
 	let marking = $state(false);
-	// Under the poster: "1h 2m watched · 28m left", or "Watched" once finished.
-	const watchLine = $derived.by(() => {
-		if (item.kind !== 'movie') return null;
-		if (fullyWatched) return 'Watched';
-		if (!resume) return null;
-		const left = Math.max(0, resume.durationSeconds - resume.positionSeconds);
-		return `${formatDurationShort(resume.positionSeconds)} watched · ${formatDurationShort(left)} left`;
-	});
+	// Under the poster: a bare progress line while a movie is in progress or finished.
+	const showProgress = $derived(item.kind === 'movie' && (fullyWatched || resume !== null));
 
 	async function toggleWatchlist() {
 		const next = !inWatchlist;
@@ -123,9 +116,8 @@
 			<div class="overflow-hidden rounded-xl shadow-2xl ring-1 ring-border">
 				<PosterArt {item} showTitle />
 			</div>
-			{#if watchLine}
+			{#if showProgress}
 				<ProgressLine fraction={item.progress} />
-				<p class="text-xs text-muted-foreground">{watchLine}</p>
 			{/if}
 		</div>
 		<div class="flex max-w-2xl flex-col gap-3">

@@ -95,6 +95,8 @@
 		{quality}
 		sourceWidth={playback.source.width}
 		onQualityChange={changeQuality}
+		tracks={playback.subtitles}
+		subtitleSettings={data.subtitleSettings}
 	/>
 {:else}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black">

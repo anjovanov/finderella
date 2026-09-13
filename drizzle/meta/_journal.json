@@ -50,6 +50,20 @@
       "when": 1789247705415,
       "tag": "0006_calm_captain_america",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789298536434,
+      "tag": "0007_lying_patch",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789302000400,
+      "tag": "0008_public_morlocks",
+      "breakpoints": true
     }
   ]
 }

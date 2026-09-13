@@ -89,10 +89,16 @@ export interface Episode {
 
 export type MediaItem = Movie | Series;
 
-/** A sidecar text track the player attaches to the <video>. */
+/** A text track the player attaches to the <video> (served as WebVTT per playback session). */
 export interface SubtitleTrack {
+	/** media_subtitle row id — keys the <track> and the stream URL. */
+	id: string;
 	src: string;
+	/** ISO 639-1, or 'und' when unknown. */
 	srclang: string;
 	label: string;
 	kind: 'captions' | 'subtitles';
+	/** The container flagged it default — auto-selected when the viewer has no remembered language. */
+	default: boolean;
+	forced: boolean;
 }
