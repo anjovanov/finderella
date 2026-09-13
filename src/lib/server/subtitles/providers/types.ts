@@ -27,6 +27,8 @@ export interface SubtitleCandidate {
 	script?: 'cyrillic';
 	/** Extra badge text: Gestdown's upstream source, "season pack", … */
 	note?: string;
+	/** Why it's believed to be in sync (filled after ranking). */
+	matchReason?: 'hash' | 'release' | 'partial';
 }
 
 /** What we know about the title being searched (from the catalog rows). */
@@ -40,6 +42,8 @@ export interface TitleQuery {
 	episode?: number;
 	/** Basename of the video file — release-name matching. */
 	fileName: string;
+	/** OpenSubtitles moviehash of the file, when known. */
+	movieHash?: string;
 }
 
 export type ProviderErrorKind = 'not-configured' | 'auth' | 'quota' | 'rate-limit' | 'network';

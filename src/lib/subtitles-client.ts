@@ -23,6 +23,7 @@ export interface SubtitleSearchResult {
 	url?: string;
 	script?: 'cyrillic';
 	note?: string;
+	matchReason?: 'hash' | 'release' | 'partial';
 }
 
 export interface SubtitleSearchResponse {

@@ -28,6 +28,7 @@ export function buildOpenSubtitlesSearchParams(
 		if (query.tmdbId) params.parent_tmdb_id = String(query.tmdbId);
 		else params.query = query.title.toLowerCase();
 	}
+	if (query.movieHash) params.moviehash = query.movieHash.toLowerCase();
 	if (opts.excludeAi) params.ai_translated = 'exclude';
 	const sorted = new URLSearchParams();
 	for (const key of Object.keys(params).sort()) sorted.set(key, params[key]);

@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { posix } from 'node:path';
 import { db } from '$lib/server/db';
-import { episode, mediaFile, movie, season, series } from '$lib/server/db/schema';
+import { episode, library, mediaFile, movie, season, series } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import type { MediaFileRow } from '$lib/server/streaming/compat';
 import { searchGestdown } from './providers/gestdown';
@@ -15,7 +15,8 @@ import {
 	type SubtitleProviderId,
 	type TitleQuery
 } from './providers/types';
-import { rankCandidates } from './rank';
+import { ensureMovieHash } from './moviehash';
+import { matchReason, rankCandidates } from './rank';
 import { configuredProviders, type SubtitleProviderSettings } from './settings';
 
 /** What the catalog knows about the title a media file belongs to. */
@@ -51,6 +52,17 @@ export async function titleQueryForFile(file: MediaFileRow): Promise<TitleQuery 
 		};
 	}
 	return null;
+}
+
+/**
+ * Attach the file's OpenSubtitles hash to a query (computing + storing it on
+ * first use when the device is online). Never fails the search.
+ */
+export async function withMovieHash(query: TitleQuery, file: MediaFileRow): Promise<TitleQuery> {
+	const lib = await db.query.library.findFirst({ where: eq(library.id, file.libraryId) });
+	if (!lib) return query;
+	const movieHash = await ensureMovieHash(file, lib.rootPath);
+	return movieHash ? { ...query, movieHash } : query;
 }
 
 /** Active files of a title, for the player flow (by slugs). */
@@ -160,12 +172,13 @@ export async function searchSubtitles(
 			errors.push({ provider: providers[i], kind: 'network', message: String(result.reason) });
 		}
 	});
-	return {
-		candidates: rankCandidates(candidates, {
-			fileName: query.fileName,
-			preferHearingImpaired: settings.preferHearingImpaired,
-			providerOrder: providers
-		}),
-		errors
-	};
+	const ranked = rankCandidates(candidates, {
+		fileName: query.fileName,
+		preferHearingImpaired: settings.preferHearingImpaired,
+		providerOrder: providers
+	});
+	for (const candidate of ranked) {
+		candidate.matchReason = matchReason(candidate, query.fileName) ?? undefined;
+	}
+	return { candidates: ranked, errors };
 }

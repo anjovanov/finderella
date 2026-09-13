@@ -10,6 +10,21 @@ describe('buildOpenSubtitlesSearchParams', () => {
 		expect(params.toString()).toBe('languages=pt-br%2Cpt-pt&tmdb_id=27205&type=movie');
 	});
 
+	it('sends the moviehash alongside the ids', () => {
+		expect(
+			buildOpenSubtitlesSearchParams(
+				{
+					kind: 'movie',
+					tmdbId: 27205,
+					title: 'Inception',
+					fileName: 'x',
+					movieHash: '8E245D9679D31E12'
+				},
+				'en'
+			).toString()
+		).toBe('languages=en&moviehash=8e245d9679d31e12&tmdb_id=27205&type=movie');
+	});
+
 	it('uses parent ids for episodes and a text query without a tmdb id', () => {
 		expect(
 			buildOpenSubtitlesSearchParams(

@@ -96,6 +96,9 @@ export const mediaFile = pgTable(
 		height: integer('height'),
 		durationMs: integer('duration_ms'),
 		bitrate: integer('bitrate'),
+		/** OpenSubtitles moviehash of this exact encode; cleared when size/mtime change. */
+		moviehash: text('moviehash'),
+		moviehashAt: timestamp('moviehash_at', { withTimezone: true }),
 		status: mediaFileStatus('status').notNull().default('active'),
 		// Set on every upsert during a scan; files not seen by a finished scan
 		// are marked missing.

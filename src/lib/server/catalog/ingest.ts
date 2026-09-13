@@ -1,4 +1,4 @@
-import { and, eq, isNull, lt, or } from 'drizzle-orm';
+import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
 import type { ProbedFile, SubtitleSource } from '@finderella/protocol';
 import { db } from '$lib/server/db';
 import {
@@ -189,6 +189,9 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 						scanSeenAt: now,
 						movieId,
 						episodeId,
+						// A changed size/mtime is a different encode: forget its hash.
+						moviehash: sql`case when ${mediaFile.size} = excluded.size and ${mediaFile.mtimeMs} = excluded.mtime_ms then ${mediaFile.moviehash} else null end`,
+						moviehashAt: sql`case when ${mediaFile.size} = excluded.size and ${mediaFile.mtimeMs} = excluded.mtime_ms then ${mediaFile.moviehashAt} else null end`,
 						updatedAt: now
 					}
 				})

@@ -160,7 +160,11 @@
 									{providerLabel[result.provider] ?? result.provider}
 								</span>
 								{#if result.note}<span>{result.note}</span>{/if}
-								{#if result.hashMatch}<span class="text-primary">exact match</span>{/if}
+								{#if result.matchReason === 'hash'}
+									<span class="text-primary">exact file match</span>
+								{:else if result.matchReason === 'release'}
+									<span class="text-primary/80">same release</span>
+								{/if}
 								{#if result.hearingImpaired}<span>SDH</span>{/if}
 								{#if result.forced}<span>forced</span>{/if}
 								{#if result.trusted}<span>trusted</span>{/if}

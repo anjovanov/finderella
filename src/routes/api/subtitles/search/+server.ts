@@ -2,7 +2,12 @@ import { error, json, type RequestHandler } from '@sveltejs/kit';
 import { z } from 'zod';
 import { normalizeLanguage } from '@finderella/protocol';
 import { registry } from '$lib/server/gateways/registry';
-import { activeFilesFor, searchSubtitles, titleQueryForFile } from '$lib/server/subtitles/search';
+import {
+	activeFilesFor,
+	searchSubtitles,
+	titleQueryForFile,
+	withMovieHash
+} from '$lib/server/subtitles/search';
 import { configuredProviders, getSubtitleProviderSettings } from '$lib/server/subtitles/settings';
 
 const SearchRequest = z.object({
@@ -35,7 +40,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!file) error(404, 'No media file is linked to this title.');
 	const query = await titleQueryForFile(file);
 	if (!query) error(404, 'This title is missing from the catalog.');
-	const outcome = await searchSubtitles(settings, query, language);
+	const outcome = await searchSubtitles(settings, await withMovieHash(query, file), language);
 	return json({
 		candidates: outcome.candidates,
 		errors: outcome.errors.map((e) => ({ ...e, resetAt: e.resetAt?.toISOString() ?? null })),

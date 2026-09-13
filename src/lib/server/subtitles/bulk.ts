@@ -15,7 +15,7 @@ import {
 import { sleep } from './limiter';
 import { openSubtitlesQuota } from './providers/opensubtitles';
 import { ProviderError, type SubtitleProviderId } from './providers/types';
-import { searchSubtitles, titleQueryForFile } from './search';
+import { searchSubtitles, titleQueryForFile, withMovieHash } from './search';
 import { configuredProviders, getSubtitleProviderSettings, parseLanguageList } from './settings';
 
 /**
@@ -250,11 +250,12 @@ async function processItem(
 		status.skippedOffline++;
 		return;
 	}
-	const query = await titleQueryForFile(file);
-	if (!query) {
+	const bare = await titleQueryForFile(file);
+	if (!bare) {
 		status.failed++;
 		return;
 	}
+	const query = await withMovieHash(bare, file);
 	const outcome = await searchSubtitles(settings, query, language, { excludeAi: true, providers });
 	for (const err of outcome.errors) {
 		if (err.kind === 'quota' || err.kind === 'auth' || err.kind === 'not-configured')
@@ -267,7 +268,10 @@ async function processItem(
 			const download = await fetchCandidate(settings, candidate, query);
 			await installSubtitle({ file, candidate, download, source: opts.source, userId: null });
 			status.downloaded++;
-			note('info', `${item.label}: ${candidate.releaseName} (${candidate.provider})`);
+			note(
+				'info',
+				`${item.label}: ${candidate.releaseName} (${candidate.provider}${candidate.matchReason === 'hash' ? ', exact match' : candidate.matchReason === 'release' ? ', same release' : ''})`
+			);
 			return;
 		} catch (err) {
 			if (err instanceof ProviderError && (err.kind === 'quota' || err.kind === 'auth')) {
