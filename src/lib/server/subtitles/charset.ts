@@ -58,3 +58,23 @@ export function normalizeSubtitleEncoding(
 	const text = new TextDecoder(legacyCodePage(language, script)).decode(bytes);
 	return new TextEncoder().encode(text);
 }
+
+/**
+ * Strip what a subtitle file has no business carrying: WebVTT STYLE/REGION
+ * blocks (CSS with possible url() fetches — cues are styled from the viewer's
+ * settings anyway), script-looking tags, and control characters. ASS is left
+ * alone: ffmpeg re-renders it to plain cues on the device.
+ */
+export function sanitizeSubtitleText(text: string, format: string): string {
+	if (format !== 'srt' && format !== 'vtt') return text;
+	let out = text.replace(/\r\n?/g, '\n');
+	if (format === 'vtt') {
+		// A block is a bare STYLE/REGION header line up to the next blank line
+		// (cue text merely starting with the word is left alone).
+		out = out.replace(/^(STYLE|REGION)[ \t]*\n(?:[^\n]+\n)*\n?/gm, '');
+	}
+	out = out.replace(/<\/?script[^>]*>/gi, '');
+	// eslint-disable-next-line no-control-regex
+	out = out.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '');
+	return out;
+}

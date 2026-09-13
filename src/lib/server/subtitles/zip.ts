@@ -30,14 +30,25 @@ export function episodeTag(name: string): string | null {
  * Subtitle files inside an archive (only text formats the scanner accepts —
  * never VobSub `.sub/.idx`), skipping macOS junk and directories.
  */
+export const MAX_ZIP_ENTRY_BYTES = 2 * 1024 * 1024;
+const MAX_ZIP_ENTRIES = 200;
+
+function wantedEntry(name: string, size: number): boolean {
+	if (name.endsWith('/') || name.startsWith('__MACOSX/')) return false;
+	if (size <= 0 || size > MAX_ZIP_ENTRY_BYTES) return false; // zip bombs never get inflated
+	return SUBTITLE_EXTENSION_SET.has(extensionOf(name));
+}
+
 export function listZipSubtitles(bytes: Uint8Array): ZipSubtitleEntry[] {
-	const entries = unzipSync(bytes);
+	let seen = 0;
+	// The filter runs on the central directory, before any entry is inflated.
+	const entries = unzipSync(bytes, {
+		filter: (file) => ++seen <= MAX_ZIP_ENTRIES && wantedEntry(file.name, file.originalSize)
+	});
 	const out: ZipSubtitleEntry[] = [];
 	for (const [name, data] of Object.entries(entries)) {
-		if (name.endsWith('/') || name.startsWith('__MACOSX/') || data.length === 0) continue;
-		const ext = extensionOf(name);
-		if (!SUBTITLE_EXTENSION_SET.has(ext)) continue;
-		out.push({ name, format: ext.slice(1), bytes: data });
+		if (data.length === 0 || data.length > MAX_ZIP_ENTRY_BYTES) continue;
+		out.push({ name, format: extensionOf(name).slice(1), bytes: data });
 	}
 	return out;
 }

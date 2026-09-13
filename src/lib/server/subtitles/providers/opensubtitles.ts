@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { log } from '$lib/server/log';
 import { fromOpenSubtitles } from '../languages';
 import { RateLimiter, sleep } from '../limiter';
+import { fetchSubtitleBytes } from '../safe-fetch';
 import { buildOpenSubtitlesSearchParams } from './opensubtitles-params';
 import {
 	ProviderError,
@@ -313,28 +314,19 @@ export async function downloadOpenSubtitles(
 	}
 	quota = { ...quotaFrom(body), seenAt: new Date() };
 	const current = await ensureSession(creds);
-	let file: Response;
-	try {
-		file = await fetch(parsed.data.link, {
-			headers: headers(current.apiKey, current.token),
-			redirect: 'follow',
-			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-		});
-	} catch (err) {
-		throw new ProviderError(
-			'opensubtitles',
-			'network',
-			`OpenSubtitles file fetch failed: ${(err as Error).message}`
-		);
-	}
-	if (!file.ok) {
+	const file = await fetchSubtitleBytes(parsed.data.link, {
+		provider: 'opensubtitles',
+		headers: headers(current.apiKey, current.token),
+		timeoutMs: REQUEST_TIMEOUT_MS
+	});
+	if (file.status !== 200) {
 		throw new ProviderError(
 			'opensubtitles',
 			'network',
 			`OpenSubtitles file fetch failed (HTTP ${file.status})`
 		);
 	}
-	return { bytes: new Uint8Array(await file.arrayBuffer()), format: 'srt' };
+	return { bytes: file.bytes, format: 'srt' };
 }
 
 /** Admin "Test" button: validates the key (and the login when credentials are set). */

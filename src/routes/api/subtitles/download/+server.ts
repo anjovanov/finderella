@@ -21,8 +21,30 @@ const DownloadRequest = z.object({
 	hearingImpaired: z.boolean().default(false),
 	forced: z.boolean().default(false),
 	releaseName: z.string().default(''),
-	script: z.enum(['cyrillic']).optional()
+	script: z
+		.enum(['cyrillic'])
+		.nullish()
+		.transform((v) => v ?? undefined)
 });
+
+/**
+ * Per-account throttle: provider quotas are shared by everyone on the hub, so
+ * one account can't burn them in a loop. In-memory, single-process hub.
+ */
+const THROTTLE_WINDOW_MS = 10 * 60 * 1000;
+const THROTTLE_MAX = 20;
+const recentByUser = new Map<string, number[]>();
+function throttled(userId: string): boolean {
+	const now = Date.now();
+	const recent = (recentByUser.get(userId) ?? []).filter((at) => now - at < THROTTLE_WINDOW_MS);
+	if (recent.length >= THROTTLE_MAX) {
+		recentByUser.set(userId, recent);
+		return true;
+	}
+	recent.push(now);
+	recentByUser.set(userId, recent);
+	return false;
+}
 
 /**
  * Download one search result for the file a playback session is showing,
@@ -32,6 +54,12 @@ const DownloadRequest = z.object({
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = locals.user;
 	if (!user) error(401, 'Sign in to download subtitles.');
+	if (throttled(user.id)) {
+		error(
+			429,
+			`You've downloaded ${THROTTLE_MAX} subtitles in the last 10 minutes; please wait a little.`
+		);
+	}
 	const parsed = DownloadRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'invalid download request');
 	const language = normalizeLanguage(parsed.data.language);

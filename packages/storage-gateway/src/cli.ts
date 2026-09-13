@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { lstat, realpath, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { Command } from 'commander';
 import { DEFAULT_LIMITS, MAX_SUBTITLE_PUT_BYTES, SUBTITLE_EXTENSIONS } from '@finderella/protocol';
@@ -19,6 +19,7 @@ const SUBTITLE_EXTENSION_SET = new Set<string>(SUBTITLE_EXTENSIONS);
  * existing file unless asked; written to a temp name and renamed.
  */
 async function putSubtitle(
+	root: string,
 	absPath: string,
 	contentBase64: string,
 	overwrite: boolean
@@ -30,9 +31,20 @@ async function putSubtitle(
 	if (bytes.byteLength === 0 || bytes.byteLength > MAX_SUBTITLE_PUT_BYTES) {
 		throw new Error('subtitle payload is empty or too large');
 	}
-	const dir = await stat(dirname(absPath)).catch(() => null);
+	// The folder must really live inside the library: a symlinked folder could
+	// otherwise redirect the write anywhere. Anything already at the target
+	// path — a dangling symlink included — counts as existing.
+	const [realDir, realRoot] = await Promise.all([
+		realpath(dirname(absPath)).catch(() => null),
+		realpath(root).catch(() => null)
+	]);
+	if (!realDir || !realRoot) throw new Error('target folder does not exist');
+	if (realDir !== realRoot && !realDir.startsWith(realRoot + sep)) {
+		throw new Error('target folder is outside the library');
+	}
+	const dir = await stat(realDir).catch(() => null);
 	if (!dir?.isDirectory()) throw new Error('target folder does not exist');
-	if (!overwrite && (await stat(absPath).catch(() => null))) throw new Error('exists');
+	if (!overwrite && (await lstat(absPath).catch(() => null))) throw new Error('exists');
 	const tmp = `${absPath}.${process.pid}.part`;
 	await writeFile(tmp, bytes);
 	try {
@@ -205,7 +217,8 @@ program
 						break;
 					}
 					case 'subtitle.put': {
-						const abs = resolveInRoot(resolve(message.rootPath), message.relPath);
+						const root = resolve(message.rootPath);
+						const abs = resolveInRoot(root, message.relPath);
 						if (!abs) {
 							conn.send({
 								type: 'resp',
@@ -215,7 +228,7 @@ program
 							});
 							break;
 						}
-						void putSubtitle(abs, message.contentBase64, message.overwrite)
+						void putSubtitle(root, abs, message.contentBase64, message.overwrite)
 							.then((data) => {
 								log(`wrote subtitle ${message.relPath} (${data.size} bytes)`);
 								conn.send({ type: 'resp', re: message.id, ok: true, data });

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { log } from '$lib/server/log';
 import { toGestdown } from '../languages';
 import { RateLimiter, sleep } from '../limiter';
+import { fetchSubtitleBytes } from '../safe-fetch';
 import { listZipSubtitles, looksLikeZip, pickZipSubtitle } from '../zip';
 import {
 	ProviderError,
@@ -187,7 +188,12 @@ export async function downloadGestdown(
 ): Promise<DownloadedSubtitle> {
 	if (!/^[a-z0-9_-]+$/i.test(id))
 		throw new ProviderError('gestdown', 'network', 'invalid Gestdown subtitle id');
-	const res = await get(`/subtitles/download/${id}`, { accept: '*/*' });
+	await limiter.wait();
+	const res = await fetchSubtitleBytes(`${API}/subtitles/download/${id}`, {
+		provider: 'gestdown',
+		headers: { 'user-agent': USER_AGENT, accept: '*/*' },
+		timeoutMs: REQUEST_TIMEOUT_MS
+	});
 	if (res.status === 404) {
 		throw new ProviderError(
 			'gestdown',
@@ -195,9 +201,16 @@ export async function downloadGestdown(
 			'Gestdown no longer has this subtitle (it was removed upstream)'
 		);
 	}
-	if (!res.ok)
+	if (res.status === 429) {
+		throw new ProviderError(
+			'gestdown',
+			'rate-limit',
+			'Gestdown is throttling requests; try again in a minute'
+		);
+	}
+	if (res.status !== 200)
 		throw new ProviderError('gestdown', 'network', `Gestdown download failed (HTTP ${res.status})`);
-	const bytes = new Uint8Array(await res.arrayBuffer());
+	const bytes = res.bytes;
 	if (looksLikeZip(bytes)) {
 		const entry = pickZipSubtitle(listZipSubtitles(bytes), wanted);
 		if (!entry)

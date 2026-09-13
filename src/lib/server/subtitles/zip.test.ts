@@ -31,6 +31,14 @@ describe('zip subtitle selection', () => {
 		expect(pickZipSubtitle([], {})).toBeNull();
 	});
 
+	it('never inflates oversized entries', () => {
+		const big = zipSync({
+			'huge.srt': new Uint8Array(2 * 1024 * 1024 + 1),
+			'ok.srt': enc('1\n00:00:01,000 --> 00:00:02,000\nx')
+		});
+		expect(listZipSubtitles(big).map((e) => e.name)).toEqual(['ok.srt']);
+	});
+
 	it('narrows to the wanted script when an archive carries both', () => {
 		const both = zipSync({
 			'Film.cyr.srt': enc('1\n00:00:01,000 --> 00:00:02,000\nЋирилица'),

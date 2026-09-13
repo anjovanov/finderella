@@ -2,6 +2,8 @@
 
 ## 2026-09-13
 
+**Hardened subtitle downloads** — every provider download is fetched only over HTTPS from that provider's own hosts (redirects re-checked hop by hop), capped at 2 MB, checked to actually be a subtitle file (HTML error pages and binaries are rejected), stripped of WebVTT style blocks and control characters, and unzipped without ever inflating oversized archive entries. The gateway refuses to write over symlinks or into symlinked folders, and each account is limited to 20 player downloads per 10 minutes so shared provider quotas can't be drained.
+
 **Better subtitle matching** (migration `0011`) — OpenSubtitles searches now send the file's moviehash (computed once from the file's first and last 64 KB and stored), so subtitles uploaded against the exact same encode rank first and show as "exact file match" in the player; otherwise results that share the file's release group and source (WEB-DL, BluRay, …) rank next and show "same release". Bulk and automatic downloads use the same order.
 
 **Two more subtitle providers** (migration `0010`) — **Gestdown (Addic7ed & SuperSubtitles)** (TV shows only, no account; an opt-in switch on Admin → Subtitles) and **Titlovi.com** (Serbian in both scripts, Croatian, Bosnian, Slovenian, Macedonian and English; a free titlovi.com account). Both feed the same player search, bulk and auto downloads. Downloads from every provider are now converted to UTF-8 before they're saved, so accented and Cyrillic text renders correctly whatever code page the provider used.

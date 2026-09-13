@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { log } from '$lib/server/log';
 import { fromSubdl, toSubdl } from '../languages';
 import { RateLimiter, sleep } from '../limiter';
+import { fetchSubtitleBytes } from '../safe-fetch';
 import { listZipSubtitles, looksLikeZip, pickZipSubtitle } from '../zip';
 import {
 	ProviderError,
@@ -192,17 +193,20 @@ export async function downloadSubdl(
 	const url = new URL(href, DOWNLOAD_BASE);
 	url.searchParams.set('api_key', apiKey.trim());
 	await limiter.wait();
-	let res: Response;
-	try {
-		res = await fetch(url, {
-			redirect: 'follow',
-			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS * 2)
-		});
-	} catch (err) {
-		throw new ProviderError('subdl', 'network', `Subdl download failed: ${(err as Error).message}`);
+	const res = await fetchSubtitleBytes(url, {
+		provider: 'subdl',
+		timeoutMs: REQUEST_TIMEOUT_MS * 2
+	});
+	if (res.status !== 200) {
+		let body: unknown = null;
+		try {
+			body = JSON.parse(new TextDecoder().decode(res.bytes));
+		} catch {
+			// not JSON
+		}
+		throw subdlError(res.status, body);
 	}
-	if (!res.ok) throw subdlError(res.status, await res.json().catch(() => null));
-	const bytes = new Uint8Array(await res.arrayBuffer());
+	const bytes = res.bytes;
 	if (looksLikeZip(bytes)) {
 		const entry = pickZipSubtitle(listZipSubtitles(bytes), wanted);
 		if (!entry)

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { log } from '$lib/server/log';
 import { RateLimiter } from '../limiter';
+import { fetchSubtitleBytes } from '../safe-fetch';
 import { listZipSubtitles, looksLikeZip, pickZipSubtitle } from '../zip';
 import { fromTitloviLang, titloviSupports, toTitloviLang } from './titlovi-languages';
 import {
@@ -294,20 +295,11 @@ export async function downloadTitlovi(
 	url.searchParams.set('type', type);
 	url.searchParams.set('mediaid', mediaId);
 	await limiter.wait();
-	let res: Response;
-	try {
-		res = await fetch(url, {
-			headers: { 'user-agent': BROWSER_UA, referer: 'https://titlovi.com/', 'x-app': 'Finderella' },
-			redirect: 'follow',
-			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS * 2)
-		});
-	} catch (err) {
-		throw new ProviderError(
-			'titlovi',
-			'network',
-			`Titlovi download failed: ${(err as Error).message}`
-		);
-	}
+	const res = await fetchSubtitleBytes(url, {
+		provider: 'titlovi',
+		headers: { 'user-agent': BROWSER_UA, referer: 'https://titlovi.com/', 'x-app': 'Finderella' },
+		timeoutMs: REQUEST_TIMEOUT_MS * 2
+	});
 	if (res.status === 429) {
 		cooldownUntil = Date.now() + COOLDOWN_MS;
 		throw new ProviderError(
@@ -316,9 +308,9 @@ export async function downloadTitlovi(
 			'Titlovi is throttling requests; paused for a few minutes'
 		);
 	}
-	if (!res.ok)
+	if (res.status !== 200)
 		throw new ProviderError('titlovi', 'network', `Titlovi download failed (HTTP ${res.status})`);
-	const bytes = new Uint8Array(await res.arrayBuffer());
+	const bytes = res.bytes;
 	if (looksLikeZip(bytes)) {
 		const entry = pickZipSubtitle(listZipSubtitles(bytes), wanted, { script: script ?? 'latin' });
 		if (!entry)

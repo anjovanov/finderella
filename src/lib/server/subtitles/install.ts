@@ -5,7 +5,8 @@ import { registry } from '$lib/server/gateways/registry';
 import { log } from '$lib/server/log';
 import type { MediaFileRow } from '$lib/server/streaming/compat';
 import { sidecarRelPath } from './naming';
-import { normalizeSubtitleEncoding } from './charset';
+import { normalizeSubtitleEncoding, sanitizeSubtitleText } from './charset';
+import { looksLikeSubtitle } from './validate';
 import { downloadGestdown } from './providers/gestdown';
 import { downloadOpenSubtitles } from './providers/opensubtitles';
 import { downloadSubdl } from './providers/subdl';
@@ -30,6 +31,22 @@ export class InstallError extends Error {
 
 /** Fetch the candidate's bytes from its provider. */
 export async function fetchCandidate(
+	settings: SubtitleProviderSettings,
+	candidate: SubtitleCandidate,
+	query: TitleQuery
+): Promise<DownloadedSubtitle> {
+	const download = await fetchFromProvider(settings, candidate, query);
+	if (!looksLikeSubtitle(download.bytes, download.format)) {
+		throw new ProviderError(
+			candidate.provider,
+			'network',
+			'The provider returned something that is not a subtitle file'
+		);
+	}
+	return download;
+}
+
+async function fetchFromProvider(
 	settings: SubtitleProviderSettings,
 	candidate: SubtitleCandidate,
 	query: TitleQuery
@@ -108,7 +125,10 @@ export async function installSubtitle(opts: {
 				.filter((p): p is string => !!p)
 		);
 		// Providers hand out legacy code pages without saying so; the device gets UTF-8.
-		const bytes = normalizeSubtitleEncoding(download.bytes, candidate.language, candidate.script);
+		const utf8 = normalizeSubtitleEncoding(download.bytes, candidate.language, candidate.script);
+		const bytes = new TextEncoder().encode(
+			sanitizeSubtitleText(new TextDecoder().decode(utf8), download.format)
+		);
 		const contentBase64 = Buffer.from(bytes).toString('base64');
 		let relPath = '';
 		for (let attempt = 1; attempt <= 20; attempt++) {
