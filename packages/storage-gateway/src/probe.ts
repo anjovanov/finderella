@@ -94,7 +94,8 @@ export async function detectTools(): Promise<ToolAvailability> {
 			ffmpegVersion,
 			hwaccels,
 			// srt/vtt sidecars convert in-process; ass and embedded tracks need ffmpeg (checked per request).
-			subtitles: true
+			subtitles: true,
+			subtitleWrite: true
 		},
 		ffprobe: resolvedFfprobe !== null
 	};

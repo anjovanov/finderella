@@ -10,6 +10,7 @@
 		'/admin': 'Overview',
 		'/admin/devices': 'Devices',
 		'/admin/users': 'Users',
+		'/admin/subtitles': 'Subtitles',
 		'/admin/settings': 'Site settings'
 	};
 	const title = $derived(titles[page.url.pathname] ?? 'Admin');

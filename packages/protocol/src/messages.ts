@@ -25,7 +25,9 @@ export const GatewayCapabilities = z.object({
 	ffmpegVersion: z.string().optional(),
 	hwaccels: z.array(z.string()).default([]),
 	/** Answers `subtitle.get` (older gateways never do — the hub must not wait on them). */
-	subtitles: z.boolean().default(false)
+	subtitles: z.boolean().default(false),
+	/** Answers `subtitle.put` (writes downloaded sidecars next to the video). */
+	subtitleWrite: z.boolean().default(false)
 });
 export type GatewayCapabilities = z.infer<typeof GatewayCapabilities>;
 
@@ -199,6 +201,24 @@ export const SubtitleGetMessage = base.extend({
 });
 export type SubtitleGetMessage = z.infer<typeof SubtitleGetMessage>;
 
+/** Downloaded sidecars may be a few hundred KB; this is the decoded ceiling. */
+export const MAX_SUBTITLE_PUT_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Write a subtitle file next to a video. `relPath` is the library-relative
+ * target (its folder must already exist — the gateway never creates
+ * directories); an existing file is refused with error `exists` unless
+ * `overwrite` is set. Answered with `resp` (`data: { size, mtimeMs }`).
+ */
+export const SubtitlePutMessage = base.extend({
+	type: z.literal('subtitle.put'),
+	rootPath: z.string().min(1),
+	relPath: z.string().min(1),
+	contentBase64: z.string().min(1),
+	overwrite: z.boolean().default(false)
+});
+export type SubtitlePutMessage = z.infer<typeof SubtitlePutMessage>;
+
 export const HubMessage = z.discriminatedUnion('type', [
 	WelcomeMessage,
 	PongMessage,
@@ -209,7 +229,8 @@ export const HubMessage = z.discriminatedUnion('type', [
 	SessionStartMessage,
 	SessionStopMessage,
 	HlsGetMessage,
-	SubtitleGetMessage
+	SubtitleGetMessage,
+	SubtitlePutMessage
 ]);
 export type HubMessage = z.infer<typeof HubMessage>;
 

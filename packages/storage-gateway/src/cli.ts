@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-import { resolve, sep } from 'node:path';
+import { rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { dirname, extname, resolve, sep } from 'node:path';
 import { Command } from 'commander';
-import { DEFAULT_LIMITS } from '@finderella/protocol';
+import { DEFAULT_LIMITS, MAX_SUBTITLE_PUT_BYTES, SUBTITLE_EXTENSIONS } from '@finderella/protocol';
 import { GatewayConnection } from './connection.js';
 import { configPath, loadConfig, saveConfig } from './config.js';
 import { FileTransfer, type Transfer } from './file-reader.js';
@@ -9,6 +10,40 @@ import { detectTools, ffmpegPath } from './probe.js';
 import { runScan } from './scanner.js';
 import { StreamTransfer } from './stream-transfer.js';
 import { ensureSubtitleVtt, tailSubtitle } from './subtitles/extract.js';
+
+const SUBTITLE_EXTENSION_SET = new Set<string>(SUBTITLE_EXTENSIONS);
+
+/**
+ * Write a downloaded subtitle beside its video. Only subtitle extensions,
+ * only into an existing folder inside the library root, never over an
+ * existing file unless asked; written to a temp name and renamed.
+ */
+async function putSubtitle(
+	absPath: string,
+	contentBase64: string,
+	overwrite: boolean
+): Promise<{ size: number; mtimeMs: number }> {
+	if (!SUBTITLE_EXTENSION_SET.has(extname(absPath).toLowerCase())) {
+		throw new Error('not a subtitle file name');
+	}
+	const bytes = Buffer.from(contentBase64, 'base64');
+	if (bytes.byteLength === 0 || bytes.byteLength > MAX_SUBTITLE_PUT_BYTES) {
+		throw new Error('subtitle payload is empty or too large');
+	}
+	const dir = await stat(dirname(absPath)).catch(() => null);
+	if (!dir?.isDirectory()) throw new Error('target folder does not exist');
+	if (!overwrite && (await stat(absPath).catch(() => null))) throw new Error('exists');
+	const tmp = `${absPath}.${process.pid}.part`;
+	await writeFile(tmp, bytes);
+	try {
+		await rename(tmp, absPath);
+	} catch (err) {
+		await unlink(tmp).catch(() => {});
+		throw err;
+	}
+	const info = await stat(absPath);
+	return { size: info.size, mtimeMs: Math.round(info.mtimeMs) };
+}
 import { TranscodeSession } from './transcode/session.js';
 
 const log = (message: string) => console.log(`[gateway] ${message}`);
@@ -163,6 +198,27 @@ program
 								const transfer = new StreamTransfer(conn, message.id, tailSubtitle(handle), limits);
 								transfers.set(message.id, transfer);
 								void transfer.run().finally(() => transfers.delete(message.id));
+							})
+							.catch((err: Error) => {
+								conn.send({ type: 'resp', re: message.id, ok: false, error: err.message });
+							});
+						break;
+					}
+					case 'subtitle.put': {
+						const abs = resolveInRoot(resolve(message.rootPath), message.relPath);
+						if (!abs) {
+							conn.send({
+								type: 'resp',
+								re: message.id,
+								ok: false,
+								error: 'path escapes library root'
+							});
+							break;
+						}
+						void putSubtitle(abs, message.contentBase64, message.overwrite)
+							.then((data) => {
+								log(`wrote subtitle ${message.relPath} (${data.size} bytes)`);
+								conn.send({ type: 'resp', re: message.id, ok: true, data });
 							})
 							.catch((err: Error) => {
 								conn.send({ type: 'resp', re: message.id, ok: false, error: err.message });

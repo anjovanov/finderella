@@ -24,6 +24,8 @@ export interface GatewayCapabilitiesJson {
 	hwaccels: string[];
 	/** Answers `subtitle.get`; absent/false on gateways that predate subtitles. */
 	subtitles?: boolean;
+	/** Answers `subtitle.put` (downloaded sidecars). */
+	subtitleWrite?: boolean;
 }
 
 /** A paired storage gateway (a device that serves local files to the hub). */

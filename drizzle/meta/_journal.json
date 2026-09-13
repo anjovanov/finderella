@@ -64,6 +64,20 @@
       "when": 1789302000400,
       "tag": "0008_public_morlocks",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789307508852,
+      "tag": "0009_tranquil_johnny_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789310447519,
+      "tag": "0010_aromatic_johnny_storm",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { flattenEpisodes } from '$lib/data';
 import { getSeriesBySlug } from '$lib/server/catalog';
 import { episodeResumePosition, withProgress } from '$lib/server/progress';
 import { getSubtitleSettings } from '$lib/server/user-settings';
+import { subtitleProvidersConfigured } from '$lib/server/subtitles/settings';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -18,9 +19,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	const { season, episode } = flat[index];
 	const userId = locals.user?.id ?? null;
-	const [resumeFrom, subtitleSettings] = await Promise.all([
+	const [resumeFrom, subtitleSettings, providersConfigured] = await Promise.all([
 		episodeResumePosition(userId, params.id, episode.id).then((position) => position ?? 0),
-		getSubtitleSettings(userId)
+		getSubtitleSettings(userId),
+		subtitleProvidersConfigured()
 	]);
 	return {
 		show,
@@ -28,6 +30,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		episode,
 		resumeFrom,
 		subtitleSettings,
+		canFindSubtitles: userId !== null && providersConfigured,
 		// Playback source comes from POST /api/playback/start (client-side).
 		nextEpisodeId: flat[index + 1]?.episode.id
 	};

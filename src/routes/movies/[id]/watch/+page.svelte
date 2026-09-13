@@ -97,6 +97,13 @@
 		onQualityChange={changeQuality}
 		tracks={playback.subtitles}
 		subtitleSettings={data.subtitleSettings}
+		subtitleTarget={{ kind: 'movie', slug: data.movie.id }}
+		sessionId={playback.sessionId}
+		canFindSubtitles={data.canFindSubtitles}
+		onSubtitlesChanged={(tracks) => {
+			// In place: replacing the object would re-source the player's video.
+			if (playback) playback.subtitles = tracks;
+		}}
 	/>
 {:else}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black">

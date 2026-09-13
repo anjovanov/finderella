@@ -14,6 +14,7 @@ import { log } from '$lib/server/log';
 import { isSampleFile, parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
 import { pruneCatalog } from './prune';
 import { enrichPending, isTmdbConfigured } from '$lib/server/metadata';
+import { queueAutoSubtitleDownload } from '$lib/server/subtitles/bulk';
 
 /**
  * Turns gateway scan reports into catalog rows. Metadata is filename-derived
@@ -262,5 +263,10 @@ export async function finalizeScan(
 	// second scan finishing mid-pass just queues one more pass.
 	if (isTmdbConfigured()) {
 		void enrichPending().catch((err) => log.error({ err }, 'metadata enrichment failed'));
+	} else {
+		// No metadata pass to wait for: search by title right away.
+		void queueAutoSubtitleDownload().catch((err) =>
+			log.error({ err }, 'auto subtitle download failed')
+		);
 	}
 }

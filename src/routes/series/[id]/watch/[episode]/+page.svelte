@@ -108,6 +108,13 @@
 		onQualityChange={changeQuality}
 		tracks={playback.subtitles}
 		subtitleSettings={data.subtitleSettings}
+		subtitleTarget={{ kind: 'series', slug: data.show.id, episodeSlug: data.episode.id }}
+		sessionId={playback.sessionId}
+		canFindSubtitles={data.canFindSubtitles}
+		onSubtitlesChanged={(tracks) => {
+			// In place: replacing the object would re-source the player's video.
+			if (playback) playback.subtitles = tracks;
+		}}
 		nextHref={data.nextEpisodeId ? episodeWatchHref(data.show.id, data.nextEpisodeId) : undefined}
 		show={data.show}
 		currentEpisodeId={data.episode.id}

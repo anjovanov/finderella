@@ -7,6 +7,7 @@
 		DashboardSquare01Icon,
 		HardDriveIcon,
 		Settings01Icon,
+		SubtitleIcon,
 		UserGroupIcon
 	} from '@hugeicons/core-free-icons';
 	import * as Sidebar from '$lib/components/ui/sidebar';
@@ -15,6 +16,7 @@
 		{ href: resolve('/admin'), label: 'Overview', icon: DashboardSquare01Icon, exact: true },
 		{ href: resolve('/admin/devices'), label: 'Devices', icon: HardDriveIcon, exact: false },
 		{ href: resolve('/admin/users'), label: 'Users', icon: UserGroupIcon, exact: false },
+		{ href: resolve('/admin/subtitles'), label: 'Subtitles', icon: SubtitleIcon, exact: false },
 		{ href: resolve('/admin/settings'), label: 'Site settings', icon: Settings01Icon, exact: false }
 	];
 

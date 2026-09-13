@@ -13,6 +13,7 @@
 		PauseIcon,
 		PlayIcon,
 		PlayListIcon,
+		Search01Icon,
 		Settings02Icon,
 		SubtitleIcon,
 		Tick02Icon,
@@ -45,7 +46,9 @@
 		storeSubtitlePreference,
 		type SubtitlePreference
 	} from '$lib/subtitle-preference';
+	import type { SubtitleTarget } from '$lib/subtitles-client';
 	import EpisodesPanel from './episodes-panel.svelte';
+	import FindSubtitlesPanel from './find-subtitles-panel.svelte';
 
 	let {
 		title,
@@ -58,6 +61,10 @@
 		onError,
 		tracks = [],
 		subtitleSettings = DEFAULT_SUBTITLE_SETTINGS,
+		subtitleTarget,
+		sessionId,
+		canFindSubtitles = false,
+		onSubtitlesChanged,
 		quality = 'original',
 		sourceWidth = null,
 		onQualityChange,
@@ -85,6 +92,13 @@
 		tracks?: SubtitleTrack[];
 		/** The viewer's subtitle language + cue styling (account settings, or defaults for guests). */
 		subtitleSettings?: SubtitleSettings;
+		/** What to search providers for (with `sessionId`) — enables "Find subtitles…". */
+		subtitleTarget?: SubtitleTarget;
+		sessionId?: string;
+		/** Signed in and at least one provider configured. */
+		canFindSubtitles?: boolean;
+		/** A download added a track: the page replaces the session's list; `selectId` is the new track. */
+		onSubtitlesChanged?: (tracks: SubtitleTrack[], selectId: string) => void;
 		/** Current ladder rung; the quality menu only renders when `onQualityChange` is given. */
 		quality?: QualityId;
 		/** Probed width of the source file; hides rungs above it and labels Auto. */
@@ -164,13 +178,20 @@
 	// A cold page load may be blocked by the browser's autoplay policy (no
 	// user gesture on the document yet); the promise rejects and the user
 	// presses play.
+	// Read through deriveds: a parent re-creating its playback object with the
+	// same src/kind/startAt must not re-source the video (it would refresh and
+	// seek back to the resume point); deriveds only notify on a changed value.
+	const sourceSrc = $derived(videoSrc);
+	const sourceKind = $derived(videoKind);
+	const sourceStartAt = $derived(startAt);
 	$effect(() => {
 		const el = videoEl;
-		const src = videoSrc;
-		const kind = videoKind;
+		const src = sourceSrc;
+		const kind = sourceKind;
+		const startFrom = sourceStartAt;
 		if (!el) return;
 
-		const resumeAt = startAt > 0 ? startAt : null;
+		const resumeAt = startFrom > 0 ? startFrom : null;
 
 		const applyResume = () => {
 			if (resumeAt !== null) el.currentTime = resumeAt;
@@ -277,7 +298,9 @@
 	let episodesOpen = $state(false);
 	let qualityOpen = $state(false);
 	let subtitlesOpen = $state(false);
-	const menuOpen = $derived(episodesOpen || qualityOpen || subtitlesOpen);
+	let findSubtitlesOpen = $state(false);
+	const menuOpen = $derived(episodesOpen || qualityOpen || subtitlesOpen || findSubtitlesOpen);
+	const showSubtitlesButton = $derived(tracks.length > 0 || canFindSubtitles);
 	const qualityOptions = $derived(availableQualities(sourceWidth));
 	// What "Original" resolves to for this file: the source itself when direct-playing,
 	// else the transcoder's output (source capped at the 4K ceiling).
@@ -297,6 +320,7 @@
 			if (!target?.closest('.episodes-panel, .episodes-trigger')) episodesOpen = false;
 			if (!target?.closest('.quality-menu, .quality-trigger')) qualityOpen = false;
 			if (!target?.closest('.subtitles-menu, .subtitles-trigger')) subtitlesOpen = false;
+			if (!target?.closest('.find-subtitles-panel, .subtitles-trigger')) findSubtitlesOpen = false;
 		};
 		document.addEventListener('pointerdown', onPointerDown, true);
 		return () => document.removeEventListener('pointerdown', onPointerDown, true);
@@ -320,6 +344,7 @@
 			episodesOpen = false;
 			qualityOpen = false;
 			subtitlesOpen = false;
+			findSubtitlesOpen = false;
 			return;
 		}
 		const target = event.target as HTMLElement | null;
@@ -362,20 +387,34 @@
 			? preferenceFromLanguage(subtitleSettings.language)
 			: (loadSubtitlePreference() ?? preferenceFromLanguage(subtitleSettings.language))
 	);
-	// Writable derived: re-picked from the preference when the track set changes,
-	// overridden by the viewer's choice in between.
-	let selectedTrackId: string | null = $derived(
-		pickSubtitleTrack(tracks, subtitlePreference)?.id ?? null
+	// The viewer's explicit pick applies to one track list (identified by its
+	// ids): when the list changes (next episode, quality restart) the preference
+	// picks again. A download sets the choice for the *incoming* list before the
+	// page swaps it in, so the new track is selected the moment it renders.
+	const listKey = (list: SubtitleTrack[]) => list.map((track) => track.id).join('|');
+	let choice = $state.raw<{ key: string; id: string | null } | null>(null);
+	const selectedTrackId: string | null = $derived(
+		choice?.key === listKey(tracks)
+			? choice.id
+			: (pickSubtitleTrack(tracks, subtitlePreference)?.id ?? null)
 	);
+	function setSelected(id: string | null, list: SubtitleTrack[] = tracks) {
+		choice = { key: listKey(list), id };
+	}
 	let failedTrackIds: string[] = $state([]);
 	let lastShownTrackId: string | null = null;
+	// When we last set modes ourselves; the browser's `change` echo of that is not a viewer action.
+	let modesAppliedAt = 0;
 
 	function applyTrackModes() {
 		for (const track of tracks) {
 			const el = trackEls[track.id];
 			if (!el) continue;
 			const mode = track.id === selectedTrackId ? 'showing' : 'disabled';
-			if (el.track.mode !== mode) el.track.mode = mode;
+			if (el.track.mode !== mode) {
+				el.track.mode = mode;
+				modesAppliedAt = Date.now();
+			}
 		}
 	}
 	$effect(applyTrackModes);
@@ -384,9 +423,12 @@
 		const el = videoEl;
 		if (!el) return;
 		const onChange = () => {
+			// Ignore the echo of our own mode changes and events while track elements
+			// are still mounting — the DOM isn't the viewer's decision yet.
+			if (Date.now() - modesAppliedAt < 500 || tracks.some((track) => !trackEls[track.id])) return;
 			const showing = tracks.find((track) => trackEls[track.id]?.track.mode === 'showing');
 			const id = showing?.id ?? null;
-			if (id !== selectedTrackId) selectedTrackId = id;
+			if (id !== selectedTrackId) setSelected(id);
 		};
 		el.textTracks.addEventListener('change', onChange);
 		return () => el.textTracks.removeEventListener('change', onChange);
@@ -420,13 +462,30 @@
 	function chooseTrack(track: SubtitleTrack | null) {
 		subtitlesOpen = false;
 		if (track) lastShownTrackId = track.id;
-		selectedTrackId = track?.id ?? null;
+		setSelected(track?.id ?? null);
 		// A track with no language ("Track 1") is a one-off pick; it never
 		// overwrites the remembered language.
 		const preference = preferenceForTrack(track);
 		if (!preference) return;
 		storeSubtitlePreference(preference);
 		if (accountSubtitles) void saveSubtitleLanguage(preference);
+	}
+
+	// A download finished: the page swaps in the session's new track list and
+	// we select the new track once it has rendered.
+	function onDownloaded(newTracks: SubtitleTrack[], trackId: string) {
+		findSubtitlesOpen = false;
+		const track = newTracks.find((t) => t.id === trackId);
+		if (track) {
+			lastShownTrackId = track.id;
+			setSelected(track.id, newTracks);
+			const preference = preferenceForTrack(track);
+			if (preference) {
+				storeSubtitlePreference(preference);
+				if (accountSubtitles) void saveSubtitleLanguage(preference);
+			}
+		}
+		onSubtitlesChanged?.(newTracks, trackId);
 	}
 
 	function toggleSubtitles() {
@@ -670,15 +729,19 @@
 								<HugeiconsIcon icon={CastIcon} class="size-6" />
 							</media-cast-button>
 
-							{#if tracks.length > 0}
+							{#if showSubtitlesButton}
 								<button
 									type="button"
 									class="ctrl-button subtitles-trigger"
 									aria-haspopup="menu"
-									aria-expanded={subtitlesOpen}
+									aria-expanded={subtitlesOpen || findSubtitlesOpen}
 									aria-label="Subtitles"
 									data-active={selectedTrackId ? '' : undefined}
-									onclick={() => (subtitlesOpen = !subtitlesOpen)}
+									onclick={() => {
+										// While the search panel is open the button just closes it.
+										if (findSubtitlesOpen) findSubtitlesOpen = false;
+										else subtitlesOpen = !subtitlesOpen;
+									}}
 								>
 									<HugeiconsIcon icon={SubtitleIcon} class="size-6" />
 								</button>
@@ -739,8 +802,33 @@
 					</div>
 				{/if}
 
-				{#if subtitlesOpen && tracks.length > 0}
+				{#if findSubtitlesOpen && subtitleTarget && sessionId}
+					<FindSubtitlesPanel
+						target={subtitleTarget}
+						{sessionId}
+						initialLanguage={subtitleSettings.language === 'off' ? 'en' : subtitleSettings.language}
+						onclose={() => (findSubtitlesOpen = false)}
+						ondownloaded={onDownloaded}
+					/>
+				{/if}
+
+				{#if subtitlesOpen && showSubtitlesButton}
 					<div class="subtitles-menu quality-menu captions-menu" role="menu" aria-label="Subtitles">
+						{#if canFindSubtitles && subtitleTarget && sessionId}
+							<button
+								type="button"
+								role="menuitem"
+								class="menu-item w-full"
+								onclick={() => {
+									subtitlesOpen = false;
+									findSubtitlesOpen = true;
+								}}
+							>
+								<span>Find subtitles…</span>
+								<HugeiconsIcon icon={Search01Icon} class="size-4 text-white/60" />
+							</button>
+							<div class="menu-separator" role="separator"></div>
+						{/if}
 						<button
 							type="button"
 							role="menuitemradio"
@@ -1110,6 +1198,15 @@
 	.player-root :global(.subtitles-menu) {
 		max-height: min(60vh, 24rem);
 		overflow-y: auto;
+	}
+
+	/* flex: none — an empty flex item in the scrollable column would otherwise
+	   shrink to 0 and leave only its margins. */
+	.player-root :global(.menu-separator) {
+		flex: none;
+		height: 1px;
+		margin: 0.25rem 0.5rem;
+		background: rgb(255 255 255 / 0.18);
 	}
 
 	.player-root :global(.menu-item:disabled) {

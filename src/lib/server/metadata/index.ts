@@ -2,6 +2,7 @@ import { and, count, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { episode, movie, season, series } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
+import { queueAutoSubtitleDownload } from '$lib/server/subtitles/bulk';
 import type { CastMember } from '$lib/data/types';
 import {
 	mapGenres,
@@ -331,6 +332,10 @@ export async function enrichPending(opts: { force?: boolean } = {}): Promise<voi
 		running = false;
 		queued = null;
 	}
+	// Titles now carry tmdb ids — the best moment to fetch subtitles for new files.
+	void queueAutoSubtitleDownload().catch((err) =>
+		log.error({ err }, 'auto subtitle download failed')
+	);
 }
 
 export interface MetadataStatus {
