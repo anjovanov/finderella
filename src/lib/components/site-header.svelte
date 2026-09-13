@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
@@ -9,15 +8,14 @@
 		DashboardSquare01Icon,
 		Logout01Icon,
 		Menu01Icon,
-		Search01Icon,
 		Settings01Icon
 	} from '@hugeicons/core-free-icons';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Input } from '$lib/components/ui/input';
 	import * as NavigationMenu from '$lib/components/ui/navigation-menu';
 	import * as Sheet from '$lib/components/ui/sheet';
+	import SearchBox from '$lib/components/search-box.svelte';
 	import { cn } from '$lib/utils.js';
 
 	interface HeaderUser {
@@ -38,15 +36,11 @@
 		{ href: resolve('/series'), path: '/series', label: 'Series' },
 		{ href: resolve('/categories'), path: '/categories', label: 'Categories' }
 	];
-	const libraryPaths = [resolve('/movies'), resolve('/series'), resolve('/watchlist')];
 	const uid = $props.id();
 	const logoutFormId = `logout-${uid}`;
 
-	// Syncs with the URL's ?q= on navigation; typing overrides until the next navigation.
-	let search = $derived(page.url.searchParams.get('q') ?? '');
 	let mobileOpen = $state(false);
 	let logoutForm = $state<HTMLFormElement | null>(null);
-	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	const initials = $derived.by(() => {
 		if (!user) return '';
@@ -63,39 +57,6 @@
 		return path === '/'
 			? page.url.pathname === path
 			: page.url.pathname === path || page.url.pathname.startsWith(`${path}/`);
-	}
-
-	/** The library the search applies to: the current one, defaulting to Movies. */
-	function searchTarget(): string {
-		return libraryPaths.find((p) => page.url.pathname.startsWith(p)) ?? resolve('/movies');
-	}
-
-	function searchUrl(): string {
-		const q = search.trim();
-		const path = searchTarget();
-		return q ? `${path}?q=${encodeURIComponent(q)}` : path;
-	}
-
-	function navigate(opts?: Parameters<typeof goto>[1]) {
-		// eslint-disable-next-line svelte/no-navigation-without-resolve -- built from resolve()d paths
-		goto(searchUrl(), opts);
-	}
-
-	// Live-filter while already on a library page; elsewhere wait for submit.
-	function oninput() {
-		if (!libraryPaths.some((p) => page.url.pathname.startsWith(p))) return;
-		clearTimeout(debounceTimer);
-		debounceTimer = setTimeout(
-			() => navigate({ replaceState: true, keepFocus: true, noScroll: true }),
-			250
-		);
-	}
-
-	function submitSearch(event: SubmitEvent) {
-		event.preventDefault();
-		clearTimeout(debounceTimer);
-		mobileOpen = false;
-		navigate();
 	}
 </script>
 
@@ -116,13 +77,9 @@
 
 	<div class="flex h-16 page-gutter items-center gap-6">
 		<a href={resolve('/')} class="text-lg font-bold tracking-[0.25em] text-primary">FINDERELLA</a>
-		<form class="relative hidden w-full max-w-xs md:block" onsubmit={submitSearch}>
-			<HugeiconsIcon
-				icon={Search01Icon}
-				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-			/>
-			<Input type="search" placeholder="Search…" bind:value={search} {oninput} class="pl-9" />
-		</form>
+		<div class="hidden w-full max-w-xs md:block">
+			<SearchBox />
+		</div>
 		<NavigationMenu.Root viewport={false} class="hidden md:flex">
 			<NavigationMenu.List class="gap-1">
 				{#each links as link (link.href)}
@@ -234,13 +191,7 @@
 					</Sheet.Description>
 				</Sheet.Header>
 				<div class="flex flex-col gap-2 px-4">
-					<form class="relative" onsubmit={submitSearch}>
-						<HugeiconsIcon
-							icon={Search01Icon}
-							class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-						/>
-						<Input type="search" placeholder="Search…" bind:value={search} {oninput} class="pl-9" />
-					</form>
+					<SearchBox layout="inline" onNavigate={() => (mobileOpen = false)} />
 					{#each links as link (link.href)}
 						<a
 							href={link.href}

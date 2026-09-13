@@ -8,9 +8,4 @@
 	<title>Series · Finderella</title>
 </svelte:head>
 
-<LibraryPage
-	title="Series"
-	items={data.items}
-	genres={data.genres}
-	initialQuery={data.initialQuery}
-/>
+<LibraryPage title="Series" items={data.items} genres={data.genres} />

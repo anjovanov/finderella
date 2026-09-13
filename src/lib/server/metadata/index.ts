@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { episode, movie, season, series } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import { queueAutoSubtitleDownload } from '$lib/server/subtitles/bulk';
+import { invalidateSearchIndex } from '$lib/server/search';
 import type { CastMember } from '$lib/data/types';
 import {
 	mapGenres,
@@ -280,7 +281,8 @@ async function pendingSeasonsByMatchedSeries(): Promise<Map<string, number[]>> {
 	return map;
 }
 
-async function runPass(force: boolean): Promise<void> {
+/** Returns how many titles/seasons the pass worked on (0 = nothing to do). */
+async function runPass(force: boolean): Promise<number> {
 	const [movies, shows, seasonsByShow] = await Promise.all([
 		db.query.movie.findMany({
 			columns: { id: true },
@@ -301,12 +303,13 @@ async function runPass(force: boolean): Promise<void> {
 					enrichSeries(seriesId, { seasonNumbers })
 		)
 	];
-	if (tasks.length === 0) return;
+	if (tasks.length === 0) return 0;
 	log.info(
 		{ movies: movies.length, series: shows.length, seasons: seasonsByShow.size, force },
 		'metadata enrichment pass'
 	);
 	await workPool(tasks);
+	return tasks.length;
 }
 
 /**
@@ -322,16 +325,19 @@ export async function enrichPending(opts: { force?: boolean } = {}): Promise<voi
 	}
 	running = true;
 	let next: { force: boolean } | null = { force: Boolean(opts.force) };
+	let enriched = 0;
 	try {
 		while (next) {
 			queued = null;
-			await runPass(next.force);
+			enriched += await runPass(next.force);
 			next = queued;
 		}
 	} finally {
 		running = false;
 		queued = null;
 	}
+	// Titles, cast and synopses changed: one search-index rebuild per run.
+	if (enriched > 0) invalidateSearchIndex();
 	// Titles now carry tmdb ids — the best moment to fetch subtitles for new files.
 	void queueAutoSubtitleDownload().catch((err) =>
 		log.error({ err }, 'auto subtitle download failed')

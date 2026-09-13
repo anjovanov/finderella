@@ -2,6 +2,7 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { StarIcon } from '@hugeicons/core-free-icons';
 	import { cn } from '$lib/utils.js';
+	import { Badge } from '$lib/components/ui/badge';
 	import { mediaHref, type MediaItem } from '$lib/data';
 	import CardMenu from './card-menu.svelte';
 	import PosterArt from './poster-art.svelte';
@@ -11,11 +12,14 @@
 		item,
 		variant = 'poster',
 		class: className,
+		showKind = false,
 		menu
 	}: {
 		item: MediaItem;
 		variant?: 'poster' | 'backdrop';
 		class?: string;
+		/** Label the card Movie/Series (mixed lists such as search results). */
+		showKind?: boolean;
 		/** Extra entries for the ⋮ menu (signed-in viewers only). */
 		menu?: { continueWatching?: boolean };
 	} = $props();
@@ -47,10 +51,17 @@
 		<ProgressLine fraction={item.progress} />
 		<div class="flex flex-col">
 			<span class="truncate text-sm font-medium group-hover:text-primary">{item.title}</span>
-			<span class="text-xs text-muted-foreground">
-				{item.year}{item.kind === 'series'
-					? ` · ${item.seasons.length} season${item.seasons.length === 1 ? '' : 's'}`
-					: ''}
+			<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
+				<span class="truncate">
+					{item.year}{item.kind === 'series'
+						? ` · ${item.seasons.length} season${item.seasons.length === 1 ? '' : 's'}`
+						: ''}
+				</span>
+				{#if showKind}
+					<Badge variant="outline" class="h-4 px-1.5 text-[10px]">
+						{item.kind === 'movie' ? 'Movie' : 'Series'}
+					</Badge>
+				{/if}
 			</span>
 		</div>
 	</a>

@@ -2,6 +2,8 @@
 
 ## 2026-09-13
 
+**Instant, typo-tolerant search** — the navbar search now shows results as you type: a dropdown with poster, year and a Movie/Series badge per row, keyboard navigation, and a "See all results" row (or Enter) that opens the new `/search` page with the full ranked grid. Matching is powered by an in-memory MiniSearch index over titles, years, cast/crew, taglines and synopses, so partial words (`inc`), misspellings (`incepton`) and accents (`amelie` → Amélie) all find their title, and a movie and a series sharing a name are both listed. The index rebuilds itself after scans, prunes and metadata refreshes. The library pages no longer filter by the URL's `?q=`; their genre and sort filters are unchanged.
+
 **Hardened subtitle downloads** — every provider download is fetched only over HTTPS from that provider's own hosts (redirects re-checked hop by hop), capped at 2 MB, checked to actually be a subtitle file (HTML error pages and binaries are rejected), stripped of WebVTT style blocks and control characters, and unzipped without ever inflating oversized archive entries. The gateway refuses to write over symlinks or into symlinked folders, and each account is limited to 20 player downloads per 10 minutes so shared provider quotas can't be drained.
 
 **Better subtitle matching** (migration `0011`) — OpenSubtitles searches now send the file's moviehash (computed once from the file's first and last 64 KB and stored), so subtitles uploaded against the exact same encode rank first and show as "exact file match" in the player; otherwise results that share the file's release group and source (WEB-DL, BluRay, …) rank next and show "same release". Bulk and automatic downloads use the same order.

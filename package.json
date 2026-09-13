@@ -69,6 +69,7 @@
 		"better-auth": "^1.7.2",
 		"drizzle-orm": "^0.45.2",
 		"fflate": "^0.8.3",
+		"minisearch": "^7.2.0",
 		"pino": "^10.3.1",
 		"postgres": "^3.4.9",
 		"ws": "^8.18.0",

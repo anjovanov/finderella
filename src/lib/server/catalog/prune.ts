@@ -2,6 +2,7 @@ import { count, eq, notExists } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { episode, mediaFile, movie, season, series } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
+import { invalidateSearchIndex } from '$lib/server/search';
 
 /**
  * Titles exist only because a scanned file linked to them (ingest is
@@ -72,5 +73,6 @@ export async function pruneCatalog(): Promise<PruneResult> {
 	if (result.movies || result.series || result.episodes) {
 		log.info(result, 'pruned catalog titles without media files');
 	}
+	if (result.movies || result.series) invalidateSearchIndex();
 	return result;
 }

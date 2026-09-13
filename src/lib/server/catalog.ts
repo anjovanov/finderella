@@ -24,7 +24,7 @@ type SeasonRow = typeof season.$inferSelect & { episodes: EpisodeRow[] };
 type EpisodeRow = typeof episode.$inferSelect;
 
 /** DB genres are free text; only the fixed tuple reaches the UI's filters. */
-function knownGenres(names: string[]): Genre[] {
+export function knownGenres(names: string[]): Genre[] {
 	return names.filter((g): g is Genre => (GENRES as readonly string[]).includes(g));
 }
 

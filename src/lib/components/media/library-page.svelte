@@ -7,7 +7,6 @@
 		title,
 		items,
 		genres,
-		initialQuery = '',
 		defaultSort = 'title',
 		sortLabels,
 		empty
@@ -15,7 +14,6 @@
 		title: string;
 		items: MediaItem[];
 		genres: Genre[];
-		initialQuery?: string;
 		/** `title` | `year` | `rating` | `added` (= keep the incoming order). */
 		defaultSort?: string;
 		sortLabels?: Record<string, string>;
@@ -23,20 +21,14 @@
 		empty?: { title: string; hint: string };
 	} = $props();
 
-	// Search comes from the nav bar via the URL's ?q= (see site-header.svelte).
-	const query = $derived(initialQuery);
+	// Text search lives in the navbar (SearchBox → /search); this page only filters by genre.
 	let genre = $state('all');
 	// The initial sort only; the toolbar owns it afterwards.
 	// svelte-ignore state_referenced_locally
 	let sort = $state(defaultSort);
 
 	const filtered = $derived.by(() => {
-		const q = query.trim().toLowerCase();
-		const matches = items.filter(
-			(item) =>
-				(!q || item.title.toLowerCase().includes(q)) &&
-				(genre === 'all' || item.genres.includes(genre as Genre))
-		);
+		const matches = items.filter((item) => genre === 'all' || item.genres.includes(genre as Genre));
 		if (sort === 'added') return matches;
 		return matches.toSorted((a, b) =>
 			sort === 'year'
@@ -65,7 +57,7 @@
 		{#if filtered.length === 0}
 			<div class="flex flex-col items-center gap-2 py-24 text-center">
 				<p class="text-lg font-medium">No results</p>
-				<p class="text-sm text-muted-foreground">Try a different search or clear the filters.</p>
+				<p class="text-sm text-muted-foreground">Try a different genre.</p>
 			</div>
 		{:else}
 			<div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">

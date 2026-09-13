@@ -19,7 +19,6 @@
 	title="Watchlist"
 	items={data.items}
 	genres={data.genres}
-	initialQuery={data.initialQuery}
 	defaultSort="added"
 	{sortLabels}
 	empty={{

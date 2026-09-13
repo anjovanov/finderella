@@ -21,6 +21,9 @@ export const init: ServerInit = async () => {
 	// Installs that predate roles: make sure someone can reach /admin.
 	const { ensureAdminExists } = await import('$lib/server/users');
 	await ensureAdminExists().catch(() => {});
+	// Build the catalog search index now so the first navbar search is instant.
+	const { warmSearchIndex } = await import('$lib/server/search');
+	warmSearchIndex();
 };
 
 // Paths reachable without a session. /api/auth/* is Better Auth's own surface;

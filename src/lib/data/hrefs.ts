@@ -8,8 +8,11 @@ import type { MediaItem } from './types';
  * (src/lib/server/catalog.ts).
  */
 
-/** Link target for a media item's detail page. */
-export function mediaHref(item: MediaItem): string {
+/**
+ * Link target for a media item's detail page. Accepts anything carrying
+ * `kind` + `id` (a lightweight `SearchResult` links the same way).
+ */
+export function mediaHref(item: Pick<MediaItem, 'kind' | 'id'>): string {
 	return item.kind === 'movie'
 		? resolve('/movies/[id]', { id: item.id })
 		: resolve('/series/[id]', { id: item.id });

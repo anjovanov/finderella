@@ -3,11 +3,7 @@ import { listMovies } from '$lib/server/catalog';
 import { withProgress } from '$lib/server/progress';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url, locals }) => {
+export const load: PageServerLoad = async ({ locals }) => {
 	const items = await withProgress(locals.user?.id ?? null, await listMovies());
-	return {
-		items,
-		genres: allGenres(items),
-		initialQuery: url.searchParams.get('q') ?? ''
-	};
+	return { items, genres: allGenres(items) };
 };
