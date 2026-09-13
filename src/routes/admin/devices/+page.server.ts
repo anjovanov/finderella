@@ -5,6 +5,12 @@ import { db } from '$lib/server/db';
 import { gateway, gatewayPairingCode, library, mediaFile } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
 import { triggerScan } from '$lib/server/gateways/scan';
+import { getSiteSettings } from '$lib/server/site-settings';
+import {
+	startTrickplayBulk,
+	stopTrickplayBulk,
+	trickplayBulkStatus
+} from '$lib/server/trickplay/bulk';
 import { LibraryKind } from '@finderella/protocol';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -17,7 +23,7 @@ function generateCode(): string {
 }
 
 export const load: PageServerLoad = async () => {
-	const [gateways, fileCounts, pendingCodes] = await Promise.all([
+	const [gateways, fileCounts, pendingCodes, siteSettings] = await Promise.all([
 		db.query.gateway.findMany({
 			with: { libraries: true },
 			orderBy: [desc(gateway.createdAt)]
@@ -32,7 +38,8 @@ export const load: PageServerLoad = async () => {
 				isNull(gatewayPairingCode.claimedByGatewayId),
 				gt(gatewayPairingCode.expiresAt, new Date())
 			)
-		})
+		}),
+		getSiteSettings()
 	]);
 	const counts = new Map(fileCounts.map((row) => [row.libraryId, row.files]));
 	return {
@@ -42,6 +49,7 @@ export const load: PageServerLoad = async () => {
 			online: registry.isOnline(a.id),
 			gatewayVersion: a.gatewayVersion,
 			ffmpeg: a.capabilities?.ffmpeg ?? false,
+			trickplay: a.capabilities?.trickplay ?? false,
 			lastSeenAt: a.lastSeenAt?.toISOString() ?? null,
 			libraries: a.libraries.map((lib) => ({
 				id: lib.id,
@@ -56,7 +64,9 @@ export const load: PageServerLoad = async () => {
 			code: c.code,
 			gatewayName: c.gatewayName,
 			expiresAt: c.expiresAt.toISOString()
-		}))
+		})),
+		trickplayJob: trickplayBulkStatus(),
+		trickplayEnabled: siteSettings.trickplayEnabled
 	};
 };
 
@@ -109,6 +119,32 @@ export const actions: Actions = {
 			return fail(409, { message: 'Device is offline' });
 		}
 		return { rescanned: lib.id };
+	},
+
+	generateTrickplay: async (event) => {
+		const formData = await event.request.formData();
+		const libraryId = formData.get('libraryId')?.toString() ?? '';
+		if (!libraryId) return fail(400, { message: 'Missing library' });
+		const outcome = await startTrickplayBulk(libraryId);
+		switch (outcome) {
+			case 'started':
+				return { trickplayStarted: libraryId };
+			case 'busy':
+				return fail(409, { message: 'A thumbnail job is already running' });
+			case 'disabled':
+				return fail(409, { message: 'Thumbnails are turned off in Site settings' });
+			case 'offline':
+				return fail(409, { message: 'Device is offline' });
+			case 'unsupported':
+				return fail(501, { message: 'Update the gateway on this device to generate thumbnails' });
+			case 'not-found':
+				return fail(404, { message: 'Library not found' });
+		}
+	},
+
+	stopTrickplay: async () => {
+		stopTrickplayBulk();
+		return { trickplayStopped: true };
 	},
 
 	renameGateway: async (event) => {

@@ -95,7 +95,12 @@ export async function detectTools(): Promise<ToolAvailability> {
 			hwaccels,
 			// srt/vtt sidecars convert in-process; ass and embedded tracks need ffmpeg (checked per request).
 			subtitles: true,
-			subtitleWrite: true
+			subtitleWrite: true,
+			// Sprite sheets need both tools; FINDERELLA_TRICKPLAY=0 opts a weak device out.
+			trickplay:
+				resolvedFfmpeg !== null &&
+				resolvedFfprobe !== null &&
+				process.env.FINDERELLA_TRICKPLAY !== '0'
 		},
 		ffprobe: resolvedFfprobe !== null
 	};
@@ -134,6 +139,69 @@ export async function probeColorTransfer(absPath: string): Promise<string | null
 		]);
 		const value = stdout.trim();
 		return value && value !== 'unknown' ? value : null;
+	} catch {
+		return null;
+	}
+}
+
+export interface TrickplaySourceInfo {
+	width: number;
+	height: number;
+	/** ffprobe ratio strings (`16:9`); absent when unknown. */
+	sar?: string;
+	dar?: string;
+	/** Display-matrix rotation in degrees (±90 swaps the display aspect). */
+	rotation?: number;
+	durationMs: number;
+	hdr: boolean;
+}
+
+interface FfprobeGeometryOutput {
+	streams?: {
+		width?: number;
+		height?: number;
+		sample_aspect_ratio?: string;
+		display_aspect_ratio?: string;
+		color_transfer?: string;
+		side_data_list?: { rotation?: number }[];
+	}[];
+	format?: { duration?: string };
+}
+
+/**
+ * Everything the trickplay planner needs from the first video stream in one
+ * ffprobe call: coded size, aspect ratios (anamorphic sources scale by
+ * display aspect, not pixels), rotation, duration and the HDR flag.
+ */
+export async function probeTrickplaySource(absPath: string): Promise<TrickplaySourceInfo | null> {
+	const bin = resolvedFfprobe;
+	if (!bin) return null;
+	try {
+		const { stdout } = await execFileAsync(bin, [
+			'-v',
+			'error',
+			'-select_streams',
+			'v:0',
+			'-show_entries',
+			'stream=width,height,sample_aspect_ratio,display_aspect_ratio,color_transfer:stream_side_data=rotation:format=duration',
+			'-of',
+			'json',
+			absPath
+		]);
+		const parsed = JSON.parse(stdout) as FfprobeGeometryOutput;
+		const video = parsed.streams?.[0];
+		const durationSec = Number(parsed.format?.duration);
+		if (!video?.width || !video.height || !Number.isFinite(durationSec)) return null;
+		const rotation = video.side_data_list?.find((d) => typeof d.rotation === 'number')?.rotation;
+		return {
+			width: video.width,
+			height: video.height,
+			sar: video.sample_aspect_ratio,
+			dar: video.display_aspect_ratio,
+			rotation,
+			durationMs: Math.round(durationSec * 1000),
+			hdr: isHdrTransfer(video.color_transfer)
+		};
 	} catch {
 		return null;
 	}

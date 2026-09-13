@@ -77,6 +77,12 @@ This exchanges the code for the device's permanent token, saved to
 `~/.config/finderella-storage-gateway/config.json` (owner-readable only). You won't need
 `--hub` or `--code` again.
 
+Seek-bar thumbnails (sprite sheets rendered the first time a title is played,
+or via Admin → Devices → _Generate thumbnails_) are kept under
+`~/.cache/finderella-storage-gateway/trickplay/` (`$XDG_CACHE_HOME` when set) —
+a few MB per feature-length file. Set `FINDERELLA_TRICKPLAY=0` to turn the
+feature off on a device that can't spare the CPU.
+
 ## 4. Connect (device)
 
 ```sh

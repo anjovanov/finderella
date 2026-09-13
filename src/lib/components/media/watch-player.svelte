@@ -65,6 +65,7 @@
 		sessionId,
 		canFindSubtitles = false,
 		onSubtitlesChanged,
+		trickplaySrc = null,
 		quality = 'original',
 		sourceWidth = null,
 		onQualityChange,
@@ -97,6 +98,8 @@
 		sessionId?: string;
 		/** Signed in and at least one provider configured. */
 		canFindSubtitles?: boolean;
+		/** WebVTT thumbnail track for seek-bar previews (sprite-sheet cues); null = none. */
+		trickplaySrc?: string | null;
 		/** A download added a track: the page replaces the session's list; `selectId` is the new track. */
 		onSubtitlesChanged?: (tracks: SubtitleTrack[], selectId: string) => void;
 		/** Current ladder rung; the quality menu only renders when `onQualityChange` is given. */
@@ -406,6 +409,12 @@
 	// When we last set modes ourselves; the browser's `change` echo of that is not a viewer action.
 	let modesAppliedAt = 0;
 
+	// The thumbnail track is metadata, not a subtitle choice: it stays `hidden`
+	// (the mode that makes the browser fetch and parse the cues) and is set here
+	// rather than via `default` so its `change` echo can't read as the viewer
+	// switching subtitles off.
+	let thumbTrackEl: HTMLTrackElement | undefined = $state();
+
 	function applyTrackModes() {
 		for (const track of tracks) {
 			const el = trackEls[track.id];
@@ -415,6 +424,10 @@
 				el.track.mode = mode;
 				modesAppliedAt = Date.now();
 			}
+		}
+		if (thumbTrackEl && thumbTrackEl.track.mode !== 'hidden') {
+			thumbTrackEl.track.mode = 'hidden';
+			modesAppliedAt = Date.now();
 		}
 	}
 	$effect(applyTrackModes);
@@ -561,6 +574,10 @@
 							{@attach positionCues}
 						/>
 					{/each}
+					{#if trickplaySrc}
+						<!-- Read by <media-slider-thumbnail> through the player store (kind + label are its lookup key). -->
+						<track bind:this={thumbTrackEl} kind="metadata" label="thumbnails" src={trickplaySrc} />
+					{/if}
 				</video>
 
 				<!-- Inside media-container so hovering it counts as player activity (keeps
@@ -613,7 +630,8 @@
 							</media-slider-track>
 							<media-slider-thumb class="slider-thumb"></media-slider-thumb>
 							<media-slider-preview class="slider-preview">
-								<media-slider-value type="pointer"></media-slider-value>
+								<media-slider-thumbnail class="slider-thumbnail"></media-slider-thumbnail>
+								<media-slider-value class="slider-time" type="pointer"></media-slider-value>
 							</media-slider-preview>
 						</media-time-slider>
 					</media-controls-group>
@@ -1136,12 +1154,23 @@
 		opacity: 1;
 	}
 
-	/* Hover time preview above the pointer */
+	/* Hover preview above the pointer: scene thumbnail (when the device made
+	   sprite sheets) over the time pill. The library positions the element
+	   itself with inline styles (`left` clamped to the slider, `width:
+	   max-content`), so no `left`/`translate` here — they would double-shift. */
 	.player-root :global(.slider-preview) {
 		position: absolute;
 		bottom: 1.5rem;
-		left: var(--media-slider-pointer);
-		translate: -50% 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.375rem;
+		opacity: 0;
+		transition: opacity 0.15s;
+		pointer-events: none;
+	}
+
+	.player-root :global(.slider-time) {
 		padding: 0.25rem 0.5rem;
 		border-radius: var(--radius);
 		background: rgb(0 0 0 / 0.85);
@@ -1149,9 +1178,28 @@
 		font-size: 0.75rem;
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
-		opacity: 0;
-		transition: opacity 0.15s;
-		pointer-events: none;
+	}
+
+	/* The element sizes itself from the tile geometry within max-width. */
+	.player-root :global(.slider-thumbnail) {
+		display: block;
+		max-width: min(400px, 50vw);
+		border-radius: var(--radius);
+		overflow: hidden;
+		background: black;
+		box-shadow:
+			0 0 0 1px rgb(255 255 255 / 0.15),
+			0 8px 24px rgb(0 0 0 / 0.6);
+	}
+
+	.player-root :global(.slider-thumbnail[data-hidden]),
+	.player-root :global(.slider-thumbnail[data-error]) {
+		display: none;
+	}
+
+	/* A sheet still loading would show the previous sheet's pixels at the new tile's offset. */
+	.player-root :global(.slider-thumbnail[data-loading]) {
+		visibility: hidden;
 	}
 
 	.player-root :global(.time-slider:hover .slider-preview) {

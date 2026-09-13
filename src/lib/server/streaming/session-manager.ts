@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { playbackSession } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
 import { log } from '$lib/server/log';
+import type { TrickplayGeometry } from '@finderella/protocol';
 import type { PlayableSource } from './source-picker';
 import type { QualityId } from '$lib/playback-quality';
 
@@ -16,6 +17,8 @@ export interface HotSession {
 	createdAt: number;
 	lastAccessAt: number;
 	lastPersistedAt: number;
+	/** Sprite-sheet layout for seek-bar thumbnails; unset when the device can't make them. */
+	trickplay?: TrickplayGeometry;
 }
 
 const IDLE_TIMEOUT_MS = 60_000;
@@ -69,6 +72,11 @@ class SessionManager {
 
 	get(sessionId: string): HotSession | undefined {
 		return this.#sessions.get(sessionId);
+	}
+
+	setTrickplay(sessionId: string, geometry: TrickplayGeometry): void {
+		const session = this.#sessions.get(sessionId);
+		if (session) session.trickplay = geometry;
 	}
 
 	/** Record activity (segment/range fetch); throttled DB write. */

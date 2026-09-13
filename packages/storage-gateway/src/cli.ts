@@ -10,8 +10,11 @@ import { detectTools, ffmpegPath } from './probe.js';
 import { runScan } from './scanner.js';
 import { StreamTransfer } from './stream-transfer.js';
 import { ensureSubtitleVtt, tailSubtitle } from './subtitles/extract.js';
+import { TrickplayQueue } from './trickplay/queue.js';
 
 const SUBTITLE_EXTENSION_SET = new Set<string>(SUBTITLE_EXTENSIONS);
+/** How long a `trickplay.get` waits for the sheet ffmpeg is writing next. */
+const TRICKPLAY_SHEET_WAIT_MS = 20_000;
 
 /**
  * Write a downloaded subtitle beside its video. Only subtitle extensions,
@@ -126,6 +129,7 @@ program
 
 		const transfers = new Map<number, Transfer>();
 		const sessions = new Map<string, TranscodeSession>();
+		const trickplay = new TrickplayQueue({ ffmpegBin: ffmpegPath, log });
 		// Only file/HLS transfers count against maxConcurrentTransfers: a subtitle
 		// stream can idle for minutes and must never make segment fetches "busy".
 		let fileTransfers = 0;
@@ -236,6 +240,74 @@ program
 							.catch((err: Error) => {
 								conn.send({ type: 'resp', re: message.id, ok: false, error: err.message });
 							});
+						break;
+					}
+					case 'trickplay.ensure': {
+						const root = resolve(message.rootPath);
+						const abs = resolveInRoot(root, message.relPath);
+						if (!abs) {
+							conn.send({
+								type: 'resp',
+								re: message.id,
+								ok: false,
+								error: 'path escapes library root'
+							});
+							break;
+						}
+						void trickplay
+							.ensure(abs, message.priority)
+							.then((data) => conn.send({ type: 'resp', re: message.id, ok: true, data }))
+							.catch((err: Error) => {
+								conn.send({ type: 'resp', re: message.id, ok: false, error: err.message });
+							});
+						break;
+					}
+					case 'trickplay.get': {
+						const root = resolve(message.rootPath);
+						const abs = resolveInRoot(root, message.relPath);
+						if (!abs) {
+							conn.send({
+								type: 'resp',
+								re: message.id,
+								ok: false,
+								error: 'path escapes library root'
+							});
+							break;
+						}
+						const limits = conn.limits ?? DEFAULT_LIMITS;
+						const controller = new AbortController();
+						let earlyCredit = 0;
+						// Placeholder while we wait for the sheet, so a hub `cancel` stops the
+						// wait and credits that arrive early aren't lost. Not counted against
+						// maxConcurrentTransfers: a hover must never make segment fetches busy.
+						transfers.set(message.id, {
+							addCredit: (bytes) => {
+								earlyCredit += bytes;
+							},
+							abort: () => controller.abort()
+						});
+						void trickplay
+							.waitForSheet(abs, message.sheet, {
+								timeoutMs: TRICKPLAY_SHEET_WAIT_MS,
+								signal: controller.signal
+							})
+							.then((path) => {
+								if (controller.signal.aborted) return;
+								const transfer = new FileTransfer(
+									conn,
+									{ requestId: message.id, absPath: path, offset: 0, length: Infinity },
+									limits
+								);
+								if (earlyCredit > 0) transfer.addCredit(earlyCredit);
+								transfers.set(message.id, transfer);
+								return transfer.run();
+							})
+							.catch((err: Error) => {
+								if (!controller.signal.aborted) {
+									conn.send({ type: 'resp', re: message.id, ok: false, error: err.message });
+								}
+							})
+							.finally(() => transfers.delete(message.id));
 						break;
 					}
 					case 'session.start': {

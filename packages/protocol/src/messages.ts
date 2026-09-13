@@ -27,7 +27,9 @@ export const GatewayCapabilities = z.object({
 	/** Answers `subtitle.get` (older gateways never do — the hub must not wait on them). */
 	subtitles: z.boolean().default(false),
 	/** Answers `subtitle.put` (writes downloaded sidecars next to the video). */
-	subtitleWrite: z.boolean().default(false)
+	subtitleWrite: z.boolean().default(false),
+	/** Answers `trickplay.ensure` / `trickplay.get` (seek-bar thumbnails; needs ffmpeg + ffprobe). */
+	trickplay: z.boolean().default(false)
 });
 export type GatewayCapabilities = z.infer<typeof GatewayCapabilities>;
 
@@ -219,6 +221,64 @@ export const SubtitlePutMessage = base.extend({
 });
 export type SubtitlePutMessage = z.infer<typeof SubtitlePutMessage>;
 
+/* ---------- trickplay (seek-bar thumbnails) ---------- */
+
+/**
+ * Layout of a file's sprite sheets, computed by the gateway before ffmpeg runs
+ * (tile height follows the display aspect ratio, so anamorphic sources come
+ * out right). `sheets` is predicted from the probed duration while a job is
+ * queued/generating and the actual file count once ready.
+ */
+export const TrickplayGeometry = z.object({
+	version: z.number().int().positive(),
+	/** Seconds between tiles. */
+	interval: z.number().positive(),
+	tileWidth: z.number().int().positive(),
+	tileHeight: z.number().int().positive(),
+	columns: z.number().int().positive(),
+	rows: z.number().int().positive(),
+	tiles: z.number().int().nonnegative(),
+	sheets: z.number().int().nonnegative()
+});
+export type TrickplayGeometry = z.infer<typeof TrickplayGeometry>;
+
+export const TrickplayStatus = z.enum(['ready', 'generating', 'queued', 'failed']);
+export type TrickplayStatus = z.infer<typeof TrickplayStatus>;
+
+/**
+ * Make sprite sheets for a video (idempotent, single-flight per file identity;
+ * sheets are cached on the device). Answered with `resp` carrying
+ * `TrickplayEnsureResult`. `high` = a viewer is waiting (first play), `low` =
+ * the admin bulk job; the gateway keeps one lane per priority.
+ */
+export const TrickplayEnsureMessage = base.extend({
+	type: z.literal('trickplay.ensure'),
+	rootPath: z.string().min(1),
+	relPath: z.string().min(1),
+	priority: z.enum(['high', 'low']).default('low')
+});
+export type TrickplayEnsureMessage = z.infer<typeof TrickplayEnsureMessage>;
+
+export const TrickplayEnsureResult = z.object({
+	status: TrickplayStatus,
+	geometry: TrickplayGeometry.optional(),
+	error: z.string().optional()
+});
+export type TrickplayEnsureResult = z.infer<typeof TrickplayEnsureResult>;
+
+/**
+ * Fetch one sprite sheet (JPEG) — answered like `file.read`. While the file is
+ * still generating, the gateway waits briefly for the next sheet to land and
+ * fails fast for ones further ahead.
+ */
+export const TrickplayGetMessage = base.extend({
+	type: z.literal('trickplay.get'),
+	rootPath: z.string().min(1),
+	relPath: z.string().min(1),
+	sheet: z.number().int().nonnegative()
+});
+export type TrickplayGetMessage = z.infer<typeof TrickplayGetMessage>;
+
 export const HubMessage = z.discriminatedUnion('type', [
 	WelcomeMessage,
 	PongMessage,
@@ -230,7 +290,9 @@ export const HubMessage = z.discriminatedUnion('type', [
 	SessionStopMessage,
 	HlsGetMessage,
 	SubtitleGetMessage,
-	SubtitlePutMessage
+	SubtitlePutMessage,
+	TrickplayEnsureMessage,
+	TrickplayGetMessage
 ]);
 export type HubMessage = z.infer<typeof HubMessage>;
 

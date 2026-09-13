@@ -100,6 +100,7 @@
 		subtitleTarget={{ kind: 'movie', slug: data.movie.id }}
 		sessionId={playback.sessionId}
 		canFindSubtitles={data.canFindSubtitles}
+		trickplaySrc={playback.trickplay?.vttSrc ?? null}
 		onSubtitlesChanged={(tracks) => {
 			// In place: replacing the object would re-source the player's video.
 			if (playback) playback.subtitles = tracks;

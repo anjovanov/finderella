@@ -26,6 +26,8 @@ export interface GatewayCapabilitiesJson {
 	subtitles?: boolean;
 	/** Answers `subtitle.put` (downloaded sidecars). */
 	subtitleWrite?: boolean;
+	/** Answers `trickplay.ensure` / `trickplay.get` (seek-bar thumbnails). */
+	trickplay?: boolean;
 }
 
 /** A paired storage gateway (a device that serves local files to the hub). */

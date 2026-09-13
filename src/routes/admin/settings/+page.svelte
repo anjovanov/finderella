@@ -12,12 +12,20 @@
 	let settingsForm = $state<HTMLFormElement | null>(null);
 	let allowRegistration = $derived(data.settings.allowRegistration);
 	let requireLogin = $derived(data.settings.requireLogin);
+	let trickplayEnabled = $derived(data.settings.trickplayEnabled);
+	let trickplayForm = $state<HTMLFormElement | null>(null);
 
 	async function submitSettings() {
 		await tick(); // let the hidden inputs pick up the new switch state
 		settingsForm?.requestSubmit();
 	}
 	let saving = $state(false);
+	let savingTrickplay = $state(false);
+
+	async function submitTrickplay() {
+		await tick();
+		trickplayForm?.requestSubmit();
+	}
 </script>
 
 <svelte:head>
@@ -82,6 +90,49 @@
 						bind:checked={allowRegistration}
 						disabled={saving}
 						onCheckedChange={submitSettings}
+					/>
+				</Field.Field>
+			</Field.Group>
+		</form>
+	</Card.Content>
+</Card.Root>
+
+<!-- Seek-bar thumbnails -->
+<Card.Root>
+	<Card.Header>
+		<Card.Title>Trickplay</Card.Title>
+		<Card.Description>Scene thumbnails while hovering the player's progress bar.</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form
+			bind:this={trickplayForm}
+			method="POST"
+			action="?/updateTrickplay"
+			use:enhance={() => {
+				savingTrickplay = true;
+				return async ({ update }) => {
+					savingTrickplay = false;
+					await update();
+				};
+			}}
+		>
+			<input type="hidden" name="trickplayEnabled" value={trickplayEnabled ? 'true' : 'false'} />
+			<Field.Group>
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label for="trickplay-enabled">Seek-bar thumbnails</Field.Label>
+						<Field.Description>
+							The device holding a file renders its thumbnails the first time the title is played
+							(and for whole libraries via <span class="font-mono">Generate thumbnails</span>
+							on the Devices page), then keeps them cached. Turn this off to spare weak devices; a single
+							device can also opt out with <span class="font-mono">FINDERELLA_TRICKPLAY=0</span>.
+						</Field.Description>
+					</Field.Content>
+					<Switch
+						id="trickplay-enabled"
+						bind:checked={trickplayEnabled}
+						disabled={savingTrickplay}
+						onCheckedChange={submitTrickplay}
 					/>
 				</Field.Field>
 			</Field.Group>

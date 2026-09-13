@@ -1,0 +1,1 @@
+ALTER TABLE "site_settings" ADD COLUMN "trickplay_enabled" boolean DEFAULT true NOT NULL;

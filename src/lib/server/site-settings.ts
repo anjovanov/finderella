@@ -7,9 +7,11 @@ const SETTINGS_ID = 'default';
 
 export type SiteSettings = Pick<
 	SiteSettingsRow,
-	'allowRegistration' | 'requireLogin' | 'updatedAt'
+	'allowRegistration' | 'requireLogin' | 'trickplayEnabled' | 'updatedAt'
 >;
-type SiteSettingsPatch = Partial<Pick<SiteSettingsRow, 'allowRegistration' | 'requireLogin'>>;
+type SiteSettingsPatch = Partial<
+	Pick<SiteSettingsRow, 'allowRegistration' | 'requireLogin' | 'trickplayEnabled'>
+>;
 
 // hooks.server.ts consults the settings on every unauthenticated request; the
 // hub is single-process, so a short in-memory cache (cleared on update) is safe.
@@ -52,6 +54,11 @@ export async function updateSiteSettings(patch: SiteSettingsPatch): Promise<Site
 /** true = every page outside login/register needs a session (the default). */
 export async function loginRequired(): Promise<boolean> {
 	return (await getSiteSettings()).requireLogin;
+}
+
+/** Admin switch for seek-bar thumbnails (devices can also opt out with FINDERELLA_TRICKPLAY=0). */
+export async function trickplayEnabled(): Promise<boolean> {
+	return (await getSiteSettings()).trickplayEnabled;
 }
 
 export async function countUsers(): Promise<number> {

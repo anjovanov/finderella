@@ -17,6 +17,8 @@ export interface PlaybackDescriptor {
 	source: { width: number | null; height: number | null };
 	/** Subtitle tracks of the file, served as WebVTT under this session. */
 	subtitles: SubtitleTrack[];
+	/** Seek-bar thumbnail track (WebVTT + sprite sheets) under this session; null when the device can't make them. */
+	trickplay: { vttSrc: string } | null;
 }
 
 export interface PlaybackTarget {

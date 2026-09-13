@@ -13,7 +13,8 @@ export const load: PageServerLoad = async () => {
 	return {
 		settings: {
 			allowRegistration: settings.allowRegistration,
-			requireLogin: settings.requireLogin
+			requireLogin: settings.requireLogin,
+			trickplayEnabled: settings.trickplayEnabled
 		},
 		orphans,
 		metadata
@@ -27,6 +28,15 @@ export const actions: Actions = {
 		const allowRegistration = formData.get('allowRegistration')?.toString() === 'true';
 		const requireLogin = formData.get('requireLogin')?.toString() === 'true';
 		await updateSiteSettings({ allowRegistration, requireLogin });
+		return { saved: true };
+	},
+
+	// Its own action: updateSettings writes both Access switches from one form
+	// and would blank them if this switch posted there without those fields.
+	updateTrickplay: async (event) => {
+		const formData = await event.request.formData();
+		const trickplayEnabled = formData.get('trickplayEnabled')?.toString() === 'true';
+		await updateSiteSettings({ trickplayEnabled });
 		return { saved: true };
 	},
 

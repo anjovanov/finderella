@@ -17,6 +17,15 @@ export function configDir(): string {
 	return join(base, 'finderella-storage-gateway');
 }
 
+/** Regenerable state (trickplay sprite sheets); safe to delete, unlike the config dir. */
+export function cacheDir(): string {
+	const base =
+		process.env.XDG_CACHE_HOME && process.env.XDG_CACHE_HOME !== ''
+			? process.env.XDG_CACHE_HOME
+			: join(homedir(), '.cache');
+	return join(base, 'finderella-storage-gateway');
+}
+
 export function configPath(): string {
 	return join(configDir(), 'config.json');
 }
