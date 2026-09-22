@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { SubtitleIcon, UserIcon } from '@hugeicons/core-free-icons';
+	import { PlayCircleIcon, SubtitleIcon, UserIcon } from '@hugeicons/core-free-icons';
 	import { cn } from '$lib/utils.js';
 
 	let { children } = $props();
@@ -21,6 +21,12 @@
 			path: '/settings/subtitles',
 			label: 'Subtitles',
 			icon: SubtitleIcon
+		},
+		{
+			href: resolve('/settings/playback'),
+			path: '/settings/playback',
+			label: 'Playback',
+			icon: PlayCircleIcon
 		}
 	];
 

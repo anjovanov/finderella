@@ -1,9 +1,10 @@
 import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
-import type { ProbedFile, SubtitleSource } from '@finderella/protocol';
+import type { AudioSource, ProbedFile, SubtitleSource } from '@finderella/protocol';
 import { db } from '$lib/server/db';
 import {
 	episode,
 	library,
+	mediaAudio,
 	mediaFile,
 	mediaSubtitle,
 	movie,
@@ -199,6 +200,8 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 				.returning({ id: mediaFile.id });
 			// Gateways that predate subtitle discovery omit the field; keep their rows.
 			if (file.subtitles) await replaceSubtitles(row.id, file.subtitles);
+			// Same for audio-track discovery.
+			if (file.audioTracks) await replaceAudioTracks(row.id, file.audioTracks);
 		} catch (err) {
 			log.error({ err, relPath: file.relPath, libraryId }, 'failed to ingest scanned file');
 		}
@@ -235,6 +238,27 @@ async function replaceSubtitles(mediaFileId: string, subtitles: SubtitleSource[]
 							hearingImpaired: track.hearingImpaired
 						}
 			)
+		);
+	});
+}
+
+/** Same wholesale swap for the file's audio streams. */
+async function replaceAudioTracks(mediaFileId: string, tracks: AudioSource[]): Promise<void> {
+	await db.transaction(async (tx) => {
+		await tx.delete(mediaAudio).where(eq(mediaAudio.mediaFileId, mediaFileId));
+		if (tracks.length === 0) return;
+		await tx.insert(mediaAudio).values(
+			tracks.map((track) => ({
+				mediaFileId,
+				streamIndex: track.streamIndex,
+				codec: track.codec,
+				language: track.language ?? null,
+				title: track.title ?? null,
+				channels: track.channels ?? null,
+				isDefault: track.isDefault,
+				commentary: track.commentary,
+				descriptive: track.descriptive
+			}))
 		);
 	});
 }

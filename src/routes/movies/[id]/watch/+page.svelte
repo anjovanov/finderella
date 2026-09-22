@@ -9,6 +9,14 @@
 		type PlaybackDescriptor
 	} from '$lib/playback-client';
 	import { loadStoredQuality, storeQuality, type QualityId } from '$lib/playback-quality';
+	import {
+		DEFAULT_AUDIO_LANGUAGE,
+		loadAudioPreference,
+		preferenceForAudioTrack,
+		saveAudioLanguage,
+		storeAudioPreference
+	} from '$lib/audio-preference';
+	import type { AudioTrack } from '$lib/data';
 
 	let { data } = $props();
 
@@ -31,9 +39,29 @@
 		quality = next;
 	}
 
+	// Audio works the same way: a pick restarts the session with that stream.
+	let audioTrackId: string | null = $state(null);
+	// This page's latest pick wins over the loader's copy (saved in the background).
+	let pickedLanguage: string | null = null;
+
+	function changeAudio(track: AudioTrack) {
+		if (track.id === playback?.audioTrackId) return;
+		const language = preferenceForAudioTrack(track);
+		if (language) {
+			pickedLanguage = language;
+			storeAudioPreference(language);
+			if (data.audioLanguage !== null) void saveAudioLanguage(language);
+		}
+		restartAt = lastPosition;
+		audioTrackId = track.id;
+	}
+
 	$effect(() => {
 		const slug = data.movie.id;
 		const chosenQuality = quality;
+		const chosenAudio = audioTrackId;
+		const audioLanguage =
+			pickedLanguage ?? data.audioLanguage ?? loadAudioPreference() ?? DEFAULT_AUDIO_LANGUAGE;
 		const startSeconds = restartAt ?? data.resumeFrom;
 		restartAt = null;
 		playbackStartAt = startSeconds;
@@ -43,7 +71,17 @@
 		sessionId = null;
 		reporter = createProgressReporter({ kind: 'movie', slug });
 
-		startPlayback({ kind: 'movie', slug, startSeconds, quality: chosenQuality }, controller.signal)
+		startPlayback(
+			{
+				kind: 'movie',
+				slug,
+				startSeconds,
+				quality: chosenQuality,
+				audioTrackId: chosenAudio,
+				audioLanguage
+			},
+			controller.signal
+		)
 			.then((descriptor) => {
 				sessionId = descriptor.sessionId;
 				playback = descriptor;
@@ -95,6 +133,9 @@
 		{quality}
 		sourceWidth={playback.source.width}
 		onQualityChange={changeQuality}
+		audioTracks={playback.audioTracks}
+		audioTrackId={playback.audioTrackId}
+		onAudioChange={changeAudio}
 		tracks={playback.subtitles}
 		subtitleSettings={data.subtitleSettings}
 		subtitleTarget={{ kind: 'movie', slug: data.movie.id }}

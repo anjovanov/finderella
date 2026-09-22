@@ -3,7 +3,7 @@ import { user } from './auth.schema';
 
 /**
  * Per-account defaults. One row per user, created on first save; readers fall
- * back to DEFAULT_SUBTITLE_SETTINGS when there is none. Values are validated
+ * back to DEFAULT_SUBTITLE_SETTINGS / DEFAULT_PLAYBACK_SETTINGS when there is none. Values are validated
  * against the option lists in $lib/data/subtitle-settings before writing.
  */
 export const userSettings = pgTable('user_settings', {
@@ -18,6 +18,8 @@ export const userSettings = pgTable('user_settings', {
 	/** Cue lines above the bottom edge (0..MAX_SUBTITLE_LINES). */
 	subtitlePosition: integer('subtitle_position').notNull().default(2),
 	subtitleFont: text('subtitle_font').notNull().default('sans'),
+	/** 'default' (the file's default track) or an ISO 639-1 code. */
+	audioLanguage: text('audio_language').notNull().default('default'),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 

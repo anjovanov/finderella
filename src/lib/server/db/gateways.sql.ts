@@ -28,6 +28,8 @@ export interface GatewayCapabilitiesJson {
 	subtitleWrite?: boolean;
 	/** Answers `trickplay.ensure` / `trickplay.get` (seek-bar thumbnails). */
 	trickplay?: boolean;
+	/** Honours `session.start.audioStreamIndex` (older gateways encode the first audio stream). */
+	audioSelect?: boolean;
 }
 
 /** A paired storage gateway (a device that serves local files to the hub). */
@@ -142,6 +144,33 @@ export const mediaSubtitle = pgTable(
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},
 	(t) => [index('media_subtitle_file_idx').on(t.mediaFileId)]
+);
+
+/**
+ * One audio stream of a media file, found at scan time and addressed by
+ * ffprobe's absolute stream index. Container order (`stream_index`) is the
+ * display order. Rows are replaced wholesale on every scan that reports the file.
+ */
+export const mediaAudio = pgTable(
+	'media_audio',
+	{
+		id: uuid('id').primaryKey().defaultRandom(),
+		mediaFileId: uuid('media_file_id')
+			.notNull()
+			.references(() => mediaFile.id, { onDelete: 'cascade' }),
+		streamIndex: integer('stream_index').notNull(),
+		codec: text('codec').notNull(),
+		/** ISO 639-1, null when unknown. */
+		language: text('language'),
+		title: text('title'),
+		channels: integer('channels'),
+		isDefault: boolean('is_default').notNull().default(false),
+		commentary: boolean('commentary').notNull().default(false),
+		/** Audio description for the visually impaired. */
+		descriptive: boolean('descriptive').notNull().default(false),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(t) => [index('media_audio_file_idx').on(t.mediaFileId)]
 );
 
 export const gatewayRelations = relations(gateway, ({ many }) => ({

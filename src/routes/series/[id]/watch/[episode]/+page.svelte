@@ -9,6 +9,14 @@
 		type PlaybackDescriptor
 	} from '$lib/playback-client';
 	import { loadStoredQuality, storeQuality, type QualityId } from '$lib/playback-quality';
+	import {
+		DEFAULT_AUDIO_LANGUAGE,
+		loadAudioPreference,
+		preferenceForAudioTrack,
+		saveAudioLanguage,
+		storeAudioPreference
+	} from '$lib/audio-preference';
+	import type { AudioTrack } from '$lib/data';
 
 	let { data } = $props();
 
@@ -35,12 +43,34 @@
 		quality = next;
 	}
 
+	// Audio works the same way: a pick restarts the session with that stream.
+	// Keyed by episode — the next episode's file has its own tracks, and the
+	// remembered language picks the matching one there.
+	let audioPick: { episodeId: string; trackId: string } | null = $state(null);
+	// This page's latest pick wins over the loader's copy (saved in the background).
+	let pickedLanguage: string | null = null;
+
+	function changeAudio(track: AudioTrack) {
+		if (track.id === playback?.audioTrackId) return;
+		const language = preferenceForAudioTrack(track);
+		if (language) {
+			pickedLanguage = language;
+			storeAudioPreference(language);
+			if (data.audioLanguage !== null) void saveAudioLanguage(language);
+		}
+		restartAt = lastPosition;
+		audioPick = { episodeId: data.episode.id, trackId: track.id };
+	}
+
 	// Re-runs per episode (same route component instance is reused on
 	// episode→episode navigation): stops the old session, starts a new one.
 	$effect(() => {
 		const slug = data.show.id;
 		const episodeSlug = data.episode.id;
 		const chosenQuality = quality;
+		const chosenAudio = audioPick?.episodeId === episodeSlug ? audioPick.trackId : null;
+		const audioLanguage =
+			pickedLanguage ?? data.audioLanguage ?? loadAudioPreference() ?? DEFAULT_AUDIO_LANGUAGE;
 		const startSeconds = restartAt ?? data.resumeFrom;
 		restartAt = null;
 		playbackStartAt = startSeconds;
@@ -51,7 +81,15 @@
 		reporter = createProgressReporter({ kind: 'series', slug, episodeSlug });
 
 		startPlayback(
-			{ kind: 'series', slug, episodeSlug, startSeconds, quality: chosenQuality },
+			{
+				kind: 'series',
+				slug,
+				episodeSlug,
+				startSeconds,
+				quality: chosenQuality,
+				audioTrackId: chosenAudio,
+				audioLanguage
+			},
 			controller.signal
 		)
 			.then((descriptor) => {
@@ -106,6 +144,9 @@
 		{quality}
 		sourceWidth={playback.source.width}
 		onQualityChange={changeQuality}
+		audioTracks={playback.audioTracks}
+		audioTrackId={playback.audioTrackId}
+		onAudioChange={changeAudio}
 		tracks={playback.subtitles}
 		subtitleSettings={data.subtitleSettings}
 		subtitleTarget={{ kind: 'series', slug: data.show.id, episodeSlug: data.episode.id }}

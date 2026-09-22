@@ -29,7 +29,9 @@ export const GatewayCapabilities = z.object({
 	/** Answers `subtitle.put` (writes downloaded sidecars next to the video). */
 	subtitleWrite: z.boolean().default(false),
 	/** Answers `trickplay.ensure` / `trickplay.get` (seek-bar thumbnails; needs ffmpeg + ffprobe). */
-	trickplay: z.boolean().default(false)
+	trickplay: z.boolean().default(false),
+	/** Honours `session.start.audioStreamIndex` (older gateways always transcode the first audio stream). */
+	audioSelect: z.boolean().default(false)
 });
 export type GatewayCapabilities = z.infer<typeof GatewayCapabilities>;
 
@@ -168,7 +170,9 @@ export const SessionStartMessage = base.extend({
 		maxVideoKbps: z.number().int().positive().optional(),
 		audioKbps: z.number().int().positive(),
 		level: z.enum(['4.1', '5.2'])
-	})
+	}),
+	/** Absolute ffprobe index of the audio stream to encode. Absent = the first audio stream. */
+	audioStreamIndex: z.number().int().nonnegative().optional()
 });
 export type SessionStartMessage = z.infer<typeof SessionStartMessage>;
 

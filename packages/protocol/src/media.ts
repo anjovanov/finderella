@@ -53,6 +53,25 @@ export const SubtitleSource = z.discriminatedUnion('source', [
 export type SubtitleSource = z.infer<typeof SubtitleSource>;
 
 /**
+ * One audio stream of a media file, in container order. `language` is a
+ * lowercase ISO 639-1 code when it could be determined (see languages.ts).
+ */
+export const AudioSource = z.object({
+	/** ffprobe's absolute stream index (ffmpeg `-map 0:<index>`), not the ordinal among audio streams. */
+	streamIndex: z.number().int().nonnegative(),
+	codec: z.string(),
+	language: z.string().optional(),
+	title: z.string().optional(),
+	channels: z.number().int().positive().optional(),
+	isDefault: z.boolean(),
+	/** Director's/cast commentary (`disposition.comment`). */
+	commentary: z.boolean(),
+	/** Audio description for the visually impaired (`disposition.visual_impaired`). */
+	descriptive: z.boolean()
+});
+export type AudioSource = z.infer<typeof AudioSource>;
+
+/**
  * One scanned media file as reported by an gateway. Codec/duration fields are
  * absent when the gateway has no ffprobe (capability reported in `hello`).
  */
@@ -68,7 +87,9 @@ export const ProbedFile = z.object({
 	durationMs: z.number().int().nonnegative().optional(),
 	bitrate: z.number().int().nonnegative().optional(),
 	/** Absent from gateways that predate subtitle discovery (the hub then keeps its rows). */
-	subtitles: z.array(SubtitleSource).optional()
+	subtitles: z.array(SubtitleSource).optional(),
+	/** Every audio stream. Absent from gateways that predate audio-track discovery (the hub then keeps its rows). */
+	audioTracks: z.array(AudioSource).optional()
 });
 export type ProbedFile = z.infer<typeof ProbedFile>;
 

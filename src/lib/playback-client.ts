@@ -5,7 +5,7 @@
  * loads must be side-effect free.)
  */
 
-import type { SubtitleTrack } from './data/types';
+import type { AudioTrack, SubtitleTrack } from './data/types';
 import type { QualityId } from './playback-quality';
 
 export interface PlaybackDescriptor {
@@ -19,6 +19,10 @@ export interface PlaybackDescriptor {
 	subtitles: SubtitleTrack[];
 	/** Seek-bar thumbnail track (WebVTT + sprite sheets) under this session; null when the device can't make them. */
 	trickplay: { vttSrc: string } | null;
+	/** Audio streams of the file (empty when its device can't switch them). */
+	audioTracks: AudioTrack[];
+	/** The stream this session plays; null when the file has none listed. */
+	audioTrackId: string | null;
 }
 
 export interface PlaybackTarget {
@@ -29,6 +33,10 @@ export interface PlaybackTarget {
 	startSeconds?: number;
 	/** Ladder rung; 'original' (default) = direct play when possible, else source-res transcode. */
 	quality?: QualityId;
+	/** An explicit audio-menu pick (media_audio id). */
+	audioTrackId?: string | null;
+	/** Preferred audio language: 'default' or an ISO 639-1 code. */
+	audioLanguage?: string;
 }
 
 export async function startPlayback(

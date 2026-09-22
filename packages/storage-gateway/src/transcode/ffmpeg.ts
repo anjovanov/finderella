@@ -18,6 +18,8 @@ export interface HlsJobOptions {
 	quality: TranscodeQuality;
 	/** Source is HDR (PQ/HLG): tone-map to BT.709 so the SDR output isn't grey. */
 	hdr?: boolean;
+	/** Absolute ffprobe index of the audio stream to encode; absent = the first one (if any). */
+	audioStreamIndex?: number;
 }
 
 /** Widest output the transcoder emits regardless of plan; larger sources are downscaled. */
@@ -71,7 +73,7 @@ export function hlsArgs(opts: HlsJobOptions): string[] {
 		'-map',
 		'0:v:0',
 		'-map',
-		'0:a:0?',
+		opts.audioStreamIndex === undefined ? '0:a:0?' : `0:${opts.audioStreamIndex}`,
 		'-vf',
 		filters.join(','),
 		'-c:v',

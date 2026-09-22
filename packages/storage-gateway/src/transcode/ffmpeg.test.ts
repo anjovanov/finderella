@@ -72,4 +72,11 @@ describe('hlsArgs', () => {
 		expect(maps).toEqual(['0:v:0', '0:a:0?']);
 		expect(valueAfter(args, '-ac')).toBe('2');
 	});
+
+	it('maps the chosen audio stream by its absolute index', () => {
+		const args = hlsArgs({ ...base, startSegment: 0, audioStreamIndex: 3 });
+		const maps = args.flatMap((a, i) => (a === '-map' ? [args[i + 1]] : []));
+		expect(maps).toEqual(['0:v:0', '0:3']);
+		expect(valueAfter(args, '-ac')).toBe('2');
+	});
 });

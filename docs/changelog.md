@@ -2,6 +2,8 @@
 
 ## 2026-09-22
 
+**Audio tracks** (migration `0013`: `media_audio`, `user_settings.audio_language`) — titles with several audio tracks (dubs, original language, commentary, audio description) now list them in the player: the subtitles button becomes **Audio & subtitles** and opens a two-column menu (Audio | Subtitles; stacked on phones), with labels like "English (5.1)", "Japanese (Stereo)" and "English – Commentary". Picking a track restarts playback at the same position with that track; files that could play directly switch to transcoding when a track other than the first is chosen (browsers can't switch audio tracks of a directly played file). The choice is remembered as a language — on the account for signed-in viewers (and editable under the new **Settings → Playback** "Preferred audio language": File's default or any language), in the browser for guests — so the next episode starts in the same language, falling back to the file's default track. Tracks are discovered when a library is scanned: **update the storage gateway on each device and rescan** before they appear; older gateways keep working with the first audio track as before.
+
 **Settings split into sections** — `/settings` now has a menu (a column on the left, a row of pills on phones) and one page per section: **Profile** (`/settings/profile`: display name, email address, password) and **Subtitles** (`/settings/subtitles`: preferred language and how subtitles look). Opening `/settings` lands on Profile, so the navbar's Settings links are unchanged. Each section is its own route with its own form actions, which leaves room for more (playback defaults) without growing one long page.
 
 ## 2026-09-13

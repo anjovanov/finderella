@@ -102,3 +102,14 @@ export interface SubtitleTrack {
 	default: boolean;
 	forced: boolean;
 }
+
+/** One audio stream of the file being played; switching restarts the session with it. */
+export interface AudioTrack {
+	/** media_audio row id — sent back as `audioTrackId` to switch. */
+	id: string;
+	label: string;
+	/** ISO 639-1, or 'und' when unknown. */
+	language: string;
+	/** The container flagged it default. */
+	default: boolean;
+}

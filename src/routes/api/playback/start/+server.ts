@@ -1,6 +1,15 @@
 import { error, json, type RequestHandler } from '@sveltejs/kit';
+import { asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { db } from '$lib/server/db';
+import { mediaAudio } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
+import {
+	directPlayAudio,
+	pickAudioTrack,
+	toAudioTracks,
+	type AudioRow
+} from '$lib/server/streaming/audio';
 import { SEGMENT_SECONDS } from '$lib/server/streaming/hls-playlist';
 import { sessionManager, type HotSession } from '$lib/server/streaming/session-manager';
 import { listSubtitleTracks } from '$lib/server/streaming/subtitles';
@@ -46,8 +55,24 @@ const StartRequest = z.object({
 	slug: z.string().min(1),
 	episodeSlug: z.string().min(1).optional(),
 	startSeconds: z.number().nonnegative().default(0),
-	quality: z.enum(QUALITY_IDS).default('original')
+	quality: z.enum(QUALITY_IDS).default('original'),
+	/** An explicit pick from the player's audio menu (a media_audio id; ignored when it isn't this file's). */
+	audioTrackId: z.string().min(1).nullish(),
+	/** The viewer's preferred audio language: 'default' or an ISO 639-1 code. */
+	audioLanguage: z.string().min(1).optional()
 });
+
+/**
+ * The file's audio streams — only when its device can honour a pick, so an
+ * old gateway (always the first stream) never shows a menu it would ignore.
+ */
+async function loadAudioRows(source: PlayableSource): Promise<AudioRow[]> {
+	if (!registry.get(source.gatewayId)?.capabilities.audioSelect) return [];
+	return db.query.mediaAudio.findMany({
+		where: eq(mediaAudio.mediaFileId, source.file.id),
+		orderBy: asc(mediaAudio.streamIndex)
+	});
+}
 
 /**
  * Create a playback session for a title and return what the player should
@@ -66,7 +91,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const viewerId = user?.id ?? null;
 	const parsed = StartRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'expected { kind, slug, episodeSlug? }');
-	const { kind, slug, episodeSlug, startSeconds, quality } = parsed.data;
+	const { kind, slug, episodeSlug, startSeconds, quality, audioTrackId, audioLanguage } =
+		parsed.data;
 	const rung = quality === 'original' ? undefined : QUALITY_LADDER[quality];
 	if (kind === 'series' && !episodeSlug) error(400, 'episodeSlug required for series');
 
@@ -83,7 +109,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 	const source = lookup.source;
 
-	if (source.directPlayable && !rung) {
+	const audioRows = await loadAudioRows(source);
+	const audio = pickAudioTrack(audioRows, { trackId: audioTrackId, language: audioLanguage });
+	const audioFields = { audioTracks: toAudioTracks(audioRows), audioTrackId: audio?.id ?? null };
+	// Browsers play the first audio stream of a direct-play file and can't
+	// switch; any other stream goes through the transcoder.
+	const directAudio = !audio || audio.id === directPlayAudio(audioRows)?.id;
+
+	if (source.directPlayable && !rung && directAudio) {
 		const session = await sessionManager.start(viewerId, source, 'direct', quality);
 		const [subtitles, trickplay] = await Promise.all([
 			listSubtitleTracks(source.file.id, session.id),
@@ -96,7 +129,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			quality,
 			source: { width: source.file.width, height: source.file.height },
 			subtitles,
-			trickplay
+			trickplay,
+			...audioFields
 		});
 	}
 
@@ -135,7 +169,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					maxVideoKbps: plan.maxVideoKbps,
 					audioKbps: plan.audioKbps,
 					level: plan.level
-				}
+				},
+				audioStreamIndex: audio?.streamIndex
 			},
 			{ timeoutMs: 15_000 }
 		);
@@ -154,6 +189,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		quality,
 		source: { width: source.file.width, height: source.file.height },
 		subtitles,
-		trickplay
+		trickplay,
+		...audioFields
 	});
 };

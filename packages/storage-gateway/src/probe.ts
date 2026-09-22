@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { GatewayCapabilities, ProbedFile } from '@finderella/protocol';
+import { embeddedAudio, type FfprobeAudioStream } from './audio/embedded.js';
 import { embeddedSubtitles, type FfprobeSubtitleStream } from './subtitles/embedded.js';
 
 const execFileAsync = promisify(execFile);
@@ -100,13 +101,16 @@ export async function detectTools(): Promise<ToolAvailability> {
 			trickplay:
 				resolvedFfmpeg !== null &&
 				resolvedFfprobe !== null &&
-				process.env.FINDERELLA_TRICKPLAY !== '0'
+				process.env.FINDERELLA_TRICKPLAY !== '0',
+			// Picking the audio stream only matters for HLS transcodes.
+			audioSelect: resolvedFfmpeg !== null
 		},
 		ffprobe: resolvedFfprobe !== null
 	};
 }
 
 interface FfprobeStream extends FfprobeSubtitleStream {
+	channels?: number;
 	width?: number;
 	height?: number;
 }
@@ -214,7 +218,14 @@ export async function probeFile(
 	Partial<
 		Pick<
 			ProbedFile,
-			'videoCodec' | 'audioCodec' | 'width' | 'height' | 'durationMs' | 'bitrate' | 'subtitles'
+			| 'videoCodec'
+			| 'audioCodec'
+			| 'width'
+			| 'height'
+			| 'durationMs'
+			| 'bitrate'
+			| 'subtitles'
+			| 'audioTracks'
 		>
 	>
 > {
@@ -243,7 +254,9 @@ export async function probeFile(
 			height: video?.height,
 			durationMs: Number.isFinite(durationSec) ? Math.round(durationSec * 1000) : undefined,
 			bitrate: Number.isFinite(bitrate) ? bitrate : undefined,
-			subtitles: subtitles.length > 0 ? subtitles : undefined
+			subtitles: subtitles.length > 0 ? subtitles : undefined,
+			// Always an array once ffprobe answered, so a file that lost its tracks clears the hub's rows.
+			audioTracks: embeddedAudio(parsed.streams as FfprobeAudioStream[] | undefined)
 		};
 	} catch {
 		return {};

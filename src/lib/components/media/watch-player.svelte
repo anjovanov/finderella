@@ -24,7 +24,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
-	import type { Series, SubtitleTrack } from '$lib/data';
+	import type { AudioTrack, Series, SubtitleTrack } from '$lib/data';
 	import {
 		cueLine,
 		cueStyle,
@@ -69,6 +69,9 @@
 		quality = 'original',
 		sourceWidth = null,
 		onQualityChange,
+		audioTracks = [],
+		audioTrackId = null,
+		onAudioChange,
 		nextHref,
 		show,
 		currentEpisodeId
@@ -108,6 +111,12 @@
 		sourceWidth?: number | null;
 		/** Viewer picked a rung — the page restarts the session at the current position. */
 		onQualityChange?: (quality: QualityId) => void;
+		/** Audio streams of the file; with 2+ and `onAudioChange` the subtitles menu gains an Audio column. */
+		audioTracks?: AudioTrack[];
+		/** The stream this session plays. */
+		audioTrackId?: string | null;
+		/** Viewer picked another stream — the page restarts the session at the current position. */
+		onAudioChange?: (track: AudioTrack) => void;
 		nextHref?: string;
 		/** When set (with `currentEpisodeId`), shows the "More episodes" control — series only. */
 		show?: Series;
@@ -303,7 +312,9 @@
 	let subtitlesOpen = $state(false);
 	let findSubtitlesOpen = $state(false);
 	const menuOpen = $derived(episodesOpen || qualityOpen || subtitlesOpen || findSubtitlesOpen);
-	const showSubtitlesButton = $derived(tracks.length > 0 || canFindSubtitles);
+	const hasAudioChoice = $derived(audioTracks.length > 1 && !!onAudioChange);
+	const showSubtitlesButton = $derived(tracks.length > 0 || canFindSubtitles || hasAudioChoice);
+	const subtitlesMenuLabel = $derived(hasAudioChoice ? 'Audio & subtitles' : 'Subtitles');
 	const qualityOptions = $derived(availableQualities(sourceWidth));
 	// What "Original" resolves to for this file: the source itself when direct-playing,
 	// else the transcoder's output (source capped at the 4K ceiling).
@@ -753,7 +764,7 @@
 									class="ctrl-button subtitles-trigger"
 									aria-haspopup="menu"
 									aria-expanded={subtitlesOpen || findSubtitlesOpen}
-									aria-label="Subtitles"
+									aria-label={subtitlesMenuLabel}
 									data-active={selectedTrackId ? '' : undefined}
 									onclick={() => {
 										// While the search panel is open the button just closes it.
@@ -831,55 +842,88 @@
 				{/if}
 
 				{#if subtitlesOpen && showSubtitlesButton}
-					<div class="subtitles-menu quality-menu captions-menu" role="menu" aria-label="Subtitles">
-						{#if canFindSubtitles && subtitleTarget && sessionId}
-							<button
-								type="button"
-								role="menuitem"
-								class="menu-item w-full"
-								onclick={() => {
-									subtitlesOpen = false;
-									findSubtitlesOpen = true;
-								}}
-							>
-								<span>Find subtitles…</span>
-								<HugeiconsIcon icon={Search01Icon} class="size-4 text-white/60" />
-							</button>
-							<div class="menu-separator" role="separator"></div>
+					<!-- With 2+ audio streams: an Audio column beside the Subtitles one. -->
+					<div
+						class={['subtitles-menu quality-menu captions-menu', hasAudioChoice && 'menu-columns']}
+						role="menu"
+						aria-label={subtitlesMenuLabel}
+					>
+						{#if hasAudioChoice}
+							<div class="menu-column" role="group" aria-label="Audio">
+								<p class="menu-heading">Audio</p>
+								{#each audioTracks as track (track.id)}
+									<button
+										type="button"
+										role="menuitemradio"
+										aria-checked={track.id === audioTrackId}
+										class="menu-item w-full"
+										onclick={() => {
+											subtitlesOpen = false;
+											if (track.id !== audioTrackId) onAudioChange?.(track);
+										}}
+									>
+										<span>{track.label}</span>
+										{#if track.id === audioTrackId}
+											<HugeiconsIcon icon={Tick02Icon} class="size-4 text-primary" />
+										{/if}
+									</button>
+								{/each}
+							</div>
+							<div class="menu-column-divider" role="separator"></div>
 						{/if}
-						<button
-							type="button"
-							role="menuitemradio"
-							aria-checked={selectedTrackId === null}
-							class="menu-item w-full"
-							onclick={() => chooseTrack(null)}
-						>
-							<span>Off</span>
-							{#if selectedTrackId === null}
-								<HugeiconsIcon icon={Tick02Icon} class="size-4 text-primary" />
+						<div class="menu-column" role="group" aria-label="Subtitles">
+							{#if hasAudioChoice}
+								<p class="menu-heading">Subtitles</p>
 							{/if}
-						</button>
-						{#each tracks as track (track.id)}
-							{@const failed = failedTrackIds.includes(track.id)}
+							{#if canFindSubtitles && subtitleTarget && sessionId}
+								<button
+									type="button"
+									role="menuitem"
+									class="menu-item w-full"
+									onclick={() => {
+										subtitlesOpen = false;
+										findSubtitlesOpen = true;
+									}}
+								>
+									<span>Find subtitles…</span>
+									<HugeiconsIcon icon={Search01Icon} class="size-4 text-white/60" />
+								</button>
+								<div class="menu-separator" role="separator"></div>
+							{/if}
 							<button
 								type="button"
 								role="menuitemradio"
-								aria-checked={selectedTrackId === track.id}
+								aria-checked={selectedTrackId === null}
 								class="menu-item w-full"
-								disabled={failed}
-								onclick={() => chooseTrack(track)}
+								onclick={() => chooseTrack(null)}
 							>
-								<span>
-									{track.label}
-									{#if failed}
-										<span class="text-white/50">· unavailable</span>
-									{/if}
-								</span>
-								{#if selectedTrackId === track.id}
+								<span>Off</span>
+								{#if selectedTrackId === null}
 									<HugeiconsIcon icon={Tick02Icon} class="size-4 text-primary" />
 								{/if}
 							</button>
-						{/each}
+							{#each tracks as track (track.id)}
+								{@const failed = failedTrackIds.includes(track.id)}
+								<button
+									type="button"
+									role="menuitemradio"
+									aria-checked={selectedTrackId === track.id}
+									class="menu-item w-full"
+									disabled={failed}
+									onclick={() => chooseTrack(track)}
+								>
+									<span>
+										{track.label}
+										{#if failed}
+											<span class="text-white/50">· unavailable</span>
+										{/if}
+									</span>
+									{#if selectedTrackId === track.id}
+										<HugeiconsIcon icon={Tick02Icon} class="size-4 text-primary" />
+									{/if}
+								</button>
+							{/each}
+						</div>
 					</div>
 				{/if}
 			</media-container>
@@ -1246,6 +1290,61 @@
 	.player-root :global(.subtitles-menu) {
 		max-height: min(60vh, 24rem);
 		overflow-y: auto;
+	}
+
+	.player-root :global(.menu-column) {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	/* Audio + Subtitles side by side, each column scrolling on its own. */
+	.player-root :global(.subtitles-menu.menu-columns) {
+		flex-direction: row;
+		max-height: none;
+		overflow: visible;
+	}
+
+	.player-root :global(.menu-columns .menu-column) {
+		min-width: 12rem;
+		max-height: min(60vh, 24rem);
+		overflow-y: auto;
+	}
+
+	.player-root :global(.menu-column-divider) {
+		flex: none;
+		width: 1px;
+		margin: 0.25rem 0.375rem;
+		background: rgb(255 255 255 / 0.18);
+	}
+
+	.player-root :global(.menu-heading) {
+		padding: 0.375rem 0.75rem 0.25rem;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: rgb(255 255 255 / 0.5);
+	}
+
+	/* Phones: stack the columns and scroll the whole menu again. */
+	@media (max-width: 640px) {
+		.player-root :global(.subtitles-menu.menu-columns) {
+			flex-direction: column;
+			max-height: min(60vh, 24rem);
+			overflow-y: auto;
+		}
+
+		.player-root :global(.menu-columns .menu-column) {
+			max-height: none;
+			overflow: visible;
+		}
+
+		.player-root :global(.menu-column-divider) {
+			width: auto;
+			height: 1px;
+			margin: 0.25rem 0.5rem;
+		}
 	}
 
 	/* flex: none — an empty flex item in the scrollable column would otherwise
