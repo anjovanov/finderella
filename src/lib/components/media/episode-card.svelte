@@ -3,6 +3,7 @@
 	import { PlayIcon } from '@hugeicons/core-free-icons';
 	import { episodeWatchHref, type Episode, type Series } from '$lib/data';
 	import PosterArt from './poster-art.svelte';
+	import MediaFormatTooltip from './media-format-tooltip.svelte';
 	import ProgressLine from './progress-line.svelte';
 
 	let {
@@ -70,7 +71,13 @@
 				</span>
 				· {episode.title}
 			</span>
-			<span class="shrink-0 text-xs text-muted-foreground">{episode.runtimeMinutes}m</span>
+			<span class="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+				<!-- Outside the <a>: interactive content can't nest in a link. -->
+				{#if episode.format}
+					<MediaFormatTooltip format={episode.format} />
+				{/if}
+				{episode.runtimeMinutes}m
+			</span>
 		</div>
 		<p class="line-clamp-2 text-sm text-muted-foreground">{episode.synopsis}</p>
 	</div>

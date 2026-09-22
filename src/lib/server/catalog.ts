@@ -1,11 +1,12 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { episode, mediaFile, movie, season, series } from '$lib/server/db/schema';
+import { episode, mediaAudio, mediaFile, movie, season, series } from '$lib/server/db/schema';
 import {
 	GENRES,
 	type Episode,
 	type Genre,
 	type Maturity,
+	type MediaFormat,
 	type MediaItem,
 	type Movie,
 	type Season,
@@ -119,23 +120,105 @@ export async function getMovieBySlug(slug: string): Promise<Movie | undefined> {
 	return row ? rowToMovie(row) : undefined;
 }
 
-/**
- * The best active file of a movie (tallest, then highest bitrate). `desc` on a
- * nullable column would put NULLs first in Postgres, hence the explicit ordering.
- */
-export async function bestMovieFile(
-	movieId: string
-): Promise<{ width: number | null; height: number | null; durationMs: number | null } | undefined> {
+/** media_file columns the detail pages show (resolution badge + file-format tooltip). */
+const fileFormatColumns = {
+	id: mediaFile.id,
+	container: mediaFile.container,
+	size: mediaFile.size,
+	bitrate: mediaFile.bitrate,
+	videoCodec: mediaFile.videoCodec,
+	audioCodec: mediaFile.audioCodec,
+	width: mediaFile.width,
+	height: mediaFile.height,
+	durationMs: mediaFile.durationMs
+};
+type FileFormatRow = {
+	id: string;
+	container: string;
+	size: number;
+	bitrate: number | null;
+	videoCodec: string | null;
+	audioCodec: string | null;
+	width: number | null;
+	height: number | null;
+};
+
+/** "Best" file = tallest, then highest bitrate. `desc` would put NULLs first in Postgres. */
+const bestFileOrder = [
+	sql`${mediaFile.height} desc nulls last`,
+	sql`${mediaFile.bitrate} desc nulls last`
+];
+
+/** The best active file of a movie (tallest, then highest bitrate). */
+export async function bestMovieFile(movieId: string) {
 	const [row] = await db
-		.select({ width: mediaFile.width, height: mediaFile.height, durationMs: mediaFile.durationMs })
+		.select(fileFormatColumns)
 		.from(mediaFile)
 		.where(and(eq(mediaFile.movieId, movieId), eq(mediaFile.status, 'active')))
-		.orderBy(sql`${mediaFile.height} desc nulls last`, sql`${mediaFile.bitrate} desc nulls last`)
+		.orderBy(...bestFileOrder)
 		.limit(1);
 	return row;
 }
 
-/** Detail-page movie: `getMovieBySlug` plus the source resolution (one extra query). */
+/**
+ * Technical details per file id, with every audio stream (one query for all
+ * files). Files scanned by a gateway that predates audio-track discovery fall
+ * back to the first stream's codec.
+ */
+async function fileFormats(files: FileFormatRow[]): Promise<Map<string, MediaFormat>> {
+	const audioRows =
+		files.length === 0
+			? []
+			: await db
+					.select()
+					.from(mediaAudio)
+					.where(
+						inArray(
+							mediaAudio.mediaFileId,
+							files.map((file) => file.id)
+						)
+					)
+					.orderBy(asc(mediaAudio.streamIndex));
+	const formats = new Map<string, MediaFormat>();
+	for (const file of files) {
+		const streams = audioRows.filter((row) => row.mediaFileId === file.id);
+		formats.set(file.id, {
+			container: file.container,
+			sizeBytes: file.size,
+			bitrate: file.bitrate,
+			videoCodec: file.videoCodec,
+			width: file.width,
+			height: file.height,
+			audio:
+				streams.length > 0
+					? streams.map((row) => ({
+							codec: row.codec,
+							language: row.language,
+							title: row.title,
+							channels: row.channels,
+							isDefault: row.isDefault,
+							commentary: row.commentary,
+							descriptive: row.descriptive
+						}))
+					: file.audioCodec
+						? [
+								{
+									codec: file.audioCodec,
+									language: null,
+									title: null,
+									channels: null,
+									isDefault: true,
+									commentary: false,
+									descriptive: false
+								}
+							]
+						: []
+		});
+	}
+	return formats;
+}
+
+/** Detail-page movie: `getMovieBySlug` plus the best file's resolution and format. */
 export async function getMovieDetail(slug: string): Promise<Movie | undefined> {
 	const row = await db.query.movie.findFirst({ where: eq(movie.slug, slug) });
 	if (!row) return undefined;
@@ -145,6 +228,7 @@ export async function getMovieDetail(slug: string): Promise<Movie | undefined> {
 		item.sourceWidth = file.width;
 		item.sourceHeight = file.height;
 	}
+	if (file) item.format = (await fileFormats([file])).get(file.id);
 	return item;
 }
 
@@ -169,6 +253,39 @@ export async function getSeriesBySlug(slug: string): Promise<Series | undefined>
 		with: withSeasons
 	});
 	return row ? rowToSeries(row) : undefined;
+}
+
+/** Detail-page series: `getSeriesBySlug` plus each episode's best-file format. */
+export async function getSeriesDetail(slug: string): Promise<Series | undefined> {
+	const row = await db.query.series.findFirst({
+		where: eq(series.slug, slug),
+		with: withSeasons
+	});
+	if (!row) return undefined;
+	const item = rowToSeries(row);
+	const files = await db
+		.select({ ...fileFormatColumns, episodeId: mediaFile.episodeId })
+		.from(mediaFile)
+		.innerJoin(episode, eq(episode.id, mediaFile.episodeId))
+		.where(and(eq(episode.seriesId, row.id), eq(mediaFile.status, 'active')))
+		.orderBy(...bestFileOrder);
+	// Ordered best-first, so the first file seen per episode wins.
+	const best = new Map<string, (typeof files)[number]>();
+	for (const file of files) {
+		if (file.episodeId && !best.has(file.episodeId)) best.set(file.episodeId, file);
+	}
+	const formats = await fileFormats([...best.values()]);
+	// Frontend episodes are keyed by slug; files by the episode's row id.
+	const rowIdBySlug = new Map(
+		row.seasons.flatMap((s) => s.episodes.map((e) => [e.slug, e.id] as const))
+	);
+	for (const s of item.seasons) {
+		for (const e of s.episodes) {
+			const file = best.get(rowIdBySlug.get(e.id) ?? '');
+			if (file) e.format = formats.get(file.id);
+		}
+	}
+	return item;
 }
 
 /** Hero pick for the home page: highest-rated item, else newest. */

@@ -1,11 +1,11 @@
 import { error } from '@sveltejs/kit';
 import { byGenre } from '$lib/data';
-import { getSeriesBySlug, listAllItems } from '$lib/server/catalog';
+import { getSeriesDetail, listAllItems } from '$lib/server/catalog';
 import { applyProgress, loadProgress } from '$lib/server/progress';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-	const show = await getSeriesBySlug(params.id);
+	const show = await getSeriesDetail(params.id);
 	if (!show) error(404, 'Series not found');
 	const related =
 		show.genres.length > 0

@@ -56,6 +56,8 @@ export interface Movie extends MediaBase {
 	/** Frame size of the best available file (tallest); only the detail loader fills these. */
 	sourceWidth?: number;
 	sourceHeight?: number;
+	/** Technical details of that file (detail loader only). */
+	format?: MediaFormat;
 }
 
 export interface Series extends MediaBase {
@@ -85,6 +87,8 @@ export interface Episode {
 	stillUrl?: string;
 	/** 0–1 of the viewer's last playback of this episode. */
 	progress?: number;
+	/** Technical details of the episode's best file (series detail loader only). */
+	format?: MediaFormat;
 }
 
 export type MediaItem = Movie | Series;
@@ -112,4 +116,30 @@ export interface AudioTrack {
 	language: string;
 	/** The container flagged it default. */
 	default: boolean;
+}
+
+/** One audio stream as the file-format tooltip lists it. */
+export interface AudioFormat {
+	codec: string;
+	/** ISO 639-1, null when unknown. */
+	language: string | null;
+	title: string | null;
+	channels: number | null;
+	isDefault: boolean;
+	commentary: boolean;
+	descriptive: boolean;
+}
+
+/** Technical details of a media file (probed at scan time). */
+export interface MediaFormat {
+	/** File extension, lowercase ('mkv'). */
+	container: string;
+	sizeBytes: number;
+	/** Overall bitrate in bit/s. */
+	bitrate: number | null;
+	videoCodec: string | null;
+	width: number | null;
+	height: number | null;
+	/** Container order; empty when the file has no audio or wasn't probed. */
+	audio: AudioFormat[];
 }

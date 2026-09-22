@@ -1,25 +1,9 @@
 import { languageName } from '@finderella/protocol';
+import { channelLabel } from '$lib/data/media-format';
 import type { AudioTrack } from '$lib/data/types';
 import type { mediaAudio } from '$lib/server/db/schema';
 
 export type AudioRow = typeof mediaAudio.$inferSelect;
-
-function channelLabel(channels: number | null): string | null {
-	switch (channels) {
-		case null:
-			return null;
-		case 1:
-			return 'Mono';
-		case 2:
-			return 'Stereo';
-		case 6:
-			return '5.1';
-		case 8:
-			return '7.1';
-		default:
-			return `${channels} ch`;
-	}
-}
 
 /**
  * Player-facing label: language (or the stream title / `Track N`), an

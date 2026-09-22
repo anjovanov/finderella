@@ -4,6 +4,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import type { MediaItem } from '$lib/data';
 	import { resolutionLabel } from '$lib/playback-quality';
+	import MediaFormatTooltip from './media-format-tooltip.svelte';
 
 	let { item, size = 'sm' }: { item: MediaItem; size?: 'sm' | 'md' } = $props();
 	const md = $derived(size === 'md');
@@ -16,7 +17,7 @@
 			? `${Math.floor(item.runtimeMinutes / 60)}h ${item.runtimeMinutes % 60}m`
 			: `${item.seasons.length} season${item.seasons.length === 1 ? '' : 's'}`
 	);
-	// Source resolution of the best file; only the movie detail loader fills sourceWidth.
+	// Source resolution of the best file; only the movie detail loader fills sourceWidth/format.
 	const resolution = $derived.by(() => {
 		if (item.kind !== 'movie' || !item.sourceWidth) return null;
 		const label = resolutionLabel(item.sourceWidth);
@@ -38,7 +39,14 @@
 	<span aria-hidden="true">·</span>
 	<span>{lengthLabel}</span>
 	<Badge variant="outline" class={md ? 'h-6 px-2.5 text-sm' : ''}>{item.maturity}</Badge>
-	{#if resolution}
+	{#if item.kind === 'movie' && item.format}
+		<!-- The resolution badge doubles as the trigger for the file's video/audio details. -->
+		<MediaFormatTooltip
+			format={item.format}
+			label={resolution ?? item.format.container.toUpperCase()}
+			{size}
+		/>
+	{:else if resolution}
 		<Badge variant="outline" class={md ? 'h-6 px-2.5 text-sm' : ''}>{resolution}</Badge>
 	{/if}
 	{#each item.genres as genre (genre)}
