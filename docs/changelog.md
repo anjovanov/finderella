@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-22
+
+**Settings split into sections** — `/settings` now has a menu (a column on the left, a row of pills on phones) and one page per section: **Profile** (`/settings/profile`: display name, email address, password) and **Subtitles** (`/settings/subtitles`: preferred language and how subtitles look). Opening `/settings` lands on Profile, so the navbar's Settings links are unchanged. Each section is its own route with its own form actions, which leaves room for more (playback defaults) without growing one long page.
+
 ## 2026-09-13
 
 **Seek-bar thumbnails (trickplay)** — hovering the player's progress bar now shows a still of the scene under the pointer, above the time pill, for movies and episodes. The device holding the file renders 10×10 JPEG sprite sheets (one 400 px tile every 15 s, keyframe-only decode at low CPU priority, HDR tone-mapped) the first time a title is played and keeps them under its cache dir (`~/.cache/finderella-storage-gateway/trickplay/`, keyed by path + size + mtime), so previews appear progressively during that first viewing and instantly afterwards. The hub synthesizes the WebVTT thumbnail track from the sheet layout the device reports (like the HLS playlist) and proxies sheets under `/api/stream/<session>/trickplay/`, with browser caching. Admin → Devices gains a per-library **Generate thumbnails** job (progress card, Stop) that renders every file up front; on-demand jobs run in their own lane so a first play never waits behind it. Admin → Site settings gains a **Trickplay** switch (migration `0012`, `site_settings.trickplay_enabled`) that turns the feature off hub-wide; a single device can still opt out with `FINDERELLA_TRICKPLAY=0`. Needs the updated gateway (`trickplay` capability); old gateways simply show no previews. Also fixes the hover time pill sitting half its width left of the pointer.
