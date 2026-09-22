@@ -3,7 +3,8 @@ import { user } from './auth.schema';
 
 /**
  * Per-account defaults. One row per user, created on first save; readers fall
- * back to DEFAULT_SUBTITLE_SETTINGS / DEFAULT_PLAYBACK_SETTINGS when there is none. Values are validated
+ * back to DEFAULT_SUBTITLE_SETTINGS / DEFAULT_PLAYBACK_SETTINGS / DEFAULT_PREFERENCES
+ * when there is none. Values are validated
  * against the option lists in $lib/data/subtitle-settings before writing.
  */
 export const userSettings = pgTable('user_settings', {
@@ -20,6 +21,13 @@ export const userSettings = pgTable('user_settings', {
 	subtitleFont: text('subtitle_font').notNull().default('sans'),
 	/** 'default' (the file's default track) or an ISO 639-1 code. */
 	audioLanguage: text('audio_language').notNull().default('default'),
+	/** 'dark' | 'light' (see $lib/data/preferences). */
+	theme: text('theme').notNull().default('dark'),
+	screensaverEnabled: boolean('screensaver_enabled').notNull().default(false),
+	/** 'media' (backdrop slideshow) | 'logo'. */
+	screensaverKind: text('screensaver_kind').notNull().default('media'),
+	/** Idle seconds before it starts; one of SCREENSAVER_TIMEOUTS. */
+	screensaverSeconds: integer('screensaver_seconds').notNull().default(300),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 

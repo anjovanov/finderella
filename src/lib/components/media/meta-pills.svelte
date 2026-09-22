@@ -32,7 +32,10 @@
 	]}
 >
 	<span class="inline-flex items-center gap-1 font-medium text-foreground">
-		<HugeiconsIcon icon={StarIcon} class="text-yellow-400 {md ? 'size-5' : 'size-4'}" />
+		<HugeiconsIcon
+			icon={StarIcon}
+			class="text-yellow-500 dark:text-yellow-400 {md ? 'size-5' : 'size-4'}"
+		/>
 		{item.rating.toFixed(1)}
 	</span>
 	<span>{yearLabel}</span>

@@ -69,17 +69,15 @@
 	}
 
 	// A tap elsewhere closes it (hover and blur already close it for mouse/keyboard).
-	$effect(() => {
+	function onDocumentPointerDown(event: PointerEvent) {
 		if (!open) return;
-		const onDocumentPointerDown = (event: PointerEvent) => {
-			const target = event.target as Node | null;
-			if (target && (trigger?.contains(target) || content?.contains(target))) return;
-			open = false;
-		};
-		document.addEventListener('pointerdown', onDocumentPointerDown, true);
-		return () => document.removeEventListener('pointerdown', onDocumentPointerDown, true);
-	});
+		const target = event.target as Node | null;
+		if (target && (trigger?.contains(target) || content?.contains(target))) return;
+		open = false;
+	}
 </script>
+
+<svelte:document onpointerdowncapture={onDocumentPointerDown} />
 
 <Tooltip.Provider delayDuration={150}>
 	<Tooltip.Root bind:open disableCloseOnTriggerClick>

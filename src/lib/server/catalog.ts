@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { episode, mediaAudio, mediaFile, movie, season, series } from '$lib/server/db/schema';
 import {
@@ -286,6 +286,35 @@ export async function getSeriesDetail(slug: string): Promise<Series | undefined>
 		}
 	}
 	return item;
+}
+
+export interface ScreensaverArtwork {
+	title: string;
+	year: number;
+	backdropUrl: string;
+}
+
+/** Backdrops for the screensaver slideshow: titles that have one, in random order. */
+export async function screensaverArtwork(limit = 40): Promise<ScreensaverArtwork[]> {
+	const columns = { title: movie.title, year: movie.year, backdropUrl: movie.backdropUrl };
+	const [movies, shows] = await Promise.all([
+		db
+			.select(columns)
+			.from(movie)
+			.where(isNotNull(movie.backdropUrl))
+			.orderBy(sql`random()`)
+			.limit(limit),
+		db
+			.select({ title: series.title, year: series.year, backdropUrl: series.backdropUrl })
+			.from(series)
+			.where(isNotNull(series.backdropUrl))
+			.orderBy(sql`random()`)
+			.limit(limit)
+	]);
+	return [...movies, ...shows]
+		.filter((row): row is ScreensaverArtwork => !!row.backdropUrl)
+		.toSorted(() => Math.random() - 0.5)
+		.slice(0, limit);
 }
 
 /** Hero pick for the home page: highest-rated item, else newest. */

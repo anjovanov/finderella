@@ -3,6 +3,7 @@
 	import { Cancel01Icon } from '@hugeicons/core-free-icons';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import { getScreensaver } from '$lib/screensaver.svelte';
 
 	let {
 		open = $bindable(false),
@@ -14,6 +15,13 @@
 	const src = $derived(
 		`https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailerKey)}?autoplay=1&rel=0&modestbranding=1`
 	);
+
+	// Pointer input over the YouTube iframe never reaches this window, so the
+	// page would look idle while the trailer plays.
+	const screensaver = getScreensaver();
+	$effect(() => {
+		if (open) return screensaver.inhibit();
+	});
 </script>
 
 <Dialog.Root bind:open>
@@ -24,7 +32,7 @@
 	-->
 	<Dialog.Content
 		showCloseButton={false}
-		class="w-[min(96vw,64rem)] max-w-none gap-0 border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-none"
+		class="dark w-[min(96vw,64rem)] max-w-none gap-0 border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-none"
 	>
 		<Dialog.Title class="sr-only">{title} — trailer</Dialog.Title>
 		<Dialog.Description class="sr-only">Trailer playing from YouTube.</Dialog.Description>

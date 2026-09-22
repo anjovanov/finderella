@@ -17,6 +17,14 @@ import {
 	SUBTITLE_SIZES,
 	type SubtitleSettings
 } from '$lib/data/subtitle-settings';
+import {
+	DEFAULT_PREFERENCES,
+	normalizePreferences,
+	SCREENSAVER_KINDS,
+	SCREENSAVER_TIMEOUTS,
+	THEMES,
+	type Preferences
+} from '$lib/data/preferences';
 
 /** A partial update from the settings form or the player (all fields optional). */
 export const SubtitleSettingsPatch = z.object({
@@ -115,6 +123,76 @@ export async function savePlaybackSettings(
 	const current = await getPlaybackSettings(userId);
 	const next: PlaybackSettings = { ...current, ...patch };
 	const values = { audioLanguage: next.audioLanguage, updatedAt: new Date() };
+	await db
+		.insert(userSettings)
+		.values({ userId, ...values })
+		.onConflictDoUpdate({ target: userSettings.userId, set: values });
+	return next;
+}
+
+/** Forms post 'true'/'false' for switches (hidden input behind the Switch). */
+const formBoolean = z.union([
+	z.boolean(),
+	z.enum(['true', 'false']).transform((v) => v === 'true')
+]);
+
+/** A partial update from one of the /settings/preferences forms. */
+export const PreferencesPatch = z.object({
+	theme: z.enum(THEMES).optional(),
+	screensaverEnabled: formBoolean.optional(),
+	screensaverKind: z.enum(SCREENSAVER_KINDS).optional(),
+	screensaverSeconds: z.coerce
+		.number()
+		.int()
+		.refine((n) => (SCREENSAVER_TIMEOUTS as readonly number[]).includes(n), 'unknown timeout')
+		.optional()
+});
+export type PreferencesPatch = z.infer<typeof PreferencesPatch>;
+
+/** The viewer's theme + screensaver settings; guests and accounts without a row get the defaults. */
+export async function getPreferences(userId: string | null): Promise<Preferences> {
+	if (!userId) return DEFAULT_PREFERENCES;
+	const row = await db.query.userSettings.findFirst({
+		columns: {
+			theme: true,
+			screensaverEnabled: true,
+			screensaverKind: true,
+			screensaverSeconds: true
+		},
+		where: eq(userSettings.userId, userId)
+	});
+	if (!row) return DEFAULT_PREFERENCES;
+	return normalizePreferences({
+		theme: row.theme,
+		screensaver: {
+			enabled: row.screensaverEnabled,
+			kind: row.screensaverKind,
+			seconds: row.screensaverSeconds
+		}
+	});
+}
+
+/** Merge a validated patch into the account's row (creating it) and return the result. */
+export async function savePreferences(
+	userId: string,
+	patch: PreferencesPatch
+): Promise<Preferences> {
+	const current = await getPreferences(userId);
+	const next = normalizePreferences({
+		theme: patch.theme ?? current.theme,
+		screensaver: {
+			enabled: patch.screensaverEnabled ?? current.screensaver.enabled,
+			kind: patch.screensaverKind ?? current.screensaver.kind,
+			seconds: patch.screensaverSeconds ?? current.screensaver.seconds
+		}
+	});
+	const values = {
+		theme: next.theme,
+		screensaverEnabled: next.screensaver.enabled,
+		screensaverKind: next.screensaver.kind,
+		screensaverSeconds: next.screensaver.seconds,
+		updatedAt: new Date()
+	};
 	await db
 		.insert(userSettings)
 		.values({ userId, ...values })

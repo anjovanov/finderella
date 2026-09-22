@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-23
+
+**Light theme and screensaver** (migration `0014`: `user_settings.theme`, `screensaver_enabled`, `screensaver_kind`, `screensaver_seconds`) — a new **Settings → Preferences** section:
+
+- **Appearance**: Dark (the default) or Light. The light theme uses the same teal accent on a near-white page; the choice applies at once, is stored on the account (so it follows you to other devices) and is rendered by the server, so pages never flash the wrong theme. The video player, trailers and the screensaver stay dark in both themes.
+- **Screensaver** (off by default): after 30 seconds to 30 minutes without mouse, keyboard or touch input, show either a slideshow of your library's movie and series artwork (slow pan, title and year) or the Finderella logo, which moves around the screen. It never covers the player or a playing trailer, and any input brings you back without clicking whatever was underneath. A **Preview** button shows it on demand.
+
 ## 2026-09-22
 
 **File details on detail pages** — hovering (or tapping, on phones) the resolution badge on a movie page, or the ⓘ next to an episode's runtime on a series page, shows the file's format: video codec and frame size ("H.265 (HEVC) · 1920×1080"), the default audio track with its language, codec and channel layout ("English · Dolby Digital Plus (E-AC-3) 5.1 · +2 more" when the file has others — the player's Audio menu lists them all), and the container, size and bitrate ("MKV · 14.2 GB · 18.3 Mb/s"). Files scanned before audio-track discovery show just the first track's codec until their library is rescanned by an updated gateway.

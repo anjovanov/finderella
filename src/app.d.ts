@@ -7,6 +7,8 @@ declare global {
 		interface Locals {
 			user?: typeof auth.$Infer.Session.user;
 			session?: typeof auth.$Infer.Session.session;
+			/** Set by the root layout load; hooks.server.ts writes it into <html class>. */
+			theme?: import('$lib/data/preferences').Theme;
 		}
 
 		// interface Error {}

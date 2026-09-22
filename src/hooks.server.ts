@@ -87,7 +87,20 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 		error(403, 'This area is for administrators only.');
 	}
 
-	return svelteKitHandler({ event, resolve, auth, building });
+	// Render the viewer's theme into app.html's `<html class="%finderella.theme%">`
+	// so the first paint is right. transformPageChunk runs after the loads, so
+	// the root layout has set `locals.theme` by then; pages that skip SSR get
+	// the dark default and the layout applies the real theme on the client.
+	const resolveWithTheme: typeof resolve = (event, opts) =>
+		resolve(event, {
+			...opts,
+			transformPageChunk: async ({ html, done }) => {
+				const out = (await opts?.transformPageChunk?.({ html, done })) ?? html;
+				return out.replace('%finderella.theme%', event.locals.theme === 'light' ? '' : 'dark');
+			}
+		});
+
+	return svelteKitHandler({ event, resolve: resolveWithTheme, auth, building });
 };
 
 export const handle: Handle = handleBetterAuth;

@@ -11,7 +11,7 @@
 <div class="h-[3px] w-full">
 	{#if percent !== null}
 		<div
-			class="h-full w-full overflow-hidden rounded-full bg-white/15"
+			class="h-full w-full overflow-hidden rounded-full bg-foreground/15"
 			role="progressbar"
 			aria-label="Watched"
 			aria-valuemin="0"

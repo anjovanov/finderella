@@ -2,7 +2,12 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { PlayCircleIcon, SubtitleIcon, UserIcon } from '@hugeicons/core-free-icons';
+	import {
+		PaintBoardIcon,
+		PlayCircleIcon,
+		SubtitleIcon,
+		UserIcon
+	} from '@hugeicons/core-free-icons';
 	import { cn } from '$lib/utils.js';
 
 	let { children } = $props();
@@ -15,6 +20,12 @@
 			path: '/settings/profile',
 			label: 'Profile',
 			icon: UserIcon
+		},
+		{
+			href: resolve('/settings/preferences'),
+			path: '/settings/preferences',
+			label: 'Preferences',
+			icon: PaintBoardIcon
 		},
 		{
 			href: resolve('/settings/subtitles'),

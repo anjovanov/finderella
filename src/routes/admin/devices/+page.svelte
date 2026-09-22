@@ -61,7 +61,7 @@
 				<p class="text-sm text-muted-foreground">Pairing code (valid 10 minutes):</p>
 				<p class="mt-1 font-mono text-2xl font-bold tracking-[0.35em] text-primary">{form.code}</p>
 				<p class="mt-3 text-sm text-muted-foreground">On the device, run:</p>
-				<code class="mt-1 block overflow-x-auto rounded-lg bg-black/40 p-3 font-mono text-xs">
+				<code class="mt-1 block overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs">
 					finderella-storage-gateway pair --hub {typeof location !== 'undefined'
 						? location.origin
 						: ''} --code
@@ -103,7 +103,7 @@
 					</form>
 				{/if}
 			</div>
-			<div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+			<div class="mt-4 h-2 overflow-hidden rounded-full bg-foreground/10">
 				<div class="h-full bg-primary transition-[width]" style:width="{progress}%"></div>
 			</div>
 			<p class="mt-2 text-xs text-muted-foreground">
@@ -118,7 +118,7 @@
 			{/if}
 			{#if job.recent.length > 0}
 				<div
-					class="mt-3 max-h-48 overflow-y-auto rounded-lg border border-border/60 bg-black/30 p-3 font-mono text-xs"
+					class="mt-3 max-h-48 overflow-y-auto rounded-lg border border-border/60 bg-muted/60 p-3 font-mono text-xs"
 				>
 					{#each job.recent as line (line.at + line.message)}
 						<div
@@ -148,7 +148,7 @@
 				<span
 					class={[
 						'inline-block size-2.5 rounded-full',
-						device.online ? 'bg-emerald-400' : 'bg-neutral-600'
+						device.online ? 'bg-emerald-400' : 'bg-muted-foreground/50'
 					]}
 					title={device.online ? 'Online' : 'Offline'}
 				></span>
@@ -203,7 +203,7 @@
 							<p class="text-sm font-medium">
 								{lib.name}
 								<span
-									class="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-xs text-muted-foreground"
+									class="ml-2 rounded-full bg-foreground/10 px-2 py-0.5 text-xs text-muted-foreground"
 								>
 									{lib.kind}
 								</span>

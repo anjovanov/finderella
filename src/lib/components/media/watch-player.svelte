@@ -23,6 +23,7 @@
 	} from '@hugeicons/core-free-icons';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { getScreensaver } from '$lib/screensaver.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import type { AudioTrack, Series, SubtitleTrack } from '$lib/data';
 	import {
@@ -122,6 +123,10 @@
 		show?: Series;
 		currentEpisodeId?: string;
 	} = $props();
+
+	// No screensaver over the player, playing or paused.
+	const screensaver = getScreensaver();
+	$effect(() => screensaver.inhibit());
 
 	// The page under this fixed overlay is taller than the viewport (header + min-h-svh
 	// main); lock scrolling while the player is open.
@@ -553,7 +558,8 @@
 
 <div
 	class={[
-		'player-root fixed inset-0 z-50 flex flex-col bg-black',
+		// `dark`: the player keeps its dark chrome in the light theme too.
+		'player-root dark fixed inset-0 z-50 flex flex-col bg-black',
 		!chromeVisible && 'cursor-none',
 		menuOpen && 'menu-open'
 	]}

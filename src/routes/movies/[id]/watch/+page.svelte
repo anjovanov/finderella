@@ -148,7 +148,7 @@
 		}}
 	/>
 {:else}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black">
+	<div class="dark fixed inset-0 z-50 flex items-center justify-center bg-black">
 		{#if playbackError}
 			<div class="flex max-w-md flex-col items-center gap-4 px-6 text-center">
 				<p class="text-lg font-medium text-white">Can't play this right now</p>
