@@ -22,6 +22,8 @@ export interface TranscodeOptions {
 	quality: TranscodeQuality;
 	/** Absolute ffprobe index of the audio stream to encode; absent = the first one. */
 	audioStreamIndex?: number;
+	/** Output audio channels; absent = stereo. */
+	audioChannels?: 1 | 2 | 6;
 	ffmpegBin: string;
 	log: (message: string) => void;
 	/** Called when the session self-reaps (idle) so the owner can drop it. */
@@ -103,7 +105,8 @@ export class TranscodeSession {
 			segmentSeconds: this.#opts.segmentSeconds,
 			quality: this.#opts.quality,
 			hdr: this.#hdr,
-			audioStreamIndex: this.#opts.audioStreamIndex
+			audioStreamIndex: this.#opts.audioStreamIndex,
+			audioChannels: this.#opts.audioChannels
 		});
 		this.#opts.log(`ffmpeg starting at segment ${startSegment} (${this.#opts.sessionId})`);
 		const proc = spawn(this.#opts.ffmpegBin, args, { stdio: ['ignore', 'ignore', 'pipe'] });

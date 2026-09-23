@@ -79,4 +79,11 @@ describe('hlsArgs', () => {
 		expect(maps).toEqual(['0:v:0', '0:3']);
 		expect(valueAfter(args, '-ac')).toBe('2');
 	});
+
+	it('encodes the requested channel count (stereo when absent)', () => {
+		expect(valueAfter(hlsArgs({ ...base, startSegment: 0, audioChannels: 1 }), '-ac')).toBe('1');
+		expect(valueAfter(hlsArgs({ ...base, startSegment: 0, audioChannels: 2 }), '-ac')).toBe('2');
+		expect(valueAfter(hlsArgs({ ...base, startSegment: 0, audioChannels: 6 }), '-ac')).toBe('6');
+		expect(valueAfter(hlsArgs({ ...base, startSegment: 0 }), '-ac')).toBe('2');
+	});
 });

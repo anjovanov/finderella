@@ -6,6 +6,7 @@ import { mediaAudio } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
 import {
 	directPlayAudio,
+	transcodeAudio,
 	pickAudioTrack,
 	toAudioTracks,
 	type AudioRow
@@ -59,7 +60,9 @@ const StartRequest = z.object({
 	/** An explicit pick from the player's audio menu (a media_audio id; ignored when it isn't this file's). */
 	audioTrackId: z.string().min(1).nullish(),
 	/** The viewer's preferred audio language: 'default' or an ISO 639-1 code. */
-	audioLanguage: z.string().min(1).optional()
+	audioLanguage: z.string().min(1).optional(),
+	/** Most channels the viewer wants (audio-channels setting); transcodes are encoded down to it. */
+	maxAudioChannels: z.union([z.literal(1), z.literal(2), z.literal(6)]).default(2)
 });
 
 /**
@@ -91,8 +94,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const viewerId = user?.id ?? null;
 	const parsed = StartRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'expected { kind, slug, episodeSlug? }');
-	const { kind, slug, episodeSlug, startSeconds, quality, audioTrackId, audioLanguage } =
-		parsed.data;
+	const {
+		kind,
+		slug,
+		episodeSlug,
+		startSeconds,
+		quality,
+		audioTrackId,
+		audioLanguage,
+		maxAudioChannels
+	} = parsed.data;
 	const rung = quality === 'original' ? undefined : QUALITY_LADDER[quality];
 	if (kind === 'series' && !episodeSlug) error(400, 'episodeSlug required for series');
 
@@ -149,8 +160,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		);
 	}
 
-	const session = await sessionManager.start(viewerId, source, 'hls', quality);
 	const plan = transcodePlan(quality, source.file.width);
+	const audioOut = transcodeAudio(maxAudioChannels, audio?.channels, plan.audioKbps);
+	const session = await sessionManager.start(viewerId, source, 'hls', quality, audioOut.kbps);
 	// In flight alongside session.start; never awaited before the transcode is up.
 	const trickplayPending = attachTrickplay(session, source);
 	try {
@@ -167,10 +179,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				quality: {
 					maxWidth: plan.maxWidth,
 					maxVideoKbps: plan.maxVideoKbps,
-					audioKbps: plan.audioKbps,
+					audioKbps: audioOut.kbps,
 					level: plan.level
 				},
-				audioStreamIndex: audio?.streamIndex
+				audioStreamIndex: audio?.streamIndex,
+				audioChannels: audioOut.channels
 			},
 			{ timeoutMs: 15_000 }
 		);

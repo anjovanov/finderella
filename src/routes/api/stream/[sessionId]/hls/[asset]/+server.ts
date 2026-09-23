@@ -23,7 +23,9 @@ export const GET: RequestHandler = async ({ params, request }) => {
 	if (asset === 'master.m3u8') {
 		// A capped rung advertises its ceiling; auto advertises the source rate.
 		const rung = session.quality === 'original' ? undefined : QUALITY_LADDER[session.quality];
-		const bandwidth = rung ? (rung.maxVideoKbps + rung.audioKbps) * 1000 : file.bitrate;
+		const bandwidth = rung
+			? (rung.maxVideoKbps + (session.audioKbps ?? rung.audioKbps)) * 1000
+			: file.bitrate;
 		const plan = transcodePlan(session.quality, file.width);
 		return new Response(buildMasterPlaylist(bandwidth, file.audioCodec !== null, plan.codec), {
 			headers: { 'content-type': 'application/vnd.apple.mpegurl', 'cache-control': 'no-store' }

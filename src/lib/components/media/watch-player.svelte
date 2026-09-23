@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '@videojs/html/video/ui';
 	import { untrack } from 'svelte';
+	import { releaseDownmix, setMonoDownmix } from '$lib/audio-downmix';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		ArrowLeft01Icon,
@@ -58,6 +59,7 @@
 		backHref,
 		videoSrc,
 		videoKind = 'file',
+		monoDownmix = false,
 		startAt = 0,
 		onProgress,
 		onError,
@@ -91,6 +93,8 @@
 		videoSrc: string;
 		/** 'file' = progressive src; 'hls' = m3u8 via hls.js (native on Safari). */
 		videoKind?: 'file' | 'hls';
+		/** Play a direct-play file's audio as mono (audio-channels setting); HLS arrives mono already. */
+		monoDownmix?: boolean;
 		/** Resume position in seconds, applied when the source loads. */
 		startAt?: number;
 		/** Playback position reports (every timeupdate, ~4 Hz — throttle upstream). */
@@ -246,6 +250,23 @@
 	const sourceSrc = $derived(videoSrc);
 	const sourceKind = $derived(videoKind);
 	const sourceStartAt = $derived(startAt);
+
+	// Declared before the source effect so the audio graph exists when autoplay
+	// starts. Through a derived so only a changed value reaches the graph, and
+	// setMonoDownmix is idempotent per element anyway: a re-run must never
+	// rebuild it (createMediaElementSource throws on the second call).
+	const wantMono = $derived(monoDownmix && sourceKind === 'file');
+	$effect(() => {
+		if (videoEl) setMonoDownmix(videoEl, wantMono);
+	});
+	// Separate effect: its cleanup runs only when the element itself changes or unmounts.
+	$effect(() => {
+		const el = videoEl;
+		return () => {
+			if (el) releaseDownmix(el);
+		};
+	});
+
 	$effect(() => {
 		const el = videoEl;
 		const src = sourceSrc;

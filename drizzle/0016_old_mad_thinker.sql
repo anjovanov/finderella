@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "audio_channels" text DEFAULT 'auto' NOT NULL;

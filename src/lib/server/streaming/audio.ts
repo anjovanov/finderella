@@ -80,3 +80,19 @@ export function directPlayAudio(rows: AudioRow[]): AudioRow | null {
 		null
 	);
 }
+
+/**
+ * Channels + bitrate for a transcode's audio: the viewer's cap (1, 2 or 6)
+ * applied to the source stream. Surround is kept only when the source has it
+ * (7.1 comes out 5.1); unknown sources stay stereo. `stereoKbps` is the
+ * quality rung's stereo budget — surround gets twice that, mono half (≥64k).
+ */
+export function transcodeAudio(
+	maxChannels: 1 | 2 | 6,
+	sourceChannels: number | null | undefined,
+	stereoKbps: number
+): { channels: 1 | 2 | 6; kbps: number } {
+	if (maxChannels === 1) return { channels: 1, kbps: Math.max(64, Math.round(stereoKbps / 2)) };
+	if (maxChannels === 6 && (sourceChannels ?? 0) >= 6) return { channels: 6, kbps: stereoKbps * 2 };
+	return { channels: 2, kbps: stereoKbps };
+}

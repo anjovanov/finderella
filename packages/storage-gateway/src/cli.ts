@@ -338,6 +338,7 @@ program
 							durationMs: message.durationMs,
 							quality: message.quality,
 							audioStreamIndex: message.audioStreamIndex,
+							audioChannels: message.audioChannels,
 							ffmpegBin: ffmpeg,
 							log,
 							onReap: () => sessions.delete(message.sessionId)

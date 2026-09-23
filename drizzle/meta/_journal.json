@@ -113,6 +113,13 @@
       "when": 1790121311084,
       "tag": "0015_sparkling_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790204977169,
+      "tag": "0016_old_mad_thinker",
+      "breakpoints": true
     }
   ]
 }

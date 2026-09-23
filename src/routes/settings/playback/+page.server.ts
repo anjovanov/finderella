@@ -23,11 +23,12 @@ function fields(formData: FormData, names: string[]): Record<string, string> {
 // One form per card, one action per form: saving one card never resets another.
 export const actions: Actions = {
 	updatePlayback: async (event) => {
-		const parsed = PlaybackSettingsPatch.pick({ audioLanguage: true }).safeParse(
-			fields(await event.request.formData(), ['audioLanguage'])
-		);
+		const parsed = PlaybackSettingsPatch.pick({
+			audioLanguage: true,
+			audioChannels: true
+		}).safeParse(fields(await event.request.formData(), ['audioLanguage', 'audioChannels']));
 		if (!parsed.success) {
-			return fail(400, { section: 'audio', message: 'Pick a language from the list' });
+			return fail(400, { section: 'audio', message: 'Pick a value from each list' });
 		}
 		await savePlaybackSettings(event.locals.user!.id, parsed.data);
 		return { section: 'audio', saved: true };

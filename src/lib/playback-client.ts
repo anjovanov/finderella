@@ -7,6 +7,8 @@
 
 import type { AudioTrack, SubtitleTrack } from './data/types';
 import type { QualityId } from './playback-quality';
+import { DEFAULT_PLAYBACK_SETTINGS, type AudioChannels } from './data/playback-settings';
+import { maxAudioChannels } from './audio-output';
 
 export interface PlaybackDescriptor {
 	mode: 'direct' | 'hls';
@@ -37,16 +39,19 @@ export interface PlaybackTarget {
 	audioTrackId?: string | null;
 	/** Preferred audio language: 'default' or an ISO 639-1 code. */
 	audioLanguage?: string;
+	/** The viewer's audio-channels setting; sent as the resolved `maxAudioChannels`. */
+	audioChannels?: AudioChannels;
 }
 
 export async function startPlayback(
 	target: PlaybackTarget,
 	signal?: AbortSignal
 ): Promise<PlaybackDescriptor> {
+	const { audioChannels = DEFAULT_PLAYBACK_SETTINGS.audioChannels, ...body } = target;
 	const res = await fetch('/api/playback/start', {
 		method: 'POST',
 		headers: { 'content-type': 'application/json' },
-		body: JSON.stringify(target),
+		body: JSON.stringify({ ...body, maxAudioChannels: await maxAudioChannels(audioChannels) }),
 		signal
 	});
 	if (!res.ok) {

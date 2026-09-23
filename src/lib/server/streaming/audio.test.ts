@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { audioLabel, directPlayAudio, pickAudioTrack, toAudioTracks, type AudioRow } from './audio';
+import {
+	audioLabel,
+	directPlayAudio,
+	pickAudioTrack,
+	toAudioTracks,
+	transcodeAudio,
+	type AudioRow
+} from './audio';
 
 function row(overrides: Partial<AudioRow>): AudioRow {
 	return {
@@ -96,5 +103,20 @@ describe('directPlayAudio', () => {
 			directPlayAudio([row({ id: 'b', streamIndex: 4 }), row({ id: 'a', streamIndex: 2 })])?.id
 		).toBe('a');
 		expect(directPlayAudio([])).toBeNull();
+	});
+});
+
+describe('transcodeAudio', () => {
+	it('keeps surround only when allowed and the source has it', () => {
+		expect(transcodeAudio(6, 6, 192)).toEqual({ channels: 6, kbps: 384 });
+		expect(transcodeAudio(6, 8, 192)).toEqual({ channels: 6, kbps: 384 });
+		expect(transcodeAudio(6, 2, 192)).toEqual({ channels: 2, kbps: 192 });
+		expect(transcodeAudio(6, null, 192)).toEqual({ channels: 2, kbps: 192 });
+		expect(transcodeAudio(2, 8, 160)).toEqual({ channels: 2, kbps: 160 });
+	});
+
+	it('downmixes to mono at half the stereo budget, never below 64k', () => {
+		expect(transcodeAudio(1, 6, 192)).toEqual({ channels: 1, kbps: 96 });
+		expect(transcodeAudio(1, 2, 96)).toEqual({ channels: 1, kbps: 64 });
 	});
 });

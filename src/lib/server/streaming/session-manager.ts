@@ -14,6 +14,8 @@ export interface HotSession {
 	source: PlayableSource;
 	mode: 'direct' | 'hls';
 	quality: QualityId;
+	/** HLS: the audio bitrate the gateway encodes (the rung's stereo budget scaled by channel count). */
+	audioKbps?: number;
 	createdAt: number;
 	lastAccessAt: number;
 	lastPersistedAt: number;
@@ -38,7 +40,8 @@ class SessionManager {
 		userId: string | null,
 		source: PlayableSource,
 		mode: 'direct' | 'hls',
-		quality: QualityId = 'original'
+		quality: QualityId = 'original',
+		audioKbps?: number
 	): Promise<HotSession> {
 		const [row] = await db
 			.insert(playbackSession)
@@ -57,6 +60,7 @@ class SessionManager {
 			source,
 			mode,
 			quality,
+			audioKbps,
 			createdAt: now,
 			lastAccessAt: now,
 			lastPersistedAt: now

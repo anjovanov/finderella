@@ -5,6 +5,7 @@ import { db } from '$lib/server/db';
 import { userSettings } from '$lib/server/db/schema';
 import { isAudioLanguage } from '$lib/audio-preference';
 import {
+	AUDIO_CHANNEL_OPTIONS,
 	DEFAULT_PLAYBACK_SETTINGS,
 	normalizePlaybackSettings,
 	STILL_WATCHING_EPISODES,
@@ -101,6 +102,7 @@ export const PlaybackSettingsPatch = z.object({
 		.toLowerCase()
 		.refine(isAudioLanguage, 'unknown language')
 		.optional(),
+	audioChannels: z.enum(AUDIO_CHANNEL_OPTIONS).optional(),
 	autoplayNext: formBoolean.optional(),
 	stillWatchingEnabled: formBoolean.optional(),
 	stillWatchingEpisodes: z.coerce
@@ -122,6 +124,7 @@ export async function getPlaybackSettings(userId: string | null): Promise<Playba
 	const row = await db.query.userSettings.findFirst({
 		columns: {
 			audioLanguage: true,
+			audioChannels: true,
 			autoplayNext: true,
 			stillWatchingEnabled: true,
 			stillWatchingEpisodes: true,
@@ -132,6 +135,7 @@ export async function getPlaybackSettings(userId: string | null): Promise<Playba
 	if (!row) return DEFAULT_PLAYBACK_SETTINGS;
 	return normalizePlaybackSettings({
 		audioLanguage: row.audioLanguage,
+		audioChannels: row.audioChannels,
 		autoplayNext: row.autoplayNext,
 		stillWatching: {
 			enabled: row.stillWatchingEnabled,
@@ -149,6 +153,7 @@ export async function savePlaybackSettings(
 	const current = await getPlaybackSettings(userId);
 	const next = normalizePlaybackSettings({
 		audioLanguage: patch.audioLanguage ?? current.audioLanguage,
+		audioChannels: patch.audioChannels ?? current.audioChannels,
 		autoplayNext: patch.autoplayNext ?? current.autoplayNext,
 		stillWatching: {
 			enabled: patch.stillWatchingEnabled ?? current.stillWatching.enabled,
@@ -158,6 +163,7 @@ export async function savePlaybackSettings(
 	});
 	const values = {
 		audioLanguage: next.audioLanguage,
+		audioChannels: next.audioChannels,
 		autoplayNext: next.autoplayNext,
 		stillWatchingEnabled: next.stillWatching.enabled,
 		stillWatchingEpisodes: next.stillWatching.episodes,

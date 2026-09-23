@@ -172,7 +172,9 @@ export const SessionStartMessage = base.extend({
 		level: z.enum(['4.1', '5.2'])
 	}),
 	/** Absolute ffprobe index of the audio stream to encode. Absent = the first audio stream. */
-	audioStreamIndex: z.number().int().nonnegative().optional()
+	audioStreamIndex: z.number().int().nonnegative().optional(),
+	/** Output audio channels (the viewer's cap applied to the source). Absent = stereo. */
+	audioChannels: z.union([z.literal(1), z.literal(2), z.literal(6)]).optional()
 });
 export type SessionStartMessage = z.infer<typeof SessionStartMessage>;
 

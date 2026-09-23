@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-24
+
+**Maximum audio channels** (migration `0016`: `user_settings.audio_channels`) — **Settings → Playback → Audio** gains a _Maximum audio channels_ choice: **Auto** (the default), **Mono**, **Stereo** (how every title played until now) or **5.1 surround**. Existing accounts and guests start on Auto. On headphones, laptops and phones it plays exactly like Stereo; only devices that report a 5.1 or larger output get surround.
+
+- **5.1 surround**: titles converted for streaming keep their surround soundtrack (AAC 5.1 at twice the stereo bitrate; 7.1 comes out as 5.1). Before, every converted title was mixed down to stereo. Titles that play directly were never mixed down, and still aren't.
+- **Mono**: everything plays through every speaker, for one earbud or hearing on one side. Converted titles are encoded mono. Titles that play directly are mixed down in the browser, so they never have to be converted just for this. Volume and mute work as usual.
+- **Auto** asks the browser how many speakers the output device has: 5.1 or more means surround, anything else stereo. It never picks mono. It asks again after audio devices are plugged in or removed. The settings page says what Auto means on the device you're using.
+- Surround (explicit or Auto) is requested only when the browser says it can decode 5.1 audio; otherwise titles play in stereo, and the settings page says so.
+
+Surround and mono conversion need the **updated storage gateway** on each device. Older gateways ignore the setting and keep converting to stereo, although mono still applies to titles that play directly.
+
 ## 2026-09-23
 
 **More playback settings** (migration `0015`: `user_settings.autoplay_next`, `still_watching_enabled`, `still_watching_episodes`, `still_watching_minutes`) — **Settings → Playback** now has three cards:

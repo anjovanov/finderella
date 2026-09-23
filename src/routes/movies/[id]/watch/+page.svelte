@@ -24,6 +24,9 @@
 
 	let { data } = $props();
 
+	// Guests get the defaults (their autoplay switch is kept per browser).
+	const playbackSettings = $derived(data.playbackSettings ?? DEFAULT_PLAYBACK_SETTINGS);
+
 	let playback: PlaybackDescriptor | null = $state(null);
 	let playbackError: string | null = $state(null);
 	let reporter: ReturnType<typeof createProgressReporter> | null = null;
@@ -66,6 +69,7 @@
 		const chosenAudio = audioTrackId;
 		const audioLanguage =
 			pickedLanguage ?? data.audioLanguage ?? loadAudioPreference() ?? DEFAULT_AUDIO_LANGUAGE;
+		const audioChannels = playbackSettings.audioChannels;
 		const startSeconds = restartAt ?? data.resumeFrom;
 		restartAt = null;
 		playbackStartAt = startSeconds;
@@ -82,7 +86,8 @@
 				startSeconds,
 				quality: chosenQuality,
 				audioTrackId: chosenAudio,
-				audioLanguage
+				audioLanguage,
+				audioChannels
 			},
 			controller.signal
 		)
@@ -128,6 +133,7 @@
 		backHref={mediaHref(data.movie)}
 		videoSrc={playback.src}
 		videoKind={playback.mode === 'hls' ? 'hls' : 'file'}
+		monoDownmix={playbackSettings.audioChannels === 'mono'}
 		startAt={playbackStartAt}
 		onProgress={(position, duration) => {
 			lastPosition = position;
@@ -137,9 +143,7 @@
 		{quality}
 		sourceWidth={playback.source.width}
 		onQualityChange={changeQuality}
-		stillWatchingAfterSeconds={stillWatchingMovieSeconds(
-			(data.playbackSettings ?? DEFAULT_PLAYBACK_SETTINGS).stillWatching
-		)}
+		stillWatchingAfterSeconds={stillWatchingMovieSeconds(playbackSettings.stillWatching)}
 		audioTracks={playback.audioTracks}
 		audioTrackId={playback.audioTrackId}
 		onAudioChange={changeAudio}

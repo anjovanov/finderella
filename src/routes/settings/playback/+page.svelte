@@ -7,8 +7,13 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import { LANGUAGES } from '@finderella/protocol/languages';
 	import { DEFAULT_AUDIO_LANGUAGE } from '$lib/audio-preference';
+	import { canDecodeSurround, detectOutputChannels } from '$lib/audio-output';
 	import {
+		AUDIO_CHANNEL_LABELS,
+		AUDIO_CHANNEL_OPTIONS,
 		episodesLabel,
+		type AudioChannels,
+		resolveAudioChannels,
 		minutesLabel,
 		STILL_WATCHING_EPISODES,
 		STILL_WATCHING_MINUTES
@@ -17,10 +22,35 @@
 	let { data, form } = $props();
 
 	let audioLanguage = $derived(data.playbackSettings.audioLanguage);
+	let audioChannels = $derived(data.playbackSettings.audioChannels);
 	let autoplayNext = $derived(data.playbackSettings.autoplayNext);
 	let stillWatching = $derived(data.playbackSettings.stillWatching.enabled);
 	let stillWatchingEpisodes = $derived(String(data.playbackSettings.stillWatching.episodes));
 	let stillWatchingMinutes = $derived(String(data.playbackSettings.stillWatching.minutes));
+
+	// What this browser/device supports; undefined until it has been asked.
+	let deviceChannels = $state<number | null | undefined>(undefined);
+	let surroundDecodable = $state<boolean | undefined>(undefined);
+	$effect(() => {
+		void detectOutputChannels().then((channels) => (deviceChannels = channels));
+		void canDecodeSurround().then((ok) => (surroundDecodable = ok));
+	});
+	// Explains the selected option (updates as the select changes, before saving).
+	const CHANNEL_DESCRIPTIONS: Record<AudioChannels, string> = {
+		auto: "Uses 5.1 surround when this device's audio output supports it, otherwise stereo.",
+		stereo:
+			'Surround soundtracks play as two-channel stereo. Right for headphones and laptop or TV speakers.',
+		surround:
+			'Surround soundtracks play in 5.1; stereo ones stay stereo. Choose this if you listen through a surround sound system.',
+		mono: 'All sound comes out of every speaker equally. Useful with a single earbud or hearing in one ear.'
+	};
+	// What Auto amounts to on this browser/device, once it has been asked.
+	const autoResult = $derived.by(() => {
+		if (surroundDecodable === undefined || deviceChannels === undefined) return null;
+		return resolveAudioChannels('auto', deviceChannels, surroundDecodable) === 6
+			? '5.1 surround'
+			: 'Stereo';
+	});
 
 	// 'default' = the track the file flags as default, which is usually the original language.
 	const ORIGINAL_LANGUAGE = 'Original language';
@@ -51,7 +81,8 @@
 	<Card.Header>
 		<Card.Title>Audio</Card.Title>
 		<Card.Description>
-			Which audio track plays when a title has several, for example a dub and the original language.
+			Which audio track plays when a title has several, for example a dub and the original language,
+			and how many channels you hear.
 		</Card.Description>
 	</Card.Header>
 	<Card.Content>
@@ -81,6 +112,29 @@
 							an audio track in the player updates this too.
 						</Field.Description>
 					{/if}
+				</Field.Field>
+				<Field.Field>
+					<Field.Label for="audio-channels">Maximum audio channels</Field.Label>
+					<Select.Root type="single" name="audioChannels" bind:value={audioChannels}>
+						<Select.Trigger id="audio-channels" class="w-full sm:w-72">
+							{AUDIO_CHANNEL_LABELS[audioChannels]}
+						</Select.Trigger>
+						<Select.Content>
+							{#each AUDIO_CHANNEL_OPTIONS as option (option)}
+								<Select.Item value={option} label={AUDIO_CHANNEL_LABELS[option]} />
+							{/each}
+						</Select.Content>
+					</Select.Root>
+					<Field.Description>
+						{AUDIO_CHANNEL_LABELS[audioChannels]} – {CHANNEL_DESCRIPTIONS[audioChannels]}
+						{#if audioChannels === 'auto' && autoResult}
+							<strong class="block font-semibold">On this device: {autoResult}.</strong>
+						{:else if audioChannels === 'surround' && surroundDecodable === false}
+							<span class="block"
+								>This browser can't play 5.1 audio, so you'll hear stereo here.</span
+							>
+						{/if}
+					</Field.Description>
 				</Field.Field>
 				<Field.Field>
 					<Button type="submit" variant="secondary" class="w-fit">Save audio settings</Button>

@@ -94,6 +94,7 @@
 		const chosenAudio = audioPick?.episodeId === episodeSlug ? audioPick.trackId : null;
 		const audioLanguage =
 			pickedLanguage ?? data.audioLanguage ?? loadAudioPreference() ?? DEFAULT_AUDIO_LANGUAGE;
+		const audioChannels = playbackSettings.audioChannels;
 		const startSeconds = restartAt ?? data.resumeFrom;
 		restartAt = null;
 		playbackStartAt = startSeconds;
@@ -111,7 +112,8 @@
 				startSeconds,
 				quality: chosenQuality,
 				audioTrackId: chosenAudio,
-				audioLanguage
+				audioLanguage,
+				audioChannels
 			},
 			controller.signal
 		)
@@ -158,6 +160,7 @@
 		backHref={mediaHref(data.show)}
 		videoSrc={playback.src}
 		videoKind={playback.mode === 'hls' ? 'hls' : 'file'}
+		monoDownmix={playbackSettings.audioChannels === 'mono'}
 		startAt={playbackStartAt}
 		onProgress={(position, duration) => {
 			lastPosition = position;

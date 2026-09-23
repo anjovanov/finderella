@@ -20,6 +20,8 @@ export interface HlsJobOptions {
 	hdr?: boolean;
 	/** Absolute ffprobe index of the audio stream to encode; absent = the first one (if any). */
 	audioStreamIndex?: number;
+	/** Output audio channels (1 mono, 2 stereo, 6 = 5.1); absent = stereo. */
+	audioChannels?: 1 | 2 | 6;
 }
 
 /** Widest output the transcoder emits regardless of plan; larger sources are downscaled. */
@@ -102,7 +104,7 @@ export function hlsArgs(opts: HlsJobOptions): string[] {
 		'-b:a',
 		`${quality.audioKbps}k`,
 		'-ac',
-		'2',
+		String(opts.audioChannels ?? 2),
 		'-f',
 		'hls',
 		'-hls_time',
