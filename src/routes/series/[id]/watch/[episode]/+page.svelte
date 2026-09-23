@@ -17,6 +17,11 @@
 		storeAudioPreference
 	} from '$lib/audio-preference';
 	import type { AudioTrack } from '$lib/data';
+	import {
+		DEFAULT_PLAYBACK_SETTINGS,
+		stillWatchingDueForEpisode
+	} from '$lib/data/playback-settings';
+	import { loadGuestAutoplay, saveAutoplayNext } from '$lib/playback-preference';
 
 	let { data } = $props();
 
@@ -41,6 +46,24 @@
 		storeQuality(next);
 		restartAt = lastPosition;
 		quality = next;
+	}
+
+	// Account settings, or the defaults for guests (whose autoplay is per browser).
+	const playbackSettings = $derived(data.playbackSettings ?? DEFAULT_PLAYBACK_SETTINGS);
+	let autoplayNext = $derived(data.playbackSettings?.autoplayNext ?? loadGuestAutoplay());
+
+	function changeAutoplay(next: boolean) {
+		autoplayNext = next;
+		saveAutoplayNext(next, data.playbackSettings !== null);
+	}
+
+	// "Still watching?": episodes that autoplayed in a row with no input. This
+	// page component survives episode→episode navigation, so the count does too;
+	// the player reads `stillWatchingDue` when it mounts for the next episode.
+	let autoAdvances = $state(0);
+
+	function onInteraction() {
+		if (autoAdvances !== 0) autoAdvances = 0;
 	}
 
 	// Audio works the same way: a pick restarts the session with that stream.
@@ -158,6 +181,11 @@
 			if (playback) playback.subtitles = tracks;
 		}}
 		nextHref={data.nextEpisodeId ? episodeWatchHref(data.show.id, data.nextEpisodeId) : undefined}
+		{autoplayNext}
+		onAutoplayChange={changeAutoplay}
+		onAutoAdvance={() => autoAdvances++}
+		{onInteraction}
+		stillWatchingDue={stillWatchingDueForEpisode(autoAdvances, playbackSettings.stillWatching)}
 		show={data.show}
 		currentEpisodeId={data.episode.id}
 	/>

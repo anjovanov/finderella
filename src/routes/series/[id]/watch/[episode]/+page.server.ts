@@ -33,6 +33,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		subtitleSettings,
 		// The account's preferred audio language; null = guest (the page uses this browser's).
 		audioLanguage: userId ? playbackSettings.audioLanguage : null,
+		// Autoplay + "Still watching?" for accounts; null = guest (defaults, autoplay per browser).
+		playbackSettings: userId ? playbackSettings : null,
 		canFindSubtitles: userId !== null && providersConfigured,
 		// Playback source comes from POST /api/playback/start (client-side).
 		nextEpisodeId: flat[index + 1]?.episode.id

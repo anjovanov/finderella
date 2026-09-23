@@ -2,6 +2,12 @@
 
 ## 2026-09-23
 
+**More playback settings** (migration `0015`: `user_settings.autoplay_next`, `still_watching_enabled`, `still_watching_episodes`, `still_watching_minutes`) — **Settings → Playback** now has three cards:
+
+- **Audio**: the "File's default" choice is now called **Original language** (it plays the track the file marks as its default, which is usually the original).
+- **Series**: **Play next episode automatically** (on by default). It's the same setting as the player's Autoplay switch, now stored on the account so it follows you between devices (guests keep it per browser).
+- **Still watching?** (off by default): pauses playback and asks before carrying on — for series after 2–6 episodes in a row that played automatically, for movies after 1–4 hours of playback — whenever there has been no click, tap or key press in the player. Playback only resumes when you press **Continue watching**; **Back to browse** leaves the player.
+
 **Light theme and screensaver** (migration `0014`: `user_settings.theme`, `screensaver_enabled`, `screensaver_kind`, `screensaver_seconds`) — a new **Settings → Preferences** section:
 
 - **Appearance**: Dark (the default) or Light. The light theme uses the same teal accent on a near-white page; the choice applies at once, is stored on the account (so it follows you to other devices) and is rendered by the server, so pages never flash the wrong theme. The video player, trailers and the screensaver stay dark in both themes.

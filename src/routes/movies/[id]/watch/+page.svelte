@@ -17,6 +17,10 @@
 		storeAudioPreference
 	} from '$lib/audio-preference';
 	import type { AudioTrack } from '$lib/data';
+	import {
+		DEFAULT_PLAYBACK_SETTINGS,
+		stillWatchingMovieSeconds
+	} from '$lib/data/playback-settings';
 
 	let { data } = $props();
 
@@ -133,6 +137,9 @@
 		{quality}
 		sourceWidth={playback.source.width}
 		onQualityChange={changeQuality}
+		stillWatchingAfterSeconds={stillWatchingMovieSeconds(
+			(data.playbackSettings ?? DEFAULT_PLAYBACK_SETTINGS).stillWatching
+		)}
 		audioTracks={playback.audioTracks}
 		audioTrackId={playback.audioTrackId}
 		onAudioChange={changeAudio}

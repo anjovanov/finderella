@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '@videojs/html/video/ui';
+	import { untrack } from 'svelte';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		ArrowLeft01Icon,
@@ -75,7 +76,13 @@
 		onAudioChange,
 		nextHref,
 		show,
-		currentEpisodeId
+		currentEpisodeId,
+		autoplayNext = true,
+		onAutoplayChange,
+		onAutoAdvance,
+		onInteraction,
+		stillWatchingDue = false,
+		stillWatchingAfterSeconds = null
 	}: {
 		title: string;
 		/** Secondary line, e.g. "S1 E2 · The Tidewalker" for series episodes. */
@@ -122,6 +129,18 @@
 		/** When set (with `currentEpisodeId`), shows the "More episodes" control — series only. */
 		show?: Series;
 		currentEpisodeId?: string;
+		/** Start `nextHref` when this episode ends (the page owns and persists it). */
+		autoplayNext?: boolean;
+		/** The Autoplay switch was flipped. */
+		onAutoplayChange?: (next: boolean) => void;
+		/** Called right before autoplay moves on to `nextHref` (the page counts these for "Still watching?"). */
+		onAutoAdvance?: () => void;
+		/** A click, tap or key press in the player — the viewer is here. */
+		onInteraction?: () => void;
+		/** Series: open "Still watching?" instead of starting this episode (read once, at mount). */
+		stillWatchingDue?: boolean;
+		/** Movies: pause and ask after this many seconds of playback without input; null = never. */
+		stillWatchingAfterSeconds?: number | null;
 	} = $props();
 
 	// No screensaver over the player, playing or paused.
@@ -144,23 +163,47 @@
 	let barVisible = $state(true);
 	let videoEl: HTMLVideoElement | undefined = $state();
 
-	// Autoplay the next episode when the current one ends (series only). On by
-	// default; persisted per browser. Watch pages are ssr = false, but guard anyway.
-	const AUTOPLAY_KEY = 'finderella:autoplay-next';
-	let autoplayNext = $state(true);
-	try {
-		autoplayNext = localStorage.getItem(AUTOPLAY_KEY) !== '0';
-	} catch {
-		// localStorage unavailable (SSR or blocked) — default on.
+	// Autoplay-next is the page's setting (account or browser); the switch reports flips.
+	function toggleAutoplayNext() {
+		onAutoplayChange?.(!autoplayNext);
 	}
 
-	function toggleAutoplayNext() {
-		autoplayNext = !autoplayNext;
-		try {
-			localStorage.setItem(AUTOPLAY_KEY, autoplayNext ? '1' : '0');
-		} catch {
-			// Preference just won't persist.
+	// "Still watching?": series decide per episode (the page counts autoplayed
+	// episodes); movies count playing time since the last input. While open,
+	// playback stays paused until the viewer chooses to continue.
+	let stillWatchingOpen = $state(untrack(() => stillWatchingDue));
+	let secondsWithoutInput = 0;
+	let lastPlayhead: number | null = null;
+
+	function noteInput() {
+		secondsWithoutInput = 0;
+		onInteraction?.();
+	}
+
+	function countWatchTime(el: HTMLVideoElement) {
+		if (stillWatchingAfterSeconds === null || el.paused || stillWatchingOpen) {
+			lastPlayhead = null;
+			return;
 		}
+		const now = el.currentTime;
+		// Ordinary playback advances ~0.25 s per timeupdate; seeks jump and don't count.
+		if (lastPlayhead !== null && now > lastPlayhead && now - lastPlayhead < 2) {
+			secondsWithoutInput += now - lastPlayhead;
+		}
+		lastPlayhead = now;
+		if (secondsWithoutInput >= stillWatchingAfterSeconds) {
+			el.pause();
+			stillWatchingOpen = true;
+		}
+	}
+
+	// Keyboard/remote users land on "Continue watching" when the prompt opens.
+	const focusOnMount = (el: HTMLElement) => el.focus();
+
+	function continueWatching() {
+		stillWatchingOpen = false;
+		noteInput();
+		videoEl?.play().catch(() => {});
 	}
 
 	// "Next episode starting in…" countdown, shown during the last 10 seconds
@@ -174,10 +217,12 @@
 		}
 		remainingSeconds = videoEl.duration - videoEl.currentTime;
 		onProgress?.(videoEl.currentTime, videoEl.duration);
+		countWatchTime(videoEl);
 	}
 
 	const nextCountdown = $derived(
-		autoplayNext &&
+		!stillWatchingOpen &&
+			autoplayNext &&
 			nextHref &&
 			remainingSeconds !== null &&
 			remainingSeconds > 0 &&
@@ -209,6 +254,11 @@
 		if (!el) return;
 
 		const resumeAt = startFrom > 0 ? startFrom : null;
+		// A due "Still watching?" prompt holds the episode at its start. Untracked:
+		// the flag must never become a reason to re-source the video.
+		const autoStart = () => {
+			if (!untrack(() => stillWatchingOpen)) el.play().catch(() => {});
+		};
 
 		const applyResume = () => {
 			if (resumeAt !== null) el.currentTime = resumeAt;
@@ -224,7 +274,7 @@
 			el.src = src;
 			el.addEventListener('loadedmetadata', applyResume, { once: true });
 			el.addEventListener('error', onMediaError);
-			el.play().catch(() => {});
+			autoStart();
 		};
 		const stopNative = () => {
 			el.removeEventListener('loadedmetadata', applyResume);
@@ -250,7 +300,7 @@
 				});
 				hls.loadSource(src);
 				hls.attachMedia(el);
-				hls.on(Hls.Events.MANIFEST_PARSED, () => el.play().catch(() => {}));
+				hls.on(Hls.Events.MANIFEST_PARSED, autoStart);
 				// hls.js never recovers from a fatal error on its own; one media
 				// recovery attempt, then hand the reason to the page.
 				let recovered = false;
@@ -306,6 +356,7 @@
 	// starts playback once the new episode's source is in.
 	function onVideoEnded() {
 		if (!autoplayNext || !nextHref) return;
+		onAutoAdvance?.();
 		/* eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d paths */
 		goto(nextHref).catch(() => {});
 	}
@@ -316,7 +367,9 @@
 	let qualityOpen = $state(false);
 	let subtitlesOpen = $state(false);
 	let findSubtitlesOpen = $state(false);
-	const menuOpen = $derived(episodesOpen || qualityOpen || subtitlesOpen || findSubtitlesOpen);
+	const menuOpen = $derived(
+		episodesOpen || qualityOpen || subtitlesOpen || findSubtitlesOpen || stillWatchingOpen
+	);
 	const hasAudioChoice = $derived(audioTracks.length > 1 && !!onAudioChange);
 	const showSubtitlesButton = $derived(tracks.length > 0 || canFindSubtitles || hasAudioChoice);
 	const subtitlesMenuLabel = $derived(hasAudioChoice ? 'Audio & subtitles' : 'Subtitles');
@@ -357,6 +410,8 @@
 	// interactive control has focus so native key handling (button activation,
 	// slider arrows) isn't doubled up.
 	function onkeydown(event: KeyboardEvent) {
+		// The prompt's own buttons take the keys; nothing may resume behind it.
+		if (stillWatchingOpen) return;
 		// Escape closes the episodes panel even while one of its controls has focus.
 		// (In fullscreen the browser may consume Escape to exit fullscreen first.)
 		if (event.key === 'Escape' && menuOpen) {
@@ -553,7 +608,8 @@
 	}
 </script>
 
-<svelte:window {onkeydown} />
+<!-- Capture phase: any input counts as the viewer being there ("Still watching?"). -->
+<svelte:window {onkeydown} onpointerdowncapture={noteInput} onkeydowncapture={noteInput} />
 <svelte:document onfullscreenchange={() => (isFullscreen = !!document.fullscreenElement)} />
 
 <div
@@ -929,6 +985,37 @@
 									{/if}
 								</button>
 							{/each}
+						</div>
+					</div>
+				{/if}
+				{#if stillWatchingOpen}
+					<div
+						class="absolute inset-0 z-30 flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm"
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="still-watching-title"
+					>
+						<div class="flex max-w-md flex-col items-center gap-5 text-center text-white">
+							<div class="flex flex-col gap-1.5">
+								<h2 id="still-watching-title" class="text-2xl font-semibold">
+									Are you still watching?
+								</h2>
+								<p class="text-white/70">{subtitle ? `${title} · ${subtitle}` : title}</p>
+							</div>
+							<div class="flex flex-wrap justify-center gap-3">
+								<Button size="lg" onclick={continueWatching} {@attach focusOnMount}>
+									Continue watching
+								</Button>
+								<!-- backHref is a resolve()d path from the page -->
+								<!-- eslint-disable svelte/no-navigation-without-resolve -->
+								<a
+									href={backHref}
+									class="inline-flex h-10 items-center rounded-4xl px-5 text-sm font-medium text-white/80 ring-1 ring-white/25 transition-colors hover:bg-white/10 hover:text-white"
+								>
+									Back to browse
+								</a>
+								<!-- eslint-enable svelte/no-navigation-without-resolve -->
+							</div>
 						</div>
 					</div>
 				{/if}

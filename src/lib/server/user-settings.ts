@@ -3,11 +3,14 @@ import { z } from 'zod';
 import { normalizeLanguage } from '@finderella/protocol';
 import { db } from '$lib/server/db';
 import { userSettings } from '$lib/server/db/schema';
+import { isAudioLanguage } from '$lib/audio-preference';
 import {
-	DEFAULT_AUDIO_LANGUAGE,
-	isAudioLanguage,
-	normalizeAudioLanguage
-} from '$lib/audio-preference';
+	DEFAULT_PLAYBACK_SETTINGS,
+	normalizePlaybackSettings,
+	STILL_WATCHING_EPISODES,
+	STILL_WATCHING_MINUTES,
+	type PlaybackSettings
+} from '$lib/data/playback-settings';
 import {
 	DEFAULT_SUBTITLE_SETTINGS,
 	HEX_COLOR_RE,
@@ -84,22 +87,31 @@ export async function saveSubtitleSettings(
 	return next;
 }
 
-export interface PlaybackSettings {
-	/** 'default' (the file's default track) or an ISO 639-1 code. */
-	audioLanguage: string;
-}
+/** Forms post 'true'/'false' for switches (hidden input behind the Switch). */
+const formBoolean = z.union([
+	z.boolean(),
+	z.enum(['true', 'false']).transform((v) => v === 'true')
+]);
 
-export const DEFAULT_PLAYBACK_SETTINGS: PlaybackSettings = {
-	audioLanguage: DEFAULT_AUDIO_LANGUAGE
-};
-
-/** A partial update from the settings form or the player. */
+/** A partial update from the settings forms or the player (all fields optional). */
 export const PlaybackSettingsPatch = z.object({
 	audioLanguage: z
 		.string()
 		.trim()
 		.toLowerCase()
 		.refine(isAudioLanguage, 'unknown language')
+		.optional(),
+	autoplayNext: formBoolean.optional(),
+	stillWatchingEnabled: formBoolean.optional(),
+	stillWatchingEpisodes: z.coerce
+		.number()
+		.int()
+		.refine((n) => (STILL_WATCHING_EPISODES as readonly number[]).includes(n), 'unknown count')
+		.optional(),
+	stillWatchingMinutes: z.coerce
+		.number()
+		.int()
+		.refine((n) => (STILL_WATCHING_MINUTES as readonly number[]).includes(n), 'unknown duration')
 		.optional()
 });
 export type PlaybackSettingsPatch = z.infer<typeof PlaybackSettingsPatch>;
@@ -108,11 +120,25 @@ export type PlaybackSettingsPatch = z.infer<typeof PlaybackSettingsPatch>;
 export async function getPlaybackSettings(userId: string | null): Promise<PlaybackSettings> {
 	if (!userId) return DEFAULT_PLAYBACK_SETTINGS;
 	const row = await db.query.userSettings.findFirst({
-		columns: { audioLanguage: true },
+		columns: {
+			audioLanguage: true,
+			autoplayNext: true,
+			stillWatchingEnabled: true,
+			stillWatchingEpisodes: true,
+			stillWatchingMinutes: true
+		},
 		where: eq(userSettings.userId, userId)
 	});
 	if (!row) return DEFAULT_PLAYBACK_SETTINGS;
-	return { audioLanguage: normalizeAudioLanguage(row.audioLanguage) };
+	return normalizePlaybackSettings({
+		audioLanguage: row.audioLanguage,
+		autoplayNext: row.autoplayNext,
+		stillWatching: {
+			enabled: row.stillWatchingEnabled,
+			episodes: row.stillWatchingEpisodes,
+			minutes: row.stillWatchingMinutes
+		}
+	});
 }
 
 /** Merge a validated patch into the account's row (creating it) and return the result. */
@@ -121,20 +147,29 @@ export async function savePlaybackSettings(
 	patch: PlaybackSettingsPatch
 ): Promise<PlaybackSettings> {
 	const current = await getPlaybackSettings(userId);
-	const next: PlaybackSettings = { ...current, ...patch };
-	const values = { audioLanguage: next.audioLanguage, updatedAt: new Date() };
+	const next = normalizePlaybackSettings({
+		audioLanguage: patch.audioLanguage ?? current.audioLanguage,
+		autoplayNext: patch.autoplayNext ?? current.autoplayNext,
+		stillWatching: {
+			enabled: patch.stillWatchingEnabled ?? current.stillWatching.enabled,
+			episodes: patch.stillWatchingEpisodes ?? current.stillWatching.episodes,
+			minutes: patch.stillWatchingMinutes ?? current.stillWatching.minutes
+		}
+	});
+	const values = {
+		audioLanguage: next.audioLanguage,
+		autoplayNext: next.autoplayNext,
+		stillWatchingEnabled: next.stillWatching.enabled,
+		stillWatchingEpisodes: next.stillWatching.episodes,
+		stillWatchingMinutes: next.stillWatching.minutes,
+		updatedAt: new Date()
+	};
 	await db
 		.insert(userSettings)
 		.values({ userId, ...values })
 		.onConflictDoUpdate({ target: userSettings.userId, set: values });
 	return next;
 }
-
-/** Forms post 'true'/'false' for switches (hidden input behind the Switch). */
-const formBoolean = z.union([
-	z.boolean(),
-	z.enum(['true', 'false']).transform((v) => v === 'true')
-]);
 
 /** A partial update from one of the /settings/preferences forms. */
 export const PreferencesPatch = z.object({

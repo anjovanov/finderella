@@ -21,6 +21,12 @@ export const userSettings = pgTable('user_settings', {
 	subtitleFont: text('subtitle_font').notNull().default('sans'),
 	/** 'default' (the file's default track) or an ISO 639-1 code. */
 	audioLanguage: text('audio_language').notNull().default('default'),
+	/** Start the next episode when one ends (the player's Autoplay switch). */
+	autoplayNext: boolean('autoplay_next').notNull().default(true),
+	/** "Still watching?" prompt; thresholds are STILL_WATCHING_EPISODES / _MINUTES presets. */
+	stillWatchingEnabled: boolean('still_watching_enabled').notNull().default(false),
+	stillWatchingEpisodes: integer('still_watching_episodes').notNull().default(3),
+	stillWatchingMinutes: integer('still_watching_minutes').notNull().default(120),
 	/** 'dark' | 'light' (see $lib/data/preferences). */
 	theme: text('theme').notNull().default('dark'),
 	screensaverEnabled: boolean('screensaver_enabled').notNull().default(false),
