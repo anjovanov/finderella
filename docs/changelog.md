@@ -2,6 +2,14 @@
 
 ## 2026-09-24
 
+**Player tweaks**:
+
+- The Quality menu shows **direct play** / **transcoded** on the quality that is actually playing. Before, the tag always sat on the Original row, even while 720p (for example) was playing. The Original row still shows the file's own resolution.
+- Changing quality, switching the audio track or moving to the next episode no longer exits fullscreen. Leaving the player (Back, "Back to browse") still does.
+- No page scrollbar flashes up while the player shows "Preparing playback…" (after a quality or audio change, or between episodes).
+- Larger back button, title and **Next episode** button in the player's top bar.
+- Movies show their release year next to the title in the player's top bar.
+
 **Maximum audio channels** (migration `0016`: `user_settings.audio_channels`) — **Settings → Playback → Audio** gains a _Maximum audio channels_ choice: **Auto** (the default), **Mono**, **Stereo** (how every title played until now) or **5.1 surround**. Existing accounts and guests start on Auto. On headphones, laptops and phones it plays exactly like Stereo; only devices that report a 5.1 or larger output get surround.
 
 - **5.1 surround**: titles converted for streaming keep their surround soundtrack (AAC 5.1 at twice the stereo bitrate; 7.1 comes out as 5.1). Before, every converted title was mixed down to stereo. Titles that play directly were never mixed down, and still aren't.

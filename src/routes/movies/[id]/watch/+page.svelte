@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { mediaHref } from '$lib/data';
 	import WatchPlayer from '$lib/components/media/watch-player.svelte';
+	import { exitFullscreen } from '$lib/fullscreen';
+	import { lockPageScroll } from '$lib/scroll-lock';
 	import {
 		beaconStop,
 		createProgressReporter,
@@ -23,6 +26,12 @@
 	} from '$lib/data/playback-settings';
 
 	let { data } = $props();
+
+	// The player fullscreens the document so a session restart keeps it; leaving
+	// the watch page (Back, "Back to browse") must not carry it to the next page.
+	onDestroy(exitFullscreen);
+	// For the page's lifetime, not the player's: it unmounts between sessions.
+	$effect(lockPageScroll);
 
 	// Guests get the defaults (their autoplay switch is kept per browser).
 	const playbackSettings = $derived(data.playbackSettings ?? DEFAULT_PLAYBACK_SETTINGS);
@@ -130,6 +139,7 @@
 {#if playback}
 	<WatchPlayer
 		title={data.movie.title}
+		year={data.movie.year}
 		backHref={mediaHref(data.movie)}
 		videoSrc={playback.src}
 		videoKind={playback.mode === 'hls' ? 'hls' : 'file'}

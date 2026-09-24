@@ -55,6 +55,7 @@
 
 	let {
 		title,
+		year,
 		subtitle,
 		backHref,
 		videoSrc,
@@ -87,6 +88,8 @@
 		stillWatchingAfterSeconds = null
 	}: {
 		title: string;
+		/** Release year, shown after the title (movies). */
+		year?: number;
 		/** Secondary line, e.g. "S1 E2 · The Tidewalker" for series episodes. */
 		subtitle?: string;
 		backHref: string;
@@ -150,17 +153,6 @@
 	// No screensaver over the player, playing or paused.
 	const screensaver = getScreensaver();
 	$effect(() => screensaver.inhibit());
-
-	// The page under this fixed overlay is taller than the viewport (header + min-h-svh
-	// main); lock scrolling while the player is open.
-	$effect(() => {
-		const root = document.documentElement;
-		const previous = root.style.overflow;
-		root.style.overflow = 'hidden';
-		return () => {
-			root.style.overflow = previous;
-		};
-	});
 
 	// The controls feature toggles `data-visible` on <media-controls> (activity/idle);
 	// mirror it onto our top bar so both fade in sync.
@@ -395,14 +387,17 @@
 	const showSubtitlesButton = $derived(tracks.length > 0 || canFindSubtitles || hasAudioChoice);
 	const subtitlesMenuLabel = $derived(hasAudioChoice ? 'Audio & subtitles' : 'Subtitles');
 	const qualityOptions = $derived(availableQualities(sourceWidth));
-	// What "Original" resolves to for this file: the source itself when direct-playing,
-	// else the transcoder's output (source capped at the 4K ceiling).
-	const autoDescription = $derived.by(() => {
-		const delivery = videoKind === 'hls' ? 'transcoded' : 'direct play';
-		if (!sourceWidth) return delivery;
-		const width = videoKind === 'hls' ? Math.min(sourceWidth, MAX_TRANSCODE_WIDTH) : sourceWidth;
-		return `${resolutionLabel(width)} · ${delivery}`;
+	// What "Original" resolves to for this file: the source itself, capped at the
+	// transcoder's 4K ceiling while an Original transcode is playing.
+	const originalResolution = $derived.by(() => {
+		if (!sourceWidth) return '';
+		const transcodingOriginal = quality === 'original' && videoKind === 'hls';
+		return resolutionLabel(
+			transcodingOriginal ? Math.min(sourceWidth, MAX_TRANSCODE_WIDTH) : sourceWidth
+		);
 	});
+	// Shown on the row that is actually playing.
+	const delivery = $derived(videoKind === 'hls' ? 'transcoded' : 'direct play');
 	const chromeVisible = $derived(barVisible || menuOpen);
 
 	// Close on any pointerdown outside the open surface and its trigger.
@@ -614,17 +609,18 @@
 		return () => observer.disconnect();
 	}
 
-	// Fullscreen the media-container itself — the element the library expects to be
-	// fullscreened (the packaged skin does the same). Our top bar and controls live
-	// inside it, so everything stays visible in fullscreen.
-	let containerEl: HTMLElement | undefined = $state();
-	let isFullscreen = $state(false);
+	// Fullscreen the whole document, not <media-container>: the watch pages unmount
+	// this player on every session restart (quality/audio change, next episode),
+	// and removing the fullscreened element would drop the browser out of
+	// fullscreen. The player root is fixed full-viewport, so it fills the screen;
+	// the watch pages exit fullscreen when the viewer leaves the route.
+	let isFullscreen = $state(!!document.fullscreenElement);
 
 	function toggleFullscreen() {
 		if (document.fullscreenElement) {
 			document.exitFullscreen().catch(() => {});
 		} else {
-			containerEl?.requestFullscreen().catch(() => {});
+			document.documentElement.requestFullscreen().catch(() => {});
 		}
 	}
 </script>
@@ -638,13 +634,14 @@
 		// `dark`: the player keeps its dark chrome in the light theme too.
 		'player-root dark fixed inset-0 z-50 flex flex-col bg-black',
 		!chromeVisible && 'cursor-none',
-		menuOpen && 'menu-open'
+		menuOpen && 'menu-open',
+		isFullscreen && 'is-fullscreen'
 	]}
 	style={cueStyle(subtitleSettings)}
 >
 	<div class="min-h-0 flex-1">
 		<video-player>
-			<media-container bind:this={containerEl}>
+			<media-container>
 				<!-- src is attached programmatically (file/HLS) by the source effect. -->
 				<video
 					bind:this={videoEl}
@@ -678,7 +675,7 @@
 				     controls visible; also shows in fullscreen). -->
 				<div
 					class={[
-						'absolute inset-x-0 top-0 z-10 flex items-center gap-4 bg-linear-to-b from-black/80 to-transparent px-4 pt-4 pb-10 transition-opacity duration-300 sm:px-6',
+						'absolute inset-x-0 top-0 z-10 flex items-center gap-4 bg-linear-to-b from-black/80 to-transparent px-4 pt-5 pb-10 transition-opacity duration-300 sm:px-6 sm:pt-6',
 						!chromeVisible && 'pointer-events-none opacity-0'
 					]}
 				>
@@ -687,26 +684,43 @@
 					<a
 						href={backHref}
 						aria-label="Back"
-						class="flex size-10 shrink-0 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15"
+						class="flex size-12 shrink-0 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15"
 					>
-						<HugeiconsIcon icon={ArrowLeft01Icon} class="size-6" />
+						<!-- 1px down: the title's ink sits low (mostly lowercase), so a
+						     geometrically centred chevron reads as higher than the text. -->
+						<HugeiconsIcon icon={ArrowLeft01Icon} class="size-8 translate-y-px" />
 					</a>
 					<!-- eslint-enable svelte/no-navigation-without-resolve -->
 					<div class="flex min-w-0 flex-col">
-						<span class="truncate text-lg font-semibold text-white">{title}</span>
+						<!-- The year sits outside the truncating span, so a long title never hides it.
+						     It shares the title's baseline one size smaller: at full size its
+						     cap-height digits and tall parentheses read as higher than the mostly
+						     lowercase title. overflow-clip (not truncate's overflow-hidden) keeps
+						     the title's text baseline; a hidden-overflow box's baseline is its
+						     bottom edge, which would lift the year. min-w-0 lets it shrink (clip,
+						     unlike hidden, doesn't zero a flex item's automatic minimum width). -->
+						<div class="flex min-w-0 items-baseline gap-2 text-white">
+							<span
+								class="min-w-0 overflow-clip text-xl font-semibold text-ellipsis whitespace-nowrap sm:text-2xl"
+								>{title}</span
+							>
+							{#if year}
+								<span class="shrink-0 text-lg text-white/60 sm:text-xl">({year})</span>
+							{/if}
+						</div>
 						{#if subtitle}
-							<span class="truncate text-sm text-white/70">{subtitle}</span>
+							<span class="truncate text-sm text-white/70 sm:text-base">{subtitle}</span>
 						{/if}
 					</div>
 					{#if nextHref}
 						<Button
 							href={nextHref}
 							variant="secondary"
-							size="sm"
-							class="ml-auto bg-white/15 text-white backdrop-blur hover:bg-white/25"
+							size="lg"
+							class="ml-auto shrink-0 bg-white/15 text-base text-white backdrop-blur hover:bg-white/25"
 						>
 							Next episode
-							<HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
+							<HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" class="size-5" />
 						</Button>
 					{/if}
 				</div>
@@ -902,8 +916,11 @@
 							>
 								<span>
 									{option.label}
-									{#if option.id === 'original'}
-										<span class="text-white/50">· {autoDescription}</span>
+									{#if option.id === 'original' && originalResolution}
+										<span class="text-white/50">· {originalResolution}</span>
+									{/if}
+									{#if option.id === quality}
+										<span class="text-white/50">· {delivery}</span>
 									{/if}
 								</span>
 								{#if option.id === quality}
@@ -1078,7 +1095,7 @@
 	   Windows GPUs the overlay plane composites above our DOM controls, making
 	   them vanish (DevTools-open disables promotion, which masks the bug). The
 	   imperceptible filter forces the video through normal compositing. */
-	.player-root :global(media-container:fullscreen video) {
+	.player-root.is-fullscreen :global(media-container video) {
 		filter: brightness(1.001);
 	}
 

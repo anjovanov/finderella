@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { episodeWatchHref, mediaHref } from '$lib/data';
 	import WatchPlayer from '$lib/components/media/watch-player.svelte';
+	import { exitFullscreen } from '$lib/fullscreen';
+	import { lockPageScroll } from '$lib/scroll-lock';
 	import {
 		beaconStop,
 		createProgressReporter,
@@ -24,6 +27,12 @@
 	import { loadGuestAutoplay, saveAutoplayNext } from '$lib/playback-preference';
 
 	let { data } = $props();
+
+	// The player fullscreens the document so a session restart keeps it; leaving
+	// the watch page (Back, "Back to browse") must not carry it to the next page.
+	onDestroy(exitFullscreen);
+	// For the page's lifetime, not the player's: it unmounts between sessions.
+	$effect(lockPageScroll);
 
 	const episodeLabel = $derived(
 		`S${data.season.number} E${data.episode.number} · ${data.episode.title}`
