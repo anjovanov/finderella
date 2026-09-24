@@ -4,6 +4,7 @@ import { db } from '$lib/server/db';
 import { library, mediaFile } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
 import { log } from '$lib/server/log';
+import { queueDeviceEvent } from '$lib/server/gateways/events';
 import { trickplayEnabled } from '$lib/server/site-settings';
 import { ensureTrickplay } from './ensure';
 
@@ -185,6 +186,20 @@ async function runJob(lib: LibraryRow): Promise<void> {
 		status.running = false;
 		status.current = null;
 		status.finishedAt = new Date().toISOString();
+		queueDeviceEvent({
+			type: 'thumbnails.finished',
+			libraryId: lib.id,
+			detail: {
+				total: status.total,
+				processed: status.processed,
+				generated: status.generated,
+				alreadyReady: status.alreadyReady,
+				failed: status.failed,
+				skipped: status.skipped,
+				stopped: status.stopRequested,
+				durationMs: Date.parse(status.finishedAt) - Date.parse(status.startedAt!)
+			}
+		});
 	}
 }
 

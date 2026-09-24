@@ -2,7 +2,6 @@
 	import { enhance } from '$app/forms';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { StopCircleIcon } from '@hugeicons/core-free-icons';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import {
@@ -18,6 +17,7 @@
 	import PlatformLabel from './platform-label.svelte';
 	import PosterThumb from './poster-thumb.svelte';
 	import TitleLink from './title-link.svelte';
+	import StreamStateBadge from './stream-state-badge.svelte';
 	import UserCell from './user-cell.svelte';
 
 	/**
@@ -33,13 +33,6 @@
 		return stream.durationSeconds ? Math.min(p, stream.durationSeconds) : p;
 	});
 	const fraction = $derived(stream.durationSeconds ? position / stream.durationSeconds : 0);
-
-	const STATE_LABELS = {
-		playing: 'Playing',
-		paused: 'Paused',
-		buffering: 'Buffering',
-		unknown: 'Starting'
-	} as const;
 
 	function clock(seconds: number): string {
 		const s = Math.max(0, Math.floor(seconds));
@@ -87,9 +80,7 @@
 						<span class="text-muted-foreground"><PlatformLabel platform={stream.platform} /></span>
 					</div>
 				</div>
-				<Badge variant={stream.state === 'playing' ? 'default' : 'secondary'} class="shrink-0">
-					{stream.terminating ? 'Stopping' : STATE_LABELS[stream.state]}
-				</Badge>
+				<StreamStateBadge state={stream.state} terminating={stream.terminating} />
 			</div>
 
 			<div class="flex flex-col gap-1">

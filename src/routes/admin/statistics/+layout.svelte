@@ -65,7 +65,7 @@
 	onMount(() => {
 		const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		if (!zone || zone === data.tz) return;
-		document.cookie = `finderella_tz=${encodeURIComponent(zone)}; path=/admin/statistics; max-age=31536000; samesite=lax`;
+		document.cookie = `finderella_tz=${encodeURIComponent(zone)}; path=/admin; max-age=31536000; samesite=lax`;
 		void invalidateAll();
 	});
 </script>

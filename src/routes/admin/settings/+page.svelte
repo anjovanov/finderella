@@ -123,7 +123,9 @@
 						<Field.Label for="trickplay-enabled">Seek-bar thumbnails</Field.Label>
 						<Field.Description>
 							The device holding a file renders its thumbnails the first time the title is played
-							(and for whole libraries via <span class="font-mono">Generate thumbnails</span>
+							(and for whole libraries via <span class="font-bold"
+								>Generate trickplay thumbnails</span
+							>
 							on the Devices page), then keeps them cached. Turn this off to spare weak devices; a single
 							device can also opt out with <span class="font-mono">FINDERELLA_TRICKPLAY=0</span>.
 						</Field.Description>

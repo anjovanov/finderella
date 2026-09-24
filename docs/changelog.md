@@ -1,6 +1,57 @@
 # Changelog
 
+## 2026-09-25
+
+**Devices activity log** (migration `0018`: new table `device_event`). The Devices page has an **Activity log** at the bottom. It lists, newest first, 20 per page:
+
+- a device paired, renamed or revoked
+- a library added or removed
+- a scan started (on a rescan or a new library) and finished (files found, errors, how long it took)
+- a thumbnail run started and finished (generated, already had them, failed, stopped early, how long it took)
+
+Each entry shows the device, the library, details, and the admin who did it ("Automatic" for things the device or server did). Entries keep the device, library and admin names after those are removed.
+
+Also fixed: revoking a device used to make its pairing code usable again until it expired. Revoking now deletes the code.
+
+**Users and Subtitles admin pages** (no schema change). Both pages now use the full width. Every admin page does except Site settings.
+
+- **Users:**
+  - **Create account** is a button above the table on the right. It opens a dialog, like Pair a device.
+  - Each row shows an avatar, name, email, role, status and join date.
+  - Actions are in a ⋮ menu: Make admin / Make user, Ban…, Unban, Delete account…
+  - Ban (with an optional reason) and Delete use dialogs instead of browser prompts.
+  - Errors and "Created an account for …" appear at the top of the page.
+- **Subtitles:**
+  - Each provider is its own panel with a status badge and what it covers.
+  - The "Remove …" boxes are real checkboxes.
+  - Test results list per provider with icons.
+  - Download settings and Bulk download sit side by side. Bulk download has a progress bar, a stats grid and an alert for paused providers.
+  - Recent activity is a proper table with status badges.
+
+**Admin overview dashboard** (`/admin`, no schema change). The Overview page is now full width and shows:
+
+- six count tiles that link to their pages: watching now, devices online, movies, series, media files and users
+- **Now playing**, refreshed every 10 seconds
+- **Recently watched**
+- a **Devices** summary with status and file counts
+- **Last 7 days**: plays, watch time, viewers and the share transcoded
+- **Recently added**, as a poster grid with one entry per movie or series ("5 new episodes")
+
+The Devices page also uses the full width now.
+
 ## 2026-09-24
+
+**Devices page redesign** (`/admin/devices`, no schema change). The page now uses the same shadcn components as the other admin pages:
+
+- A summary line under the heading (devices, online, libraries, files). **Pair a device** moved to a button in the header, or the empty-state call to action.
+- Pairing happens in a dialog. The code is shown as eight separate key-style tiles. There's a copy button, an expiry bar, and copyable `pair` / `connect` commands. The dialog notices when a device uses the code.
+- Each device is a card:
+  - a live status light, "last seen" in relative time, and the pairing date
+  - the gateway version as a small badge between the status and the pairing date
+  - a ⋮ menu with Rename, Add library and Revoke
+- Each library is a row with a Movies/Series icon, its path, file count and last scan. **Rescan** stays visible; **Generate thumbnails** (with the reason it's unavailable) and **Remove library** are in a ⋮ menu.
+- Rename and Add library are dialogs. Add library has a proper Movies/Series select. Revoke and Remove use confirmation dialogs instead of browser prompts. Errors show inside the dialog, and page-level errors appear at the top.
+- The thumbnail job card has a progress bar and a stats grid.
 
 **Admin statistics** (migration `0017`: new tables `play_history` and `user_activity`; `playback_session.history_id` and `stop_reason`). A new **Statistics** page in the admin dashboard, similar to Tautulli. It has five sections:
 

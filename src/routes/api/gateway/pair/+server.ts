@@ -4,6 +4,7 @@ import { error, json, type RequestHandler } from '@sveltejs/kit';
 import { z } from 'zod';
 import { db } from '$lib/server/db';
 import { gateway, gatewayPairingCode } from '$lib/server/db/schema';
+import { recordDeviceEvent } from '$lib/server/gateways/events';
 import { log } from '$lib/server/log';
 
 const PairRequest = z.object({
@@ -52,6 +53,13 @@ export const POST: RequestHandler = async ({ request }) => {
 		.set({ claimedByGatewayId: created.id })
 		.where(eq(gatewayPairingCode.id, row.id));
 
+	// Credited to the admin who generated the code.
+	await recordDeviceEvent({
+		type: 'device.paired',
+		actorUserId: row.createdByUserId,
+		gatewayId: created.id,
+		gatewayName: created.name
+	});
 	log.info({ gatewayId: created.id, name: created.name }, 'gateway paired');
 	return json({ gatewayId: created.id, name: created.name, token });
 };

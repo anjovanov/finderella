@@ -18,8 +18,8 @@
 	// Sections with sub-pages (/admin/statistics/history …) keep their parent's title.
 	const section = $derived(page.url.pathname.split('/').slice(0, 3).join('/'));
 	const title = $derived(titles[page.url.pathname] ?? titles[section] ?? 'Admin');
-	// Statistics tables and charts need the room; forms read better narrow.
-	const wide = $derived(section === '/admin/statistics');
+	// Dashboards, tables and lists need the room; the site-settings forms read better narrow.
+	const wide = $derived(section !== '/admin/settings');
 </script>
 
 <Sidebar.Provider open={data.sidebarOpen}>

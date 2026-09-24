@@ -12,6 +12,7 @@ import {
 	series
 } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
+import { recordDeviceEvent } from '$lib/server/gateways/events';
 import { isSampleFile, parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
 import { pruneCatalog } from './prune';
 import { enrichPending, isTmdbConfigured } from '$lib/server/metadata';
@@ -283,6 +284,15 @@ export async function finalizeScan(
 	}
 	await db.update(library).set({ lastScanAt: now }).where(eq(library.id, libraryId));
 	log.info({ libraryId, ...stats }, 'library scan finished');
+	await recordDeviceEvent({
+		type: 'scan.finished',
+		libraryId,
+		detail: {
+			files: stats.files,
+			errors: stats.errors,
+			...(startedAt ? { durationMs: now.getTime() - startedAt.getTime() } : {})
+		}
+	});
 	// Another library's scan may still be inserting titles; it prunes at its own end.
 	if (!hasActiveScans()) {
 		await pruneCatalog().catch((err) => log.error({ err }, 'catalog prune failed'));

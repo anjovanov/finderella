@@ -6,16 +6,22 @@
 	/**
 	 * Page numbers under a statistics table; the page lives in the URL
 	 * (`?page=`), so the route's load serves it and links stay shareable.
-	 * Renders nothing when everything fits on one page.
+	 * Renders nothing when everything fits on one page. `noScroll` keeps the scroll
+	 * position (a table further down a page).
 	 */
-	let { total, perPage, page }: { total: number; perPage: number; page: number } = $props();
+	let {
+		total,
+		perPage,
+		page,
+		noScroll = false
+	}: { total: number; perPage: number; page: number; noScroll?: boolean } = $props();
 
 	function go(next: number) {
 		const url = new URL(appPage.url);
 		if (next <= 1) url.searchParams.delete('page');
 		else url.searchParams.set('page', String(next));
 		// eslint-disable-next-line svelte/no-navigation-without-resolve -- same route, new query
-		void goto(url, { keepFocus: true });
+		void goto(url, { keepFocus: true, noScroll });
 	}
 </script>
 

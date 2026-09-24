@@ -14,6 +14,8 @@ import {
 } from 'drizzle-orm/pg-core';
 import { user } from './auth.schema';
 import { episode, movie } from './catalog.sql';
+// Relative, not $lib: drizzle-kit loads this file without SvelteKit's aliases.
+import { DEVICE_EVENT_TYPES } from '../../data/device-events';
 
 export const libraryKind = pgEnum('library_kind', ['movie', 'series']);
 export const mediaFileStatus = pgEnum('media_file_status', ['active', 'missing']);
@@ -171,6 +173,30 @@ export const mediaAudio = pgTable(
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},
 	(t) => [index('media_audio_file_idx').on(t.mediaFileId)]
+);
+
+/**
+ * Audit log of device/library administration. Names are snapshotted and the
+ * references go null on delete, so entries outlive a revoked device or a
+ * removed library (and the admin who acted).
+ */
+export const deviceEvent = pgTable(
+	'device_event',
+	{
+		id: uuid('id').primaryKey().defaultRandom(),
+		type: text('type', { enum: DEVICE_EVENT_TYPES }).notNull(),
+		/** Who acted; null = the device or the hub itself (scan results, job ends). */
+		actorUserId: text('actor_user_id').references(() => user.id, { onDelete: 'set null' }),
+		actorName: text('actor_name'),
+		gatewayId: uuid('gateway_id').references(() => gateway.id, { onDelete: 'set null' }),
+		gatewayName: text('gateway_name'),
+		libraryId: uuid('library_id').references(() => library.id, { onDelete: 'set null' }),
+		libraryName: text('library_name'),
+		/** Type-specific extras: counts, duration, paths, old/new names. */
+		detail: jsonb('detail').$type<Record<string, unknown>>(),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(t) => [index('device_event_created_idx').on(t.createdAt)]
 );
 
 export const gatewayRelations = relations(gateway, ({ many }) => ({
