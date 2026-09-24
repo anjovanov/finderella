@@ -28,11 +28,13 @@
 	--border: oklch(0.9 0.008 230);
 	--input: oklch(0.9 0.008 230);
 	--ring: oklch(0.55 0.12 215);
-	--chart-1: oklch(0.87 0 0);
-	--chart-2: oklch(0.556 0 0);
-	--chart-3: oklch(0.439 0 0);
-	--chart-4: oklch(0.371 0 0);
-	--chart-5: oklch(0.269 0 0);
+	/* Chart series (admin statistics): teal first, then hues that stay apart
+	   for common colour-vision deficiencies (teal/amber pairs most charts). */
+	--chart-1: oklch(0.58 0.11 205);
+	--chart-2: oklch(0.72 0.15 65);
+	--chart-3: oklch(0.55 0.15 290);
+	--chart-4: oklch(0.62 0.17 15);
+	--chart-5: oklch(0.65 0.14 145);
 	--radius: 0.625rem;
 	--sidebar: oklch(0.97 0.006 230);
 	--sidebar-foreground: oklch(0.2 0.02 230);
@@ -63,11 +65,11 @@
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.78 0.12 210);
-	--chart-1: oklch(0.87 0 0);
-	--chart-2: oklch(0.556 0 0);
-	--chart-3: oklch(0.439 0 0);
-	--chart-4: oklch(0.371 0 0);
-	--chart-5: oklch(0.269 0 0);
+	--chart-1: oklch(0.76 0.12 205);
+	--chart-2: oklch(0.8 0.14 70);
+	--chart-3: oklch(0.7 0.14 290);
+	--chart-4: oklch(0.72 0.15 15);
+	--chart-5: oklch(0.78 0.14 150);
 	--sidebar: oklch(0.205 0 0);
 	--sidebar-foreground: oklch(0.985 0 0);
 	--sidebar-primary: oklch(0.488 0.243 264.376);

@@ -1,6 +1,7 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
 import { registry } from '$lib/server/gateways/registry';
 import { contentTypeFor } from '$lib/server/streaming/compat';
+import { countBytes } from '$lib/server/streaming/count-bytes';
 import { sessionManager } from '$lib/server/streaming/session-manager';
 
 /**
@@ -63,5 +64,8 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		'cache-control': 'no-store'
 	};
 	if (status === 206) headers['content-range'] = `bytes ${start}-${end}/${size}`;
-	return new Response(body, { status, headers });
+	return new Response(
+		countBytes(body, (n) => sessionManager.addBytes(session.id, n)),
+		{ status, headers }
+	);
 };

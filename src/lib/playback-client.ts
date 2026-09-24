@@ -6,6 +6,7 @@
  */
 
 import type { AudioTrack, SubtitleTrack } from './data/types';
+import type { PlayerState } from './data/stats';
 import type { QualityId } from './playback-quality';
 import { DEFAULT_PLAYBACK_SETTINGS, type AudioChannels } from './data/playback-settings';
 import { maxAudioChannels } from './audio-output';
@@ -124,5 +125,69 @@ export function createProgressReporter(target: PlaybackTarget) {
 			reportProgress({ ...target, ...latest }, useBeacon);
 			latest = null;
 		}
+	};
+}
+
+/** What the player reports to the hub's activity monitor. */
+export interface PlaybackSnapshot {
+	state: PlayerState;
+	positionSeconds: number;
+	durationSeconds: number | null;
+	/** The subtitle track shown; null = off. */
+	subtitleTrackId: string | null;
+}
+
+const HEARTBEAT_INTERVAL_MS = 10_000;
+
+/**
+ * Per-session heartbeat for admin statistics: sent right away when the state
+ * or subtitle track changes and every 10 s once playback began. It keeps a
+ * paused session alive and listed. A 410 means an admin stopped the stream —
+ * `onTerminated` gets the message to show.
+ */
+export function createHeartbeat(sessionId: string, onTerminated: (message: string) => void) {
+	let snapshot: PlaybackSnapshot = {
+		state: 'unknown',
+		positionSeconds: 0,
+		durationSeconds: null,
+		subtitleTrackId: null
+	};
+	let disposed = false;
+
+	function send(): void {
+		if (disposed) return;
+		void fetch(`/api/stream/${sessionId}/heartbeat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(snapshot),
+			keepalive: true
+		})
+			.then(async (res) => {
+				if (res.status !== 410 || disposed) return;
+				dispose();
+				const body = (await res.json().catch(() => null)) as { message?: string } | null;
+				onTerminated(body?.message ?? 'Playback was stopped.');
+			})
+			.catch(() => {});
+	}
+
+	const timer = setInterval(() => {
+		if (snapshot.state !== 'unknown') send();
+	}, HEARTBEAT_INTERVAL_MS);
+
+	function dispose(): void {
+		disposed = true;
+		clearInterval(timer);
+	}
+
+	return {
+		update(next: Partial<PlaybackSnapshot>): void {
+			const changed =
+				(next.state !== undefined && next.state !== snapshot.state) ||
+				(next.subtitleTrackId !== undefined && next.subtitleTrackId !== snapshot.subtitleTrackId);
+			snapshot = { ...snapshot, ...next };
+			if (changed && snapshot.state !== 'unknown') send();
+		},
+		dispose
 	};
 }

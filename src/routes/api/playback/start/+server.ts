@@ -5,6 +5,7 @@ import { db } from '$lib/server/db';
 import { mediaAudio } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
 import {
+	audioLabel,
 	directPlayAudio,
 	transcodeAudio,
 	pickAudioTrack,
@@ -87,6 +88,7 @@ async function loadAudioRows(source: PlayableSource): Promise<AudioRow[]> {
  * Error bodies are shown verbatim by the watch pages, so keep them readable.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
+	const userAgent = request.headers.get('user-agent');
 	const user = locals.user ?? null;
 	// hooks.server.ts already answers 401 when an account is required; this is
 	// the defensive check for guest mode being switched off mid-session.
@@ -126,9 +128,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Browsers play the first audio stream of a direct-play file and can't
 	// switch; any other stream goes through the transcoder.
 	const directAudio = !audio || audio.id === directPlayAudio(audioRows)?.id;
+	const chosenAudioLabel = audio ? audioLabel(audio, audioRows.indexOf(audio)) : null;
 
 	if (source.directPlayable && !rung && directAudio) {
-		const session = await sessionManager.start(viewerId, source, 'direct', quality);
+		const session = await sessionManager.start(viewerId, source, 'direct', quality, {
+			startSeconds,
+			userAgent,
+			details: { audioLabel: chosenAudioLabel }
+		});
 		const [subtitles, trickplay] = await Promise.all([
 			listSubtitleTracks(source.file.id, session.id),
 			attachTrickplay(session, source)
@@ -162,7 +169,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const plan = transcodePlan(quality, source.file.width);
 	const audioOut = transcodeAudio(maxAudioChannels, audio?.channels, plan.audioKbps);
-	const session = await sessionManager.start(viewerId, source, 'hls', quality, audioOut.kbps);
+	const session = await sessionManager.start(viewerId, source, 'hls', quality, {
+		audioKbps: audioOut.kbps,
+		startSeconds,
+		userAgent,
+		details: {
+			audioLabel: chosenAudioLabel,
+			audioChannels: audioOut.channels,
+			streamWidth: Math.min(plan.maxWidth, source.file.width || plan.maxWidth)
+		}
+	});
 	// In flight alongside session.start; never awaited before the transcode is up.
 	const trickplayPending = attachTrickplay(session, source);
 	try {

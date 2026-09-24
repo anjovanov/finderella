@@ -3,6 +3,7 @@ import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { isAdmin } from '$lib/auth-roles';
 import { loginRequired } from '$lib/server/site-settings';
+import { markSeen } from '$lib/server/stats/seen';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Bridge the gateway WebSocket handler out of the SvelteKit bundle so the
@@ -60,6 +61,7 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	if (session) {
 		event.locals.session = session.session;
 		event.locals.user = session.user;
+		markSeen(session.user.id, event.request.headers.get('user-agent'));
 	}
 
 	if (!event.locals.user && !isPublic(event.url.pathname)) {

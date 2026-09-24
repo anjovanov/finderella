@@ -6,6 +6,7 @@
 	import { lockPageScroll } from '$lib/scroll-lock';
 	import {
 		beaconStop,
+		createHeartbeat,
 		createProgressReporter,
 		startPlayback,
 		stopPlayback,
@@ -39,6 +40,7 @@
 	let playback: PlaybackDescriptor | null = $state(null);
 	let playbackError: string | null = $state(null);
 	let reporter: ReturnType<typeof createProgressReporter> | null = null;
+	let heartbeat: ReturnType<typeof createHeartbeat> | null = null;
 	let sessionId: string | null = null;
 
 	// Quality is a session-level choice: switching restarts playback at the
@@ -102,6 +104,7 @@
 		)
 			.then((descriptor) => {
 				sessionId = descriptor.sessionId;
+				heartbeat = createHeartbeat(descriptor.sessionId, onPlaybackError);
 				playback = descriptor;
 			})
 			.catch((err: Error) => {
@@ -116,6 +119,8 @@
 		return () => {
 			window.removeEventListener('pagehide', onPageHide);
 			controller.abort();
+			heartbeat?.dispose();
+			heartbeat = null;
 			reporter?.flush();
 			stopPlayback(sessionId);
 		};
@@ -124,6 +129,8 @@
 	// The player can't buffer its way out of a fatal error: drop the session
 	// and show the reason in the same panel /api/playback/start failures use.
 	function onPlaybackError(message: string) {
+		heartbeat?.dispose();
+		heartbeat = null;
 		reporter?.flush();
 		stopPlayback(sessionId);
 		sessionId = null;
@@ -148,7 +155,9 @@
 		onProgress={(position, duration) => {
 			lastPosition = position;
 			reporter?.onProgress(position, duration);
+			heartbeat?.update({ positionSeconds: position, durationSeconds: duration });
 		}}
+		onPlaybackState={(snapshot) => heartbeat?.update(snapshot)}
 		onError={onPlaybackError}
 		{quality}
 		sourceWidth={playback.source.width}

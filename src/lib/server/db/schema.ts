@@ -6,3 +6,4 @@ export * from './site.sql';
 export * from './watchlist.sql';
 export * from './user-settings.sql';
 export * from './subtitles.sql';
+export * from './activity.sql';

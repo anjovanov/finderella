@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
+		Analytics01Icon,
 		ArrowLeft01Icon,
 		DashboardSquare01Icon,
 		HardDriveIcon,
@@ -14,6 +15,12 @@
 
 	const items = [
 		{ href: resolve('/admin'), label: 'Overview', icon: DashboardSquare01Icon, exact: true },
+		{
+			href: resolve('/admin/statistics'),
+			label: 'Statistics',
+			icon: Analytics01Icon,
+			exact: false
+		},
 		{ href: resolve('/admin/devices'), label: 'Devices', icon: HardDriveIcon, exact: false },
 		{ href: resolve('/admin/users'), label: 'Users', icon: UserGroupIcon, exact: false },
 		{ href: resolve('/admin/subtitles'), label: 'Subtitles', icon: SubtitleIcon, exact: false },

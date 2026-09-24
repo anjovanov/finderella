@@ -50,6 +50,8 @@
 		type SubtitlePreference
 	} from '$lib/subtitle-preference';
 	import type { SubtitleTarget } from '$lib/subtitles-client';
+	import type { PlaybackSnapshot } from '$lib/playback-client';
+	import type { PlayerState } from '$lib/data/stats';
 	import EpisodesPanel from './episodes-panel.svelte';
 	import FindSubtitlesPanel from './find-subtitles-panel.svelte';
 
@@ -63,6 +65,7 @@
 		monoDownmix = false,
 		startAt = 0,
 		onProgress,
+		onPlaybackState,
 		onError,
 		tracks = [],
 		subtitleSettings = DEFAULT_SUBTITLE_SETTINGS,
@@ -102,6 +105,8 @@
 		startAt?: number;
 		/** Playback position reports (every timeupdate, ~4 Hz — throttle upstream). */
 		onProgress?: (positionSeconds: number, durationSeconds: number) => void;
+		/** Play/pause/buffering and subtitle changes, for the page's heartbeat (admin activity monitor). */
+		onPlaybackState?: (snapshot: Partial<PlaybackSnapshot>) => void;
 		/**
 		 * Unrecoverable playback failure (codec the browser can't decode, the
 		 * device's transcoder erroring, the file failing to load). Without this
@@ -214,6 +219,15 @@
 		remainingSeconds = videoEl.duration - videoEl.currentTime;
 		onProgress?.(videoEl.currentTime, videoEl.duration);
 		countWatchTime(videoEl);
+	}
+
+	function reportState(state: PlayerState) {
+		if (!videoEl) return;
+		onPlaybackState?.({
+			state,
+			positionSeconds: videoEl.currentTime,
+			durationSeconds: Number.isFinite(videoEl.duration) ? videoEl.duration : null
+		});
 	}
 
 	const nextCountdown = $derived(
@@ -519,6 +533,12 @@
 	}
 	$effect(applyTrackModes);
 
+	// The shown subtitle track rides along in the heartbeat (activity monitor).
+	$effect(() => {
+		const subtitleTrackId = selectedTrackId;
+		untrack(() => onPlaybackState?.({ subtitleTrackId }));
+	});
+
 	$effect(() => {
 		const el = videoEl;
 		if (!el) return;
@@ -648,7 +668,13 @@
 					slot="media"
 					playsinline
 					preload="metadata"
-					onended={onVideoEnded}
+					onended={() => {
+						reportState('paused');
+						onVideoEnded();
+					}}
+					onplaying={() => reportState('playing')}
+					onpause={() => reportState('paused')}
+					onwaiting={() => reportState('buffering')}
 					ontimeupdate={onTimeUpdate}
 					onloadstart={() => (remainingSeconds = null)}
 					onloadedmetadata={applyTrackModes}

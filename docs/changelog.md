@@ -2,6 +2,32 @@
 
 ## 2026-09-24
 
+**Admin statistics** (migration `0017`: new tables `play_history` and `user_activity`; `playback_session.history_id` and `stop_reason`). A new **Statistics** page in the admin dashboard, similar to Tautulli. It has five sections:
+
+- **Activity** shows everything playing right now, refreshed every 5 seconds. For each stream it shows:
+  - who is watching, and on what browser, operating system and kind of device
+  - where they are in the title, and whether it is playing, paused or buffering
+  - direct play or transcode (with the quality and output resolution)
+  - the source file's resolution, codec and bitrate
+  - the audio track and subtitles in use
+  - which device is serving it, and live bandwidth
+
+  **Stop stream** ends a stream; the viewer's player shows "Playback was stopped by an administrator." Below the streams are totals for the chosen period (plays, watch time, viewers, share transcoded) and lists of the most watched movies and shows, the most active users and the most used platforms.
+
+- **History** lists every play. You can filter it by user (or guests), by movies or episodes, and by period. Each row shows platform, direct play or transcode, start and stop times, time paused, time actually watched, how far into the title it got, and data sent.
+- **Graphs** switch between 7 days, 30 days, 90 days and 1 year, and between counting plays and watch time. They show plays per day (movies and episodes), direct play vs transcode per day, day of the week, hour of the day, top platforms and top users. Days and hours follow your browser's time zone.
+- **Users** lists every account with Last seen, Last played, Last platform, total plays and total watch time; the table is sortable. Each user has a page with watch time for the last 24 hours, 7 days, 30 days and all time, the platforms they use, and their recent history.
+- **Libraries** shows, per library: the device and whether it's online, titles, seasons and episodes, files, total size, total runtime, last scan, plays and last played. It also breaks files down by resolution, video codec, container and audio codec (for all libraries or one), and lists recently added files.
+
+How plays are counted:
+
+- A "play" is one viewing. Changing quality or audio track, or reloading the page, within 10 minutes continues the same play instead of starting a new one.
+- Plays with less than 30 seconds of watch time are not recorded.
+- Watch time only counts time spent playing, not time paused.
+- IP addresses are not recorded.
+- History starts with this version; earlier viewing isn't imported.
+- Pausing no longer ends a playback session after about a minute, because the player now checks in every 10 seconds while the page is open. A paused transcode still can't resume after about 2 minutes, because the device stops the transcoder on its own (unchanged).
+
 **Player tweaks**:
 
 - The Quality menu shows **direct play** / **transcoded** on the quality that is actually playing. Before, the tag always sat on the Original row, even while 720p (for example) was playing. The Original row still shows the file's own resolution.

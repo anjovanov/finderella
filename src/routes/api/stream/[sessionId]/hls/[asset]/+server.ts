@@ -1,6 +1,7 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
 import { registry } from '$lib/server/gateways/registry';
 import { buildMasterPlaylist, buildMediaPlaylist } from '$lib/server/streaming/hls-playlist';
+import { countBytes } from '$lib/server/streaming/count-bytes';
 import { sessionManager } from '$lib/server/streaming/session-manager';
 import { QUALITY_LADDER, transcodePlan } from '$lib/playback-quality';
 
@@ -49,10 +50,13 @@ export const GET: RequestHandler = async ({ params, request }) => {
 	} catch {
 		error(502, 'device is offline');
 	}
-	return new Response(body, {
-		headers: {
-			'content-type': asset === 'init.mp4' ? 'video/mp4' : 'video/iso.segment',
-			'cache-control': 'no-store'
+	return new Response(
+		countBytes(body, (n) => sessionManager.addBytes(session.id, n)),
+		{
+			headers: {
+				'content-type': asset === 'init.mp4' ? 'video/mp4' : 'video/iso.segment',
+				'cache-control': 'no-store'
+			}
 		}
-	});
+	);
 };
