@@ -15,7 +15,7 @@ const API_BASE = 'https://api.themoviedb.org/3';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p';
 const REQUEST_TIMEOUT_MS = 10_000;
 
-export type ImageSize = 'w185' | 'w342' | 'w500' | 'w780' | 'w1280' | 'original';
+export type ImageSize = 'w185' | 'w300' | 'w342' | 'w500' | 'w780' | 'w1280' | 'original';
 
 export function isTmdbConfigured(): boolean {
 	return Boolean(env.TMDB_API_KEY?.trim());
@@ -75,6 +75,18 @@ export function imageUrl(path: string | null | undefined, size: ImageSize): stri
 // ---------- schemas ----------
 
 const TmdbGenre = z.object({ id: z.number(), name: z.string() });
+/** A TV network or a production company — same shape on both. */
+const TmdbCompany = z.object({
+	id: z.number(),
+	name: z.string(),
+	logo_path: z.string().nullish()
+});
+const TmdbCollectionRef = z.object({
+	id: z.number(),
+	name: z.string(),
+	poster_path: z.string().nullish(),
+	backdrop_path: z.string().nullish()
+});
 const CastMember = z.object({
 	name: z.string(),
 	character: z.string().nullish(),
@@ -139,6 +151,8 @@ export const MovieDetails = z.object({
 	poster_path: z.string().nullish(),
 	backdrop_path: z.string().nullish(),
 	genres: z.array(TmdbGenre).nullish(),
+	belongs_to_collection: TmdbCollectionRef.nullish(),
+	production_companies: z.array(TmdbCompany).nullish(),
 	credits: Credits,
 	release_dates: ReleaseDates.nullish(),
 	videos: Videos
@@ -157,6 +171,7 @@ export const TvDetails = z.object({
 	backdrop_path: z.string().nullish(),
 	genres: z.array(TmdbGenre).nullish(),
 	created_by: z.array(z.object({ name: z.string() })).nullish(),
+	networks: z.array(TmdbCompany).nullish(),
 	seasons: z
 		.array(z.object({ season_number: z.number(), air_date: z.string().nullish() }))
 		.nullish(),
@@ -187,6 +202,7 @@ export type SearchTvResult = z.infer<typeof SearchTvResult>;
 export type MovieDetails = z.infer<typeof MovieDetails>;
 export type TvDetails = z.infer<typeof TvDetails>;
 export type TvSeason = z.infer<typeof TvSeason>;
+export type TmdbCompany = z.infer<typeof TmdbCompany>;
 
 // ---------- endpoints ----------
 

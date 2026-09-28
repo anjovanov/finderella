@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-28
+
+**Categories rework: genres, collections, networks & studios** (migration `0019`: new tables `collection` and `studio`; `movie.studios`, `movie.collection_id`, `movie.metadata_version`, `series.studios`, `series.metadata_version`). `/categories` no longer shows a carousel row per genre. It now has three tile grids, and each tile opens `/categories/<genres|collections|networks>/<slug>`: the library grid with a Movies/Series filter, genre filter and sort.
+
+- **Genres:** backdrop tiles. Each tile uses the top-rated artwork in the genre that another tile isn't already using.
+- **Collections:** TMDB `belongs_to_collection` (Harry Potter, Avatar…). A collection shows once **2 or more** of its movies are in the library, and its page sorts in release order.
+- **Networks & Studios:** TMDB `networks` for series and `production_companies` for movies. Streaming brands merge across both lists, so HBO, HBO Max, Max and HBO Films are all **HBO**; the list lives in `studioBrand` in `metadata/map.ts`. A tile needs **2 or more** titles. Logos are drawn in a single colour so dark TMDB logos stay visible in both themes.
+
+No extra TMDB requests: these fields come with the details calls enrichment already makes. Existing titles backfill automatically. Matched titles below the new `METADATA_VERSION` (2) are re-fetched by their stored `tmdb_id` on the next enrichment pass, without a re-search, and series skip their seasons. Pruning also removes collection and studio rows no title references.
+
 ## 2026-09-25
 
 **Devices activity log** (migration `0018`: new table `device_event`). The Devices page has an **Activity log** at the bottom. It lists, newest first, 20 per page:

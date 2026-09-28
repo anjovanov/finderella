@@ -1,4 +1,5 @@
 import { resolve } from '$app/paths';
+import type { CategoryType } from './categories';
 import { playTarget } from './episodes';
 import type { MediaItem } from './types';
 
@@ -31,4 +32,9 @@ export function watchHref(item: MediaItem): string {
 /** Link target for playing a specific series episode. */
 export function episodeWatchHref(seriesId: string, episodeId: string): string {
 	return resolve('/series/[id]/watch/[episode]', { id: seriesId, episode: episodeId });
+}
+
+/** Link target for a browse category (/categories/genres/sci-fi, /categories/networks/hbo…). */
+export function categoryHref(type: CategoryType, slug: string): string {
+	return resolve('/categories/[type=category]/[slug]', { type, slug });
 }

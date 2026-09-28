@@ -18,7 +18,32 @@ import {
  * gradient poster art; genres is a text[] matching the fixed GENRES enum.
  * `tmdb_id` / `metadata_updated_at` track TMDB enrichment (see
  * src/lib/server/metadata): stamped even when unmatched so scans don't retry.
+ * `metadata_version` is the enrichment schema the row was filled with; a
+ * matched row below `METADATA_VERSION` is re-fetched (by its stored tmdb_id)
+ * on the next pass, which is how new TMDB fields backfill.
  */
+
+/** A TMDB movie collection ("Harry Potter Collection"); rows exist only while a movie points at one. */
+export const collection = pgTable('collection', {
+	tmdbId: integer('tmdb_id').primaryKey(),
+	slug: text('slug').notNull().unique(),
+	name: text('name').notNull(),
+	posterUrl: text('poster_url'),
+	backdropUrl: text('backdrop_url'),
+	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+/**
+ * A network / studio brand. TV networks and movie production companies that
+ * belong to one brand (HBO, HBO Max, HBO Films…) share a row — `studioBrand`
+ * in metadata/map.ts decides the slug. Titles reference it from `studios`.
+ */
+export const studio = pgTable('studio', {
+	slug: text('slug').primaryKey(),
+	name: text('name').notNull(),
+	logoUrl: text('logo_url'),
+	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
 
 export const movie = pgTable('movie', {
 	id: uuid('id').primaryKey().defaultRandom(),
@@ -50,8 +75,17 @@ export const movie = pgTable('movie', {
 	backdropUrl: text('backdrop_url'),
 	/** YouTube video id of the TMDB trailer; null when TMDB lists none. */
 	trailerKey: text('trailer_key'),
+	/** Brand slugs (`studio.slug`): production companies for movies, networks for series. */
+	studios: text('studios')
+		.array()
+		.notNull()
+		.$default(() => []),
+	collectionId: integer('collection_id').references(() => collection.tmdbId, {
+		onDelete: 'set null'
+	}),
 	tmdbId: integer('tmdb_id'),
 	metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true }),
+	metadataVersion: smallint('metadata_version').notNull().default(0),
 	addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -81,8 +115,14 @@ export const series = pgTable('series', {
 	backdropUrl: text('backdrop_url'),
 	/** YouTube video id of the TMDB trailer; null when TMDB lists none. */
 	trailerKey: text('trailer_key'),
+	/** Brand slugs (`studio.slug`): production companies for movies, networks for series. */
+	studios: text('studios')
+		.array()
+		.notNull()
+		.$default(() => []),
 	tmdbId: integer('tmdb_id'),
 	metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true }),
+	metadataVersion: smallint('metadata_version').notNull().default(0),
 	addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -123,7 +163,9 @@ export const episode = pgTable(
 	(t) => [unique().on(t.seriesId, t.slug)]
 );
 
-export const movieRelations = relations(movie, () => ({}));
+export const movieRelations = relations(movie, ({ one }) => ({
+	collection: one(collection, { fields: [movie.collectionId], references: [collection.tmdbId] })
+}));
 
 export const seriesRelations = relations(series, ({ many }) => ({
 	seasons: many(season),

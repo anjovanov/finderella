@@ -1,6 +1,14 @@
-import { count, eq, notExists } from 'drizzle-orm';
+import { count, eq, notExists, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { episode, mediaFile, movie, season, series } from '$lib/server/db/schema';
+import {
+	collection,
+	episode,
+	mediaFile,
+	movie,
+	season,
+	series,
+	studio
+} from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import { invalidateSearchIndex } from '$lib/server/search';
 
@@ -34,6 +42,12 @@ const seasonHasNoEpisodes = notExists(
 const seriesHasNoEpisodes = notExists(
 	db.select({ id: episode.id }).from(episode).where(eq(episode.seriesId, series.id))
 );
+// Category lookup rows only live while a title still points at them.
+const collectionHasNoMovies = notExists(
+	db.select({ id: movie.id }).from(movie).where(eq(movie.collectionId, collection.tmdbId))
+);
+const studioHasNoTitles = sql`not exists (select 1 from ${movie} where ${studio.slug} = any(${movie.studios}))
+	and not exists (select 1 from ${series} where ${studio.slug} = any(${series.studios}))`;
 
 /** How many titles a prune would remove right now (settings page). */
 export async function countOrphans(): Promise<{ movies: number; series: number }> {
@@ -68,6 +82,8 @@ export async function pruneCatalog(): Promise<PruneResult> {
 			.delete(series)
 			.where(seriesHasNoEpisodes)
 			.returning({ id: series.id });
+		await tx.delete(collection).where(collectionHasNoMovies);
+		await tx.delete(studio).where(studioHasNoTitles);
 		return { movies: movies.length, series: seriesRows.length, episodes: episodes.length };
 	});
 	if (result.movies || result.series || result.episodes) {

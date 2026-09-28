@@ -1,16 +1,19 @@
-import { and, count, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, count, eq, inArray, isNotNull, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { episode, movie, season, series } from '$lib/server/db/schema';
+import { collection, episode, movie, season, series, studio } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import { queueAutoSubtitleDownload } from '$lib/server/subtitles/bulk';
 import { invalidateSearchIndex } from '$lib/server/search';
 import type { CastMember } from '$lib/data/types';
 import {
+	collectionSlug,
+	isCanonicalBrandName,
 	mapGenres,
 	movieMaturity,
 	pickBestMatch,
 	pickTrailer,
 	scanTitleFromSlug,
+	studioBrand,
 	tvMaturity,
 	yearOf,
 	type MatchCandidate
@@ -24,6 +27,7 @@ import {
 	searchMovie,
 	searchTv,
 	type MovieDetails,
+	type TmdbCompany,
 	type TvDetails
 } from './tmdb';
 
@@ -38,12 +42,20 @@ import {
 
 export { isTmdbConfigured };
 
+/**
+ * Bump when enrichment starts storing a new TMDB field. Matched titles below
+ * it are re-fetched by their stored tmdb_id on the next (non-forced) pass —
+ * no re-search. 2 = networks / studios + collections.
+ */
+export const METADATA_VERSION = 2;
+
 const CONCURRENCY = 2;
 const CAST_LIMIT = 8;
 const POSTER_SIZE = 'w500';
 const BACKDROP_SIZE = 'w1280';
 const PROFILE_SIZE = 'w185';
 const STILL_SIZE = 'w780';
+const LOGO_SIZE = 'w300';
 
 function castFrom(credits: MovieDetails['credits'] | TvDetails['credits']): CastMember[] {
 	return (credits?.cast ?? [])
@@ -93,12 +105,83 @@ async function workPool(tasks: (() => Promise<void>)[]): Promise<void> {
 	await Promise.all(Array.from({ length: Math.min(CONCURRENCY, tasks.length) }, worker));
 }
 
+// ---------- networks / studios + collections ----------
+
+/**
+ * Upsert the brand rows for a title's networks / companies and return their
+ * slugs (de-duplicated, TMDB order). A logo is taken from the source named
+ * like the brand itself ("HBO" beats "HBO Films"), else from any source while
+ * the brand has none — never replaced by null.
+ */
+async function upsertStudios(sources: TmdbCompany[] | null | undefined): Promise<string[]> {
+	const slugs: string[] = [];
+	for (const source of sources ?? []) {
+		if (!source.name.trim()) continue;
+		const brand = studioBrand(source.name);
+		if (!slugs.includes(brand.slug)) slugs.push(brand.slug);
+		const logoUrl = imageUrl(source.logo_path, LOGO_SIZE);
+		const canonical = isCanonicalBrandName(source.name, brand);
+		await db
+			.insert(studio)
+			.values({ slug: brand.slug, name: brand.name, logoUrl })
+			.onConflictDoUpdate({
+				target: studio.slug,
+				set: {
+					name: brand.name,
+					updatedAt: new Date(),
+					logoUrl: logoUrl && canonical ? logoUrl : sql`coalesce(${studio.logoUrl}, ${logoUrl})`
+				}
+			});
+	}
+	return slugs;
+}
+
+/** Upsert the movie's TMDB collection; the slug is kept once assigned. */
+async function upsertCollection(
+	ref: MovieDetails['belongs_to_collection']
+): Promise<number | null> {
+	if (!ref || !ref.name.trim()) return null;
+	const name = ref.name.trim();
+	const values = {
+		name,
+		posterUrl: imageUrl(ref.poster_path, POSTER_SIZE),
+		backdropUrl: imageUrl(ref.backdrop_path, BACKDROP_SIZE),
+		updatedAt: new Date()
+	};
+	const existing = await db.query.collection.findFirst({
+		columns: { tmdbId: true },
+		where: eq(collection.tmdbId, ref.id)
+	});
+	if (existing) {
+		await db.update(collection).set(values).where(eq(collection.tmdbId, ref.id));
+		return ref.id;
+	}
+	let slug = collectionSlug(name);
+	const taken = await db.query.collection.findFirst({
+		columns: { tmdbId: true },
+		where: and(eq(collection.slug, slug), ne(collection.tmdbId, ref.id))
+	});
+	if (taken) slug = `${slug}-${ref.id}`;
+	await db
+		.insert(collection)
+		.values({ tmdbId: ref.id, slug, ...values })
+		.onConflictDoUpdate({ target: collection.tmdbId, set: values });
+	return ref.id;
+}
+
 // ---------- movies ----------
 
-function movieUpdate(details: MovieDetails, current: typeof movie.$inferSelect) {
+function movieUpdate(
+	details: MovieDetails,
+	current: typeof movie.$inferSelect,
+	links: { studios: string[]; collectionId: number | null }
+) {
 	const values: Partial<typeof movie.$inferInsert> = {
 		tmdbId: details.id,
 		metadataUpdatedAt: new Date(),
+		metadataVersion: METADATA_VERSION,
+		studios: links.studios,
+		collectionId: links.collectionId,
 		synopsis: details.overview ?? current.synopsis,
 		tagline: details.tagline?.trim() || null,
 		genres: mapGenres((details.genres ?? []).map((g) => g.name)),
@@ -123,7 +206,7 @@ function movieUpdate(details: MovieDetails, current: typeof movie.$inferSelect) 
 
 export async function enrichMovie(movieId: string, opts: { force?: boolean } = {}): Promise<void> {
 	const row = await db.query.movie.findFirst({ where: eq(movie.id, movieId) });
-	if (!row || (!opts.force && row.metadataUpdatedAt)) return;
+	if (!row || (!opts.force && isCurrent(row))) return;
 
 	// A forced refresh re-matches from scratch so a wrong match can be corrected.
 	let tmdbId = opts.force ? null : row.tmdbId;
@@ -149,16 +232,25 @@ export async function enrichMovie(movieId: string, opts: { force?: boolean } = {
 		log.info({ slug: row.slug, title: row.title, year: row.year }, 'movie unmatched on tmdb');
 		return;
 	}
-	await db.update(movie).set(movieUpdate(details, row)).where(eq(movie.id, movieId));
+	const links = {
+		studios: await upsertStudios(details.production_companies),
+		collectionId: await upsertCollection(details.belongs_to_collection)
+	};
+	await db
+		.update(movie)
+		.set(movieUpdate(details, row, links))
+		.where(eq(movie.id, movieId));
 	log.info({ slug: row.slug, tmdbId: details.id }, 'movie metadata enriched');
 }
 
 // ---------- series ----------
 
-function seriesUpdate(details: TvDetails, current: typeof series.$inferSelect) {
+function seriesUpdate(details: TvDetails, current: typeof series.$inferSelect, studios: string[]) {
 	const values: Partial<typeof series.$inferInsert> = {
 		tmdbId: details.id,
 		metadataUpdatedAt: new Date(),
+		metadataVersion: METADATA_VERSION,
+		studios,
 		synopsis: details.overview ?? current.synopsis,
 		tagline: details.tagline?.trim() || null,
 		genres: mapGenres((details.genres ?? []).map((g) => g.name)),
@@ -228,7 +320,10 @@ export async function enrichSeries(
 		await enrichSeasons(seriesId, row.tmdbId, opts.seasonNumbers);
 		return;
 	}
-	if (!opts.force && row.metadataUpdatedAt) return;
+	if (!opts.force && isCurrent(row)) return;
+	// Enriched before METADATA_VERSION: refresh the series row only — its
+	// seasons and episodes are already filled.
+	const versionOnly = !opts.force && row.metadataUpdatedAt !== null && row.tmdbId !== null;
 
 	let tmdbId = opts.force ? null : row.tmdbId;
 	if (!tmdbId) {
@@ -255,12 +350,40 @@ export async function enrichSeries(
 		log.info({ slug: row.slug, title: row.title, year: row.year }, 'series unmatched on tmdb');
 		return;
 	}
-	await db.update(series).set(seriesUpdate(details, row)).where(eq(series.id, seriesId));
-	await enrichSeasons(seriesId, details.id);
+	const studios = await upsertStudios(details.networks);
+	await db
+		.update(series)
+		.set(seriesUpdate(details, row, studios))
+		.where(eq(series.id, seriesId));
+	if (!versionOnly) await enrichSeasons(seriesId, details.id);
 	log.info({ slug: row.slug, tmdbId: details.id }, 'series metadata enriched');
 }
 
 // ---------- runner ----------
+
+/**
+ * Nothing left to fetch: enriched, and either unmatched (only a forced refresh
+ * retries those) or filled at the current METADATA_VERSION.
+ */
+function isCurrent(row: {
+	metadataUpdatedAt: Date | null;
+	tmdbId: number | null;
+	metadataVersion: number;
+}): boolean {
+	return (
+		row.metadataUpdatedAt !== null &&
+		(row.tmdbId === null || row.metadataVersion >= METADATA_VERSION)
+	);
+}
+
+const moviePending = or(
+	isNull(movie.metadataUpdatedAt),
+	and(isNotNull(movie.tmdbId), lt(movie.metadataVersion, METADATA_VERSION))
+);
+const seriesPending = or(
+	isNull(series.metadataUpdatedAt),
+	and(isNotNull(series.tmdbId), lt(series.metadataVersion, METADATA_VERSION))
+);
 
 /** Series already matched whose newer episodes still lack metadata → season numbers. */
 async function pendingSeasonsByMatchedSeries(): Promise<Map<string, number[]>> {
@@ -286,11 +409,11 @@ async function runPass(force: boolean): Promise<number> {
 	const [movies, shows, seasonsByShow] = await Promise.all([
 		db.query.movie.findMany({
 			columns: { id: true },
-			where: force ? undefined : isNull(movie.metadataUpdatedAt)
+			where: force ? undefined : moviePending
 		}),
 		db.query.series.findMany({
 			columns: { id: true },
-			where: force ? undefined : isNull(series.metadataUpdatedAt)
+			where: force ? undefined : seriesPending
 		}),
 		force ? new Map<string, number[]>() : pendingSeasonsByMatchedSeries()
 	]);

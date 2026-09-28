@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, sql, type SQL } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { episode, mediaAudio, mediaFile, movie, season, series } from '$lib/server/db/schema';
 import {
@@ -242,6 +242,21 @@ export async function getSeriesBySlugs(slugs: string[]): Promise<Series[]> {
 	if (slugs.length === 0) return [];
 	const rows = await db.query.series.findMany({
 		where: inArray(series.slug, slugs),
+		with: withSeasons
+	});
+	return rows.map(rowToSeries);
+}
+
+/** Movies / series matching an arbitrary filter (category pages). */
+export async function listMoviesWhere(where: SQL): Promise<Movie[]> {
+	const rows = await db.query.movie.findMany({ where, orderBy: desc(movie.addedAt) });
+	return rows.map(rowToMovie);
+}
+
+export async function listSeriesWhere(where: SQL): Promise<Series[]> {
+	const rows = await db.query.series.findMany({
+		where,
+		orderBy: desc(series.addedAt),
 		with: withSeasons
 	});
 	return rows.map(rowToSeries);

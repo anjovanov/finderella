@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+	collectionSlug,
+	isCanonicalBrandName,
 	mapGenres,
 	movieMaturity,
 	normalizeTitle,
 	pickBestMatch,
 	pickTrailer,
 	scanTitleFromSlug,
+	studioBrand,
+	studioBrands,
 	tvMaturity,
 	type TrailerCandidate,
 	yearOf
@@ -164,5 +168,48 @@ describe('scanTitleFromSlug', () => {
 	it('keeps series slugs whole', () => {
 		expect(scanTitleFromSlug('rick-and-morty', 'series')).toBe('rick and morty');
 		expect(scanTitleFromSlug('the-4400', 'series')).toBe('the 4400');
+	});
+});
+
+describe('studioBrand', () => {
+	it("merges a brand's networks and companies", () => {
+		for (const name of ['HBO', 'HBO Max', 'Max', 'HBO Films', 'Home Box Office (HBO)']) {
+			expect(studioBrand(name)).toEqual({ slug: 'hbo', name: 'HBO' });
+		}
+		expect(studioBrand('Apple TV+').slug).toBe('apple-tv');
+		expect(studioBrand('Apple Original Films').slug).toBe('apple-tv');
+		expect(studioBrand('Amazon MGM Studios').slug).toBe('prime-video');
+	});
+
+	it('keeps + meaningful', () => {
+		expect(studioBrand('Disney+')).toEqual({ slug: 'disney-plus', name: 'Disney+' });
+		expect(studioBrand('Disney').slug).toBe('disney');
+		expect(studioBrand('Paramount+ with Showtime').slug).toBe('paramount-plus');
+		expect(studioBrand('Paramount Pictures').slug).toBe('paramount-pictures');
+	});
+
+	it('lets unknown companies stand under their own name', () => {
+		expect(studioBrand(' A24 ')).toEqual({ slug: 'a24', name: 'A24' });
+		expect(studioBrand('Warner Bros. Pictures')).toEqual({
+			slug: 'warner-bros-pictures',
+			name: 'Warner Bros. Pictures'
+		});
+	});
+
+	it("de-duplicates a title's brands in order", () => {
+		expect(studioBrands(['HBO', 'HBO Films', '', 'A24']).map((b) => b.slug)).toEqual([
+			'hbo',
+			'a24'
+		]);
+	});
+
+	it("recognizes the brand's own name", () => {
+		const hbo = studioBrand('HBO Films');
+		expect(isCanonicalBrandName('HBO Films', hbo)).toBe(false);
+		expect(isCanonicalBrandName('HBO', hbo)).toBe(true);
+	});
+
+	it('slugs collections', () => {
+		expect(collectionSlug('Harry Potter Collection')).toBe('harry-potter-collection');
 	});
 });

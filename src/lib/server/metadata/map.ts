@@ -1,4 +1,5 @@
 import { GENRES, type Genre, type Maturity } from '$lib/data/types';
+import { slugify } from '$lib/server/catalog/parse';
 
 /** Pure TMDB → catalog mapping helpers (unit-tested; no I/O). */
 
@@ -195,4 +196,119 @@ export function scanTitleFromSlug(slug: string, kind: 'movie' | 'series'): strin
 		}
 	}
 	return words.join(' ');
+}
+
+// ---------- networks / studios ----------
+
+export interface StudioBrand {
+	slug: string;
+	name: string;
+}
+
+/**
+ * Lowercase, accent-free, `&` → "and", punctuation → spaces — but `+` survives,
+ * so "Disney+" and "Disney" stay different brands.
+ */
+function brandKey(name: string): string {
+	return name
+		.normalize('NFD')
+		.replace(/\p{M}/gu, '')
+		.toLowerCase()
+		.replace(/&/g, ' and ')
+		.replace(/[^a-z0-9+]+/g, ' ')
+		.trim();
+}
+
+/**
+ * Streaming brands whose TV networks and production companies go by several
+ * names on TMDB. Everything listed under one entry becomes one category tile.
+ */
+const BRANDS: { slug: string; name: string; aliases: string[] }[] = [
+	{
+		slug: 'netflix',
+		name: 'Netflix',
+		aliases: ['netflix', 'netflix animation', 'netflix studios']
+	},
+	{
+		slug: 'hbo',
+		name: 'HBO',
+		aliases: [
+			'hbo',
+			'hbo max',
+			'max',
+			'max originals',
+			'hbo films',
+			'hbo documentary films',
+			'hbo entertainment',
+			'hbo originals',
+			'home box office',
+			'home box office hbo'
+		]
+	},
+	{
+		slug: 'apple-tv',
+		name: 'Apple TV+',
+		aliases: ['apple tv+', 'apple tv', 'apple studios', 'apple original films']
+	},
+	{
+		slug: 'prime-video',
+		name: 'Prime Video',
+		aliases: [
+			'prime video',
+			'amazon',
+			'amazon prime video',
+			'amazon studios',
+			'amazon mgm studios',
+			'amazon content services'
+		]
+	},
+	{ slug: 'disney-plus', name: 'Disney+', aliases: ['disney+'] },
+	{ slug: 'hulu', name: 'Hulu', aliases: ['hulu', 'hulu originals'] },
+	{
+		slug: 'paramount-plus',
+		name: 'Paramount+',
+		aliases: ['paramount+', 'paramount+ with showtime']
+	},
+	{ slug: 'peacock', name: 'Peacock', aliases: ['peacock', 'peacock original'] },
+	{ slug: 'showtime', name: 'Showtime', aliases: ['showtime', 'showtime networks'] },
+	{ slug: 'fx', name: 'FX', aliases: ['fx', 'fx productions', 'fx networks'] },
+	{ slug: 'amc', name: 'AMC', aliases: ['amc', 'amc studios'] },
+	{
+		slug: 'bbc',
+		name: 'BBC',
+		aliases: ['bbc', 'bbc one', 'bbc two', 'bbc three', 'bbc four', 'bbc iplayer', 'bbc film']
+	}
+];
+
+const BRAND_BY_ALIAS = new Map(
+	BRANDS.flatMap((b) => b.aliases.map((alias) => [alias, { slug: b.slug, name: b.name }] as const))
+);
+
+/**
+ * The category a TMDB network / production company belongs to: a known
+ * streaming brand, or the company under its own name.
+ */
+export function studioBrand(name: string): StudioBrand {
+	const trimmed = name.trim();
+	return BRAND_BY_ALIAS.get(brandKey(trimmed)) ?? { slug: slugify(trimmed), name: trimmed };
+}
+
+/** True when `name` is the brand's own name (its logo beats a sub-label's). */
+export function isCanonicalBrandName(name: string, brand: StudioBrand): boolean {
+	return brandKey(name) === brandKey(brand.name);
+}
+
+/** De-duplicated brands for a title's networks / companies, in TMDB order. */
+export function studioBrands(names: Iterable<string>): StudioBrand[] {
+	const seen = new Map<string, StudioBrand>();
+	for (const name of names) {
+		if (!name.trim()) continue;
+		const brand = studioBrand(name);
+		if (!seen.has(brand.slug)) seen.set(brand.slug, brand);
+	}
+	return [...seen.values()];
+}
+
+export function collectionSlug(name: string): string {
+	return slugify(name);
 }

@@ -1,11 +1,4 @@
-import { allGenres, byGenre } from '$lib/data';
-import { listAllItems } from '$lib/server/catalog';
-import { withProgress } from '$lib/server/progress';
+import { categoryIndex } from '$lib/server/categories';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const items = await withProgress(locals.user?.id ?? null, await listAllItems());
-	return {
-		categories: allGenres(items).map((genre) => ({ genre, items: byGenre(genre, items) }))
-	};
-};
+export const load: PageServerLoad = async () => ({ index: await categoryIndex() });
