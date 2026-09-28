@@ -188,11 +188,19 @@
 						{/snippet}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end" class="min-w-56">
-						<DropdownMenu.Label class="flex flex-col gap-0.5">
+						<!-- The active profile, avatar included, so it reads apart from the switch list below. -->
+						<DropdownMenu.Label class="flex items-center gap-2.5">
+							{#if profile}
+								<ProfileAvatar
+									name={profile.name}
+									color={profile.avatarColor}
+									icon={profile.avatarIcon}
+									size="sm"
+								/>
+							{/if}
 							<span class="truncate text-sm font-medium text-foreground">
 								{profile?.name ?? user.name}
 							</span>
-							<span class="truncate">{user.email}</span>
 						</DropdownMenu.Label>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Group>
