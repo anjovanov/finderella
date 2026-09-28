@@ -271,7 +271,7 @@
 					<Sheet.Title class="tracking-[0.25em] text-primary">FINDERELLA</Sheet.Title>
 					<Sheet.Description class="truncate">
 						{#if user}
-							{profile ? `${profile.name} · ${user.email}` : user.email}
+							{profile?.name ?? user.name}
 						{:else}
 							Browsing as a guest
 						{/if}
