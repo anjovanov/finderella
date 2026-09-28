@@ -25,6 +25,7 @@ import {
 import { loginRequired, trickplayEnabled } from '$lib/server/site-settings';
 import { pickEpisodeSource, pickMovieSource } from '$lib/server/streaming/source-picker';
 import { QUALITY_IDS, QUALITY_LADDER, transcodePlan } from '$lib/playback-quality';
+import { requireProfile } from '$lib/server/profiles';
 
 /**
  * Playback start must not wait on thumbnails: the device answers from its
@@ -94,6 +95,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// the defensive check for guest mode being switched off mid-session.
 	if (!user && (await loginRequired())) error(401, 'Sign in to watch.');
 	const viewerId = user?.id ?? null;
+	// Signed in but no profile picked yet (several on the account): 409.
+	const profile = user ? requireProfile(locals) : null;
+	const viewerProfile = profile ? { id: profile.id, name: profile.name } : null;
 	const parsed = StartRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'expected { kind, slug, episodeSlug? }');
 	const {
@@ -134,6 +138,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const session = await sessionManager.start(viewerId, source, 'direct', quality, {
 			startSeconds,
 			userAgent,
+			profile: viewerProfile,
 			details: { audioLabel: chosenAudioLabel }
 		});
 		const [subtitles, trickplay] = await Promise.all([
@@ -173,6 +178,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		audioKbps: audioOut.kbps,
 		startSeconds,
 		userAgent,
+		profile: viewerProfile,
 		details: {
 			audioLabel: chosenAudioLabel,
 			audioChannels: audioOut.channels,

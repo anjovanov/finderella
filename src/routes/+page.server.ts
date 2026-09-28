@@ -3,16 +3,17 @@ import { byGenre, topRated, type MediaItem } from '$lib/data';
 import { featured, listMovies, listSeries, recentlyAdded } from '$lib/server/catalog';
 import { applyProgress, continueWatching, loadProgress } from '$lib/server/progress';
 import type { PageServerLoad } from './$types';
+import { viewerProfileId } from '$lib/server/profiles';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const userId = locals.user?.id ?? null;
+	const profileId = viewerProfileId(locals);
 	const [hero, movies, series, recent, watching, progress] = await Promise.all([
 		featured(),
 		listMovies(),
 		listSeries(),
 		recentlyAdded(),
-		continueWatching(userId),
-		loadProgress(userId)
+		continueWatching(profileId),
+		loadProgress(profileId)
 	]);
 	for (const list of [movies, series, recent, watching, hero ? [hero] : []]) {
 		applyProgress(list, progress);

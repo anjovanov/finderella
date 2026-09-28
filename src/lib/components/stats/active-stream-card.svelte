@@ -76,7 +76,7 @@
 				<div class="flex min-w-0 flex-col gap-1.5">
 					<TitleLink title={stream.title} />
 					<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-						<UserCell user={stream.user} />
+						<UserCell user={stream.user} profile={stream.profileName} />
 						<span class="text-muted-foreground"><PlatformLabel platform={stream.platform} /></span>
 					</div>
 				</div>

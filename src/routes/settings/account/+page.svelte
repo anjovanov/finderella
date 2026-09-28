@@ -22,13 +22,13 @@
 </script>
 
 <svelte:head>
-	<title>Profile · Settings · Finderella</title>
+	<title>Account · Settings · Finderella</title>
 </svelte:head>
 
-<!-- Profile -->
+<!-- Account -->
 <Card.Root>
 	<Card.Header>
-		<Card.Title>Profile</Card.Title>
+		<Card.Title>Account</Card.Title>
 		<Card.Description>
 			<span class="inline-flex flex-wrap items-center gap-2">
 				<Badge variant={data.account.isAdmin ? 'default' : 'secondary'}>
@@ -41,19 +41,19 @@
 	<Card.Content>
 		<form method="POST" action="?/updateName" use:enhance>
 			<Field.Group>
-				<Field.Field data-invalid={message('profile') ? true : undefined}>
+				<Field.Field data-invalid={message('name') ? true : undefined}>
 					<Field.Label for="name">Display name</Field.Label>
 					<Input
 						id="name"
 						name="name"
 						value={data.account.name}
 						autocomplete="name"
-						aria-invalid={message('profile') ? true : undefined}
+						aria-invalid={message('name') ? true : undefined}
 						required
 					/>
-					{#if message('profile')}
-						<Field.Error>{message('profile')}</Field.Error>
-					{:else if saved('profile')}
+					{#if message('name')}
+						<Field.Error>{message('name')}</Field.Error>
+					{:else if saved('name')}
 						<Field.Description>Name updated.</Field.Description>
 					{/if}
 				</Field.Field>

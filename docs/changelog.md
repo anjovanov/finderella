@@ -2,6 +2,19 @@
 
 ## 2026-09-28
 
+**Profiles** (migrations `0020` + `0021`: new tables `profile` and `profile_settings`, which replaces `user_settings`; `watch_progress` and `watchlist` are keyed by `profile_id` instead of `user_id`; `play_history.profile_id` / `profile_name`, `playback_session.profile_id` and Better Auth's `session.active_profile_id`). An account can have up to **5 profiles**, each with a name, colour and icon.
+
+- **Per profile:** watch progress, Continue watching, the watchlist, "Mark as watched", and every setting under Preferences, Subtitles and Playback (including the theme).
+- **Per account:** name, email, password and role. **Settings → Profile** was renamed **Settings → Account** (`/settings/account`). `/settings/profile` no longer exists and returns 404.
+- **Who's watching?** After signing in, an account with 2 or more profiles picks one at `/profiles`. An account with one profile goes straight in. The choice is remembered for that sign-in on that device.
+- **Switching:** from the avatar menu (the other profiles, then **Manage profiles**) or the mobile menu, or on `/profiles`. The current page reloads as the new profile.
+- **Managing profiles** happens on `/profiles` too: **Edit** switches the picker into edit mode (**Done** leaves it), with a pencil on each profile. Choose a profile to edit its name, colour (12 to choose from) or icon (20, or the name's initial), or delete it from the same dialog. **Add profile** is always there while the account has fewer than 5. The avatar menu's **Manage profiles** opens `/profiles?manage`. The main profile can't be deleted. Deleting a profile also deletes its progress, watchlist and settings. Its plays stay in the statistics under the profile's name.
+- **Admin statistics:** Activity, Now playing, Recently watched and History show the profile after the user's name when it differs from the account name. Two profiles of one account watching the same title count as two plays.
+
+Existing accounts get a main profile named after the account. It keeps all existing progress, watchlist, settings and history.
+
+Better Auth's multiSession plugin wasn't used. It keeps several separate accounts signed in within one browser, each with its own password, while profiles live under one sign-in. The active profile is a Better Auth **session additional field** (`activeProfileId`). The server writes it and clients can't set it.
+
 **Categories rework: genres, collections, networks & studios** (migration `0019`: new tables `collection` and `studio`; `movie.studios`, `movie.collection_id`, `movie.metadata_version`, `series.studios`, `series.metadata_version`). `/categories` no longer shows a carousel row per genre. It now has three tile grids, and each tile opens `/categories/<genres|collections|networks>/<slug>`: the library grid with a Movies/Series filter, genre filter and sort.
 
 - **Genres:** backdrop tiles. Each tile uses the top-rated artwork in the genre that another tile isn't already using.

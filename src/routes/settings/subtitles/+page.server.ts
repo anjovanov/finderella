@@ -3,11 +3,12 @@ import {
 	getSubtitleSettings,
 	saveSubtitleSettings,
 	SubtitleSettingsPatch
-} from '$lib/server/user-settings';
+} from '$lib/server/profile-settings';
 import type { Actions, PageServerLoad } from './$types';
+import { requireProfile } from '$lib/server/profiles';
 
 export const load: PageServerLoad = async ({ locals }) => ({
-	subtitleSettings: await getSubtitleSettings(locals.user!.id)
+	subtitleSettings: await getSubtitleSettings(requireProfile(locals).id)
 });
 
 export const actions: Actions = {
@@ -22,7 +23,7 @@ export const actions: Actions = {
 		);
 		const parsed = SubtitleSettingsPatch.safeParse(raw);
 		if (!parsed.success) return fail(400, { message: 'Pick a value from each list' });
-		await saveSubtitleSettings(event.locals.user!.id, parsed.data);
+		await saveSubtitleSettings(requireProfile(event.locals).id, parsed.data);
 		return { saved: true };
 	}
 };

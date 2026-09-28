@@ -3,6 +3,7 @@ import { getMoviesBySlugs, getSeriesBySlugs } from '$lib/server/catalog';
 import { withProgress } from '$lib/server/progress';
 import { searchCatalog } from '$lib/server/search';
 import type { PageServerLoad } from './$types';
+import { viewerProfileId } from '$lib/server/profiles';
 
 const MAX_RESULTS = 60;
 
@@ -25,5 +26,5 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	);
 	// A title pruned since the last index rebuild simply drops out.
 	const items = hits.flatMap((h) => byKey.get(`${h.kind}:${h.id}`) ?? []);
-	return { q, items: await withProgress(locals.user?.id ?? null, items) };
+	return { q, items: await withProgress(viewerProfileId(locals), items) };
 };

@@ -7,6 +7,7 @@ import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { roleForNewUser, USER_ROLE } from '$lib/auth-roles';
 import { db } from '$lib/server/db';
+import { ensurePrimaryProfile } from '$lib/server/profiles';
 import { countUsers, registrationOpen } from '$lib/server/site-settings';
 
 export const auth = betterAuth({
@@ -14,6 +15,15 @@ export const auth = betterAuth({
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
 	emailAndPassword: { enabled: true },
+	session: {
+		additionalFields: {
+			// The profile this sign-in is watching as (see $lib/server/profiles).
+			// Per device like any streaming service, gone on sign-out. Written by
+			// the server only (`input: false` keeps /update-session from setting
+			// it) and validated against the user's profiles on every request.
+			activeProfileId: { type: 'string', required: false, input: false }
+		}
+	},
 	hooks: {
 		// Public sign-up honours the admin's "allow registration" switch. This
 		// runs for both the /register form action (auth.api.signUpEmail) and the
@@ -35,6 +45,11 @@ export const auth = betterAuth({
 					const existing = await countUsers();
 					const requested = (user as { role?: string | null }).role;
 					return { data: { ...user, role: roleForNewUser(existing, requested) } };
+				},
+				// Every account starts with its primary profile (sign-up and
+				// admin-created users alike); hooks.server.ts re-creates a missing one.
+				after: async (user) => {
+					await ensurePrimaryProfile(user.id, user.name);
 				}
 			}
 		}

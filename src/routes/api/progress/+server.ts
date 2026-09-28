@@ -1,6 +1,7 @@
 import { error, json, type RequestHandler } from '@sveltejs/kit';
 import { z } from 'zod';
 import { saveProgress } from '$lib/server/progress';
+import { requireProfile } from '$lib/server/profiles';
 
 const ProgressRequest = z.object({
 	kind: z.enum(['movie', 'series']),
@@ -12,11 +13,11 @@ const ProgressRequest = z.object({
 
 /** Watch-position updates: throttled POSTs from the player + a pagehide beacon. */
 export const POST: RequestHandler = async ({ request, locals }) => {
-	const user = locals.user;
 	// Guests (public access mode) have nowhere to store a position.
-	if (!user) return json({ ok: false });
+	if (!locals.user) return json({ ok: false });
+	const profile = requireProfile(locals);
 	const parsed = ProgressRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'invalid progress payload');
-	const saved = await saveProgress({ userId: user.id, ...parsed.data });
+	const saved = await saveProgress({ profileId: profile.id, ...parsed.data });
 	return json({ ok: saved });
 };

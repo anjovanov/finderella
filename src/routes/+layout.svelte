@@ -12,11 +12,13 @@
 	// inhibit it, the settings page previews it.
 	setScreensaver(new ScreensaverController());
 
-	// The admin area brings its own sidebar chrome and the auth pages stand
-	// alone; everywhere else the navbar shows (guests included, on a public
-	// hub). Error pages keep it.
+	// The admin area brings its own sidebar chrome and the auth pages and the
+	// profile picker stand alone; everywhere else the navbar shows (guests
+	// included, on a public hub). Error pages keep it.
 	const inAdmin = $derived(page.route.id?.startsWith('/admin') ?? false);
-	const authPage = $derived(page.route.id === '/login' || page.route.id === '/register');
+	const authPage = $derived(
+		page.route.id === '/login' || page.route.id === '/register' || page.route.id === '/profiles'
+	);
 	const showHeader = $derived(!authPage && (page.error !== null || !inAdmin));
 
 	// The server renders the class into <html> for the first paint; this keeps
@@ -35,7 +37,7 @@
 </svelte:head>
 
 {#if showHeader}
-	<SiteHeader user={data.user} />
+	<SiteHeader user={data.user} profile={data.profile} profiles={data.profiles} />
 {/if}
 {#if inAdmin && !page.error}
 	{@render children()}

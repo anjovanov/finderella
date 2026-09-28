@@ -7,7 +7,7 @@ import { inProgress, progressFraction } from '$lib/data/progress';
 import type { MediaItem } from '$lib/data/types';
 
 export async function saveProgress(input: {
-	userId: string;
+	profileId: string;
 	kind: 'movie' | 'series';
 	slug: string;
 	episodeSlug?: string;
@@ -21,14 +21,14 @@ export async function saveProgress(input: {
 		await db
 			.insert(watchProgress)
 			.values({
-				userId: input.userId,
+				profileId: input.profileId,
 				movieId: row.id,
 				positionSeconds: input.positionSeconds,
 				durationSeconds: input.durationSeconds,
 				updatedAt: now
 			})
 			.onConflictDoUpdate({
-				target: [watchProgress.userId, watchProgress.movieId],
+				target: [watchProgress.profileId, watchProgress.movieId],
 				// Partial unique index — the conflict target must repeat its predicate.
 				targetWhere: sql`${watchProgress.movieId} is not null`,
 				set: {
@@ -51,7 +51,7 @@ export async function saveProgress(input: {
 	await db
 		.insert(watchProgress)
 		.values({
-			userId: input.userId,
+			profileId: input.profileId,
 			episodeId: episodeRow.id,
 			seriesId: seriesRow.id,
 			positionSeconds: input.positionSeconds,
@@ -59,7 +59,7 @@ export async function saveProgress(input: {
 			updatedAt: now
 		})
 		.onConflictDoUpdate({
-			target: [watchProgress.userId, watchProgress.episodeId],
+			target: [watchProgress.profileId, watchProgress.episodeId],
 			targetWhere: sql`${watchProgress.episodeId} is not null`,
 			set: {
 				positionSeconds: input.positionSeconds,
@@ -78,14 +78,14 @@ export interface WatchState {
 
 /** A movie's saved position + duration, only while it's worth resuming (else null). */
 export async function movieWatchState(
-	userId: string | null,
+	profileId: string | null,
 	slug: string
 ): Promise<WatchState | null> {
-	if (!userId) return null;
+	if (!profileId) return null;
 	const row = await db.query.movie.findFirst({ where: eq(movie.slug, slug) });
 	if (!row) return null;
 	const progress = await db.query.watchProgress.findFirst({
-		where: and(eq(watchProgress.userId, userId), eq(watchProgress.movieId, row.id))
+		where: and(eq(watchProgress.profileId, profileId), eq(watchProgress.movieId, row.id))
 	});
 	if (!progress || !inProgress(progress.positionSeconds, progress.durationSeconds)) return null;
 	return { positionSeconds: progress.positionSeconds, durationSeconds: progress.durationSeconds };
@@ -93,19 +93,19 @@ export async function movieWatchState(
 
 /** Saved resume position (seconds) for a movie, if it's worth resuming. */
 export async function movieResumePosition(
-	userId: string | null,
+	profileId: string | null,
 	slug: string
 ): Promise<number | null> {
-	return (await movieWatchState(userId, slug))?.positionSeconds ?? null;
+	return (await movieWatchState(profileId, slug))?.positionSeconds ?? null;
 }
 
 /** Saved resume position (seconds) for one episode, if it's worth resuming. */
 export async function episodeResumePosition(
-	userId: string | null,
+	profileId: string | null,
 	seriesSlug: string,
 	episodeSlug: string
 ): Promise<number | null> {
-	if (!userId) return null;
+	if (!profileId) return null;
 	const seriesRow = await db.query.series.findFirst({ where: eq(series.slug, seriesSlug) });
 	if (!seriesRow) return null;
 	const episodeRow = await db.query.episode.findFirst({
@@ -113,7 +113,7 @@ export async function episodeResumePosition(
 	});
 	if (!episodeRow) return null;
 	const progress = await db.query.watchProgress.findFirst({
-		where: and(eq(watchProgress.userId, userId), eq(watchProgress.episodeId, episodeRow.id))
+		where: and(eq(watchProgress.profileId, profileId), eq(watchProgress.episodeId, episodeRow.id))
 	});
 	if (!progress || !inProgress(progress.positionSeconds, progress.durationSeconds)) return null;
 	return progress.positionSeconds;
@@ -124,10 +124,10 @@ export async function episodeResumePosition(
  * per movie/series, newest first. Titles the viewer dismissed stay hidden
  * until they play them again (`saveProgress` clears `dismissedAt`).
  */
-export async function continueWatching(userId: string | null, limit = 12): Promise<MediaItem[]> {
-	if (!userId) return [];
+export async function continueWatching(profileId: string | null, limit = 12): Promise<MediaItem[]> {
+	if (!profileId) return [];
 	const rows = await db.query.watchProgress.findMany({
-		where: and(eq(watchProgress.userId, userId), isNull(watchProgress.dismissedAt)),
+		where: and(eq(watchProgress.profileId, profileId), isNull(watchProgress.dismissedAt)),
 		orderBy: [desc(watchProgress.updatedAt)],
 		limit: 50
 	});
@@ -158,7 +158,7 @@ export async function continueWatching(userId: string | null, limit = 12): Promi
  * itself is kept (bars and resume positions stay). Series: every episode row.
  */
 export async function dismissProgress(
-	userId: string,
+	profileId: string,
 	kind: 'movie' | 'series',
 	slug: string
 ): Promise<boolean> {
@@ -169,7 +169,7 @@ export async function dismissProgress(
 		await db
 			.update(watchProgress)
 			.set({ dismissedAt: now })
-			.where(and(eq(watchProgress.userId, userId), eq(watchProgress.movieId, row.id)));
+			.where(and(eq(watchProgress.profileId, profileId), eq(watchProgress.movieId, row.id)));
 		return true;
 	}
 	const seriesRow = await db.query.series.findFirst({ where: eq(series.slug, slug) });
@@ -177,7 +177,7 @@ export async function dismissProgress(
 	await db
 		.update(watchProgress)
 		.set({ dismissedAt: now })
-		.where(and(eq(watchProgress.userId, userId), eq(watchProgress.seriesId, seriesRow.id)));
+		.where(and(eq(watchProgress.profileId, profileId), eq(watchProgress.seriesId, seriesRow.id)));
 	return true;
 }
 
@@ -193,7 +193,7 @@ function finishedSeconds(durationMs: number | null | undefined, runtimeMinutes: 
  * has no episodes.
  */
 export async function markWatched(
-	userId: string,
+	profileId: string,
 	kind: 'movie' | 'series',
 	slug: string
 ): Promise<boolean> {
@@ -206,14 +206,14 @@ export async function markWatched(
 		await db
 			.insert(watchProgress)
 			.values({
-				userId,
+				profileId,
 				movieId: row.id,
 				positionSeconds: seconds,
 				durationSeconds: seconds,
 				updatedAt: now
 			})
 			.onConflictDoUpdate({
-				target: [watchProgress.userId, watchProgress.movieId],
+				target: [watchProgress.profileId, watchProgress.movieId],
 				targetWhere: sql`${watchProgress.movieId} is not null`,
 				set: {
 					positionSeconds: seconds,
@@ -253,7 +253,7 @@ export async function markWatched(
 	const values = episodes.map((ep, i) => {
 		const seconds = finishedSeconds(durationByEpisode.get(ep.id), ep.runtimeMinutes);
 		return {
-			userId,
+			profileId,
 			episodeId: ep.id,
 			seriesId: seriesRow.id,
 			positionSeconds: seconds,
@@ -265,7 +265,7 @@ export async function markWatched(
 		.insert(watchProgress)
 		.values(values)
 		.onConflictDoUpdate({
-			target: [watchProgress.userId, watchProgress.episodeId],
+			target: [watchProgress.profileId, watchProgress.episodeId],
 			targetWhere: sql`${watchProgress.episodeId} is not null`,
 			// Multi-row upsert: each conflict must take its own row's values.
 			set: {
@@ -295,11 +295,11 @@ export function emptyProgress(): ProgressOverlay {
 
 /**
  * Everything one viewer has done with the catalog — watch positions and
- * watchlist membership — keyed by public slug (a user's rows are few).
- * Guests (null) get an empty overlay.
+ * watchlist membership — keyed by public slug (a profile's rows are few).
+ * Guests and profile-less sign-ins (null) get an empty overlay.
  */
-export async function loadProgress(userId: string | null): Promise<ProgressOverlay> {
-	if (!userId) return emptyProgress();
+export async function loadProgress(profileId: string | null): Promise<ProgressOverlay> {
+	if (!profileId) return emptyProgress();
 	const [movieRows, episodeRows, watchlistKeys] = await Promise.all([
 		db
 			.select({
@@ -309,7 +309,7 @@ export async function loadProgress(userId: string | null): Promise<ProgressOverl
 			})
 			.from(watchProgress)
 			.innerJoin(movie, eq(watchProgress.movieId, movie.id))
-			.where(eq(watchProgress.userId, userId)),
+			.where(eq(watchProgress.profileId, profileId)),
 		db
 			.select({
 				episodeSlug: episode.slug,
@@ -320,9 +320,9 @@ export async function loadProgress(userId: string | null): Promise<ProgressOverl
 			.from(watchProgress)
 			.innerJoin(episode, eq(watchProgress.episodeId, episode.id))
 			.innerJoin(series, eq(episode.seriesId, series.id))
-			.where(eq(watchProgress.userId, userId))
+			.where(eq(watchProgress.profileId, profileId))
 			.orderBy(desc(watchProgress.updatedAt)),
-		loadWatchlistKeys(userId)
+		loadWatchlistKeys(profileId)
 	]);
 	const overlay: ProgressOverlay = { ...emptyProgress(), watchlist: watchlistKeys };
 	for (const row of movieRows) {
@@ -360,8 +360,8 @@ export function applyProgress<T extends MediaItem>(items: T[], overlay: Progress
 }
 
 export async function withProgress<T extends MediaItem>(
-	userId: string | null,
+	profileId: string | null,
 	items: T[]
 ): Promise<T[]> {
-	return applyProgress(items, await loadProgress(userId));
+	return applyProgress(items, await loadProgress(profileId));
 }

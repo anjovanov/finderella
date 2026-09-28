@@ -12,15 +12,15 @@ export function watchlistKey(kind: WatchlistKind, slug: string): string {
 }
 
 /** Keys of everything the viewer saved (see `watchlistKey`). Guests (null) get an empty set. */
-export async function loadWatchlistKeys(userId: string | null): Promise<Set<string>> {
+export async function loadWatchlistKeys(profileId: string | null): Promise<Set<string>> {
 	const keys = new Set<string>();
-	if (!userId) return keys;
+	if (!profileId) return keys;
 	const rows = await db
 		.select({ movieSlug: movie.slug, seriesSlug: series.slug })
 		.from(watchlist)
 		.leftJoin(movie, eq(watchlist.movieId, movie.id))
 		.leftJoin(series, eq(watchlist.seriesId, series.id))
-		.where(eq(watchlist.userId, userId));
+		.where(eq(watchlist.profileId, profileId));
 	for (const row of rows) {
 		if (row.movieSlug) keys.add(watchlistKey('movie', row.movieSlug));
 		else if (row.seriesSlug) keys.add(watchlistKey('series', row.seriesSlug));
@@ -30,7 +30,7 @@ export async function loadWatchlistKeys(userId: string | null): Promise<Set<stri
 
 /** Save or unsave a title. Returns false when the slug doesn't exist. */
 export async function toggleWatchlist(
-	userId: string,
+	profileId: string,
 	kind: WatchlistKind,
 	slug: string,
 	add: boolean
@@ -45,22 +45,24 @@ export async function toggleWatchlist(
 		// A bare ON CONFLICT DO NOTHING covers the partial unique indexes without a target.
 		await db
 			.insert(watchlist)
-			.values({ userId, [kind === 'movie' ? 'movieId' : 'seriesId']: target.id })
+			.values({ profileId, [kind === 'movie' ? 'movieId' : 'seriesId']: target.id })
 			.onConflictDoNothing();
 	} else {
-		await db.delete(watchlist).where(and(eq(watchlist.userId, userId), eq(idColumn, target.id)));
+		await db
+			.delete(watchlist)
+			.where(and(eq(watchlist.profileId, profileId), eq(idColumn, target.id)));
 	}
 	return true;
 }
 
 /** The viewer's saved titles, most recently added first. */
-export async function listWatchlist(userId: string): Promise<MediaItem[]> {
+export async function listWatchlist(profileId: string): Promise<MediaItem[]> {
 	const rows = await db
 		.select({ movieSlug: movie.slug, seriesSlug: series.slug })
 		.from(watchlist)
 		.leftJoin(movie, eq(watchlist.movieId, movie.id))
 		.leftJoin(series, eq(watchlist.seriesId, series.id))
-		.where(eq(watchlist.userId, userId))
+		.where(eq(watchlist.profileId, profileId))
 		.orderBy(desc(watchlist.createdAt));
 	const [movies, shows] = await Promise.all([
 		getMoviesBySlugs(rows.flatMap((r) => (r.movieSlug ? [r.movieSlug] : []))),

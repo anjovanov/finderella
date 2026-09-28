@@ -1,7 +1,7 @@
 /**
- * Per-account look & feel: color theme and the idle screensaver. Client-safe
+ * Per-profile look & feel: color theme and the idle screensaver. Client-safe
  * (the settings page, root layout and screensaver read it); stored in
- * `user_settings`, and guests always get DEFAULT_PREFERENCES.
+ * `profile_settings`, and guests always get DEFAULT_PREFERENCES.
  */
 
 export const THEMES = ['dark', 'light'] as const;

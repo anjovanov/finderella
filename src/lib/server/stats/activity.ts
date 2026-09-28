@@ -103,6 +103,7 @@ export async function listActiveStreams(): Promise<ActiveStream[]> {
 			user: s.userId
 				? { id: s.userId, name: u?.name ?? 'Deleted user', image: u?.image ?? null }
 				: null,
+			profileName: s.profileName,
 			title,
 			backdropUrl: m?.backdropUrl ?? e?.stillUrl ?? e?.backdropUrl ?? null,
 			state: s.live.state,

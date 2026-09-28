@@ -79,6 +79,8 @@ export function episodeCode(t: Pick<PlayTitle, 'seasonNumber' | 'episodeNumber'>
 export interface ActiveStream {
 	sessionId: string;
 	user: StatUser | null;
+	/** The account profile watching; null for guests. */
+	profileName: string | null;
 	title: PlayTitle;
 	backdropUrl: string | null;
 	state: PlayerState;
@@ -113,6 +115,8 @@ export interface ActiveStream {
 export interface HistoryEntry {
 	id: string;
 	user: StatUser | null;
+	/** The account profile that watched (a snapshot once the profile is deleted). */
+	profileName: string | null;
 	title: PlayTitle;
 	platform: Platform;
 	startedAt: string;

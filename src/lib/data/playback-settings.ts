@@ -1,6 +1,6 @@
 /**
- * Per-account playback settings (client-safe: the settings page, the watch
- * pages and the player read them). Stored in `user_settings`; guests get
+ * Per-profile playback settings (client-safe: the settings page, the watch
+ * pages and the player read them). Stored in `profile_settings`; guests get
  * DEFAULT_PLAYBACK_SETTINGS (autoplay-next remembered per browser).
  */
 

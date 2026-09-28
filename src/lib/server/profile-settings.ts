@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { normalizeLanguage } from '@finderella/protocol';
 import { db } from '$lib/server/db';
-import { userSettings } from '$lib/server/db/schema';
+import { profileSettings } from '$lib/server/db/schema';
 import { isAudioLanguage } from '$lib/audio-preference';
 import {
 	AUDIO_CHANNEL_OPTIONS,
@@ -49,10 +49,12 @@ export const SubtitleSettingsPatch = z.object({
 });
 export type SubtitleSettingsPatch = z.infer<typeof SubtitleSettingsPatch>;
 
-/** The viewer's subtitle settings; guests and accounts without a row get the defaults. */
-export async function getSubtitleSettings(userId: string | null): Promise<SubtitleSettings> {
-	if (!userId) return DEFAULT_SUBTITLE_SETTINGS;
-	const row = await db.query.userSettings.findFirst({ where: eq(userSettings.userId, userId) });
+/** The viewer's subtitle settings; guests, profile-less sign-ins and profiles without a row get the defaults. */
+export async function getSubtitleSettings(profileId: string | null): Promise<SubtitleSettings> {
+	if (!profileId) return DEFAULT_SUBTITLE_SETTINGS;
+	const row = await db.query.profileSettings.findFirst({
+		where: eq(profileSettings.profileId, profileId)
+	});
 	if (!row) return DEFAULT_SUBTITLE_SETTINGS;
 	return normalizeSubtitleSettings({
 		language: row.subtitleLanguage,
@@ -64,12 +66,12 @@ export async function getSubtitleSettings(userId: string | null): Promise<Subtit
 	});
 }
 
-/** Merge a validated patch into the account's row (creating it) and return the result. */
+/** Merge a validated patch into the profile's row (creating it) and return the result. */
 export async function saveSubtitleSettings(
-	userId: string,
+	profileId: string,
 	patch: SubtitleSettingsPatch
 ): Promise<SubtitleSettings> {
-	const current = await getSubtitleSettings(userId);
+	const current = await getSubtitleSettings(profileId);
 	const next = normalizeSubtitleSettings({ ...current, ...patch });
 	const now = new Date();
 	const values = {
@@ -82,9 +84,9 @@ export async function saveSubtitleSettings(
 		updatedAt: now
 	};
 	await db
-		.insert(userSettings)
-		.values({ userId, ...values })
-		.onConflictDoUpdate({ target: userSettings.userId, set: values });
+		.insert(profileSettings)
+		.values({ profileId, ...values })
+		.onConflictDoUpdate({ target: profileSettings.profileId, set: values });
 	return next;
 }
 
@@ -118,10 +120,10 @@ export const PlaybackSettingsPatch = z.object({
 });
 export type PlaybackSettingsPatch = z.infer<typeof PlaybackSettingsPatch>;
 
-/** The viewer's playback settings; guests and accounts without a row get the defaults. */
-export async function getPlaybackSettings(userId: string | null): Promise<PlaybackSettings> {
-	if (!userId) return DEFAULT_PLAYBACK_SETTINGS;
-	const row = await db.query.userSettings.findFirst({
+/** The viewer's playback settings; guests, profile-less sign-ins and profiles without a row get the defaults. */
+export async function getPlaybackSettings(profileId: string | null): Promise<PlaybackSettings> {
+	if (!profileId) return DEFAULT_PLAYBACK_SETTINGS;
+	const row = await db.query.profileSettings.findFirst({
 		columns: {
 			audioLanguage: true,
 			audioChannels: true,
@@ -130,7 +132,7 @@ export async function getPlaybackSettings(userId: string | null): Promise<Playba
 			stillWatchingEpisodes: true,
 			stillWatchingMinutes: true
 		},
-		where: eq(userSettings.userId, userId)
+		where: eq(profileSettings.profileId, profileId)
 	});
 	if (!row) return DEFAULT_PLAYBACK_SETTINGS;
 	return normalizePlaybackSettings({
@@ -145,12 +147,12 @@ export async function getPlaybackSettings(userId: string | null): Promise<Playba
 	});
 }
 
-/** Merge a validated patch into the account's row (creating it) and return the result. */
+/** Merge a validated patch into the profile's row (creating it) and return the result. */
 export async function savePlaybackSettings(
-	userId: string,
+	profileId: string,
 	patch: PlaybackSettingsPatch
 ): Promise<PlaybackSettings> {
-	const current = await getPlaybackSettings(userId);
+	const current = await getPlaybackSettings(profileId);
 	const next = normalizePlaybackSettings({
 		audioLanguage: patch.audioLanguage ?? current.audioLanguage,
 		audioChannels: patch.audioChannels ?? current.audioChannels,
@@ -171,9 +173,9 @@ export async function savePlaybackSettings(
 		updatedAt: new Date()
 	};
 	await db
-		.insert(userSettings)
-		.values({ userId, ...values })
-		.onConflictDoUpdate({ target: userSettings.userId, set: values });
+		.insert(profileSettings)
+		.values({ profileId, ...values })
+		.onConflictDoUpdate({ target: profileSettings.profileId, set: values });
 	return next;
 }
 
@@ -190,17 +192,17 @@ export const PreferencesPatch = z.object({
 });
 export type PreferencesPatch = z.infer<typeof PreferencesPatch>;
 
-/** The viewer's theme + screensaver settings; guests and accounts without a row get the defaults. */
-export async function getPreferences(userId: string | null): Promise<Preferences> {
-	if (!userId) return DEFAULT_PREFERENCES;
-	const row = await db.query.userSettings.findFirst({
+/** The viewer's theme + screensaver settings; guests, profile-less sign-ins and profiles without a row get the defaults. */
+export async function getPreferences(profileId: string | null): Promise<Preferences> {
+	if (!profileId) return DEFAULT_PREFERENCES;
+	const row = await db.query.profileSettings.findFirst({
 		columns: {
 			theme: true,
 			screensaverEnabled: true,
 			screensaverKind: true,
 			screensaverSeconds: true
 		},
-		where: eq(userSettings.userId, userId)
+		where: eq(profileSettings.profileId, profileId)
 	});
 	if (!row) return DEFAULT_PREFERENCES;
 	return normalizePreferences({
@@ -213,12 +215,12 @@ export async function getPreferences(userId: string | null): Promise<Preferences
 	});
 }
 
-/** Merge a validated patch into the account's row (creating it) and return the result. */
+/** Merge a validated patch into the profile's row (creating it) and return the result. */
 export async function savePreferences(
-	userId: string,
+	profileId: string,
 	patch: PreferencesPatch
 ): Promise<Preferences> {
-	const current = await getPreferences(userId);
+	const current = await getPreferences(profileId);
 	const next = normalizePreferences({
 		theme: patch.theme ?? current.theme,
 		screensaver: {
@@ -235,8 +237,8 @@ export async function savePreferences(
 		updatedAt: new Date()
 	};
 	await db
-		.insert(userSettings)
-		.values({ userId, ...values })
-		.onConflictDoUpdate({ target: userSettings.userId, set: values });
+		.insert(profileSettings)
+		.values({ profileId, ...values })
+		.onConflictDoUpdate({ target: profileSettings.profileId, set: values });
 	return next;
 }

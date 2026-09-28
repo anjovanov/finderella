@@ -3,8 +3,22 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import type { StatUser } from '$lib/data/stats';
 
-	/** Avatar + name linking to the user's statistics; null = a guest viewer. */
-	let { user, size = 'sm' }: { user: StatUser | null; size?: 'sm' | 'default' } = $props();
+	/**
+	 * Avatar + name linking to the user's statistics; null = a guest viewer.
+	 * `profile` names the account profile that watched — shown after the name
+	 * unless it just repeats it (a one-profile account named like its owner).
+	 */
+	let {
+		user,
+		profile = null,
+		size = 'sm'
+	}: { user: StatUser | null; profile?: string | null; size?: 'sm' | 'default' } = $props();
+
+	const profileLabel = $derived(
+		user && profile && profile.trim().toLowerCase() !== user.name.trim().toLowerCase()
+			? profile
+			: null
+	);
 
 	const initials = $derived(
 		(user?.name ?? 'Guest')
@@ -33,7 +47,12 @@
 		class="group flex min-w-0 items-center gap-2"
 	>
 		{@render avatar()}
-		<span class="truncate group-hover:underline">{user.name}</span>
+		<span class="truncate">
+			<span class="group-hover:underline">{user.name}</span>
+			{#if profileLabel}
+				<span class="text-muted-foreground">· {profileLabel}</span>
+			{/if}
+		</span>
 	</a>
 {:else}
 	<span class="flex min-w-0 items-center gap-2 text-muted-foreground">

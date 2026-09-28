@@ -3,11 +3,12 @@ import {
 	getPlaybackSettings,
 	PlaybackSettingsPatch,
 	savePlaybackSettings
-} from '$lib/server/user-settings';
+} from '$lib/server/profile-settings';
 import type { Actions, PageServerLoad } from './$types';
+import { requireProfile } from '$lib/server/profiles';
 
 export const load: PageServerLoad = async ({ locals }) => ({
-	playbackSettings: await getPlaybackSettings(locals.user!.id)
+	playbackSettings: await getPlaybackSettings(requireProfile(locals).id)
 });
 
 /** The string fields a form posted (missing ones — e.g. disabled selects — stay untouched). */
@@ -30,7 +31,7 @@ export const actions: Actions = {
 		if (!parsed.success) {
 			return fail(400, { section: 'audio', message: 'Pick a value from each list' });
 		}
-		await savePlaybackSettings(event.locals.user!.id, parsed.data);
+		await savePlaybackSettings(requireProfile(event.locals).id, parsed.data);
 		return { section: 'audio', saved: true };
 	},
 
@@ -39,7 +40,7 @@ export const actions: Actions = {
 			fields(await event.request.formData(), ['autoplayNext'])
 		);
 		if (!parsed.success) return fail(400, { section: 'autoplay', message: 'Invalid value' });
-		await savePlaybackSettings(event.locals.user!.id, parsed.data);
+		await savePlaybackSettings(requireProfile(event.locals).id, parsed.data);
 		return { section: 'autoplay', saved: true };
 	},
 
@@ -58,7 +59,7 @@ export const actions: Actions = {
 		if (!parsed.success) {
 			return fail(400, { section: 'stillWatching', message: 'Pick a value from each list' });
 		}
-		await savePlaybackSettings(event.locals.user!.id, parsed.data);
+		await savePlaybackSettings(requireProfile(event.locals).id, parsed.data);
 		return { section: 'stillWatching', saved: true };
 	}
 };

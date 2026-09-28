@@ -19,6 +19,7 @@ import {
 	mediaFile,
 	movie,
 	playHistory,
+	profile,
 	season,
 	series,
 	user,
@@ -145,6 +146,8 @@ function historyQuery() {
 		.select({
 			id: playHistory.id,
 			userId: playHistory.userId,
+			// The profile's current name while it exists, else the snapshot.
+			profileName: sql<string | null>`coalesce(${profile.name}, ${playHistory.profileName})`,
 			...userColumns,
 			...titleColumns,
 			...platformColumns,
@@ -160,6 +163,7 @@ function historyQuery() {
 		})
 		.from(playHistory)
 		.leftJoin(user, eq(user.id, playHistory.userId))
+		.leftJoin(profile, eq(profile.id, playHistory.profileId))
 		.leftJoin(movie, eq(movie.id, playHistory.movieId))
 		.leftJoin(series, eq(series.id, playHistory.seriesId))
 		.leftJoin(episode, eq(episode.id, playHistory.episodeId));
@@ -171,6 +175,7 @@ function toHistoryEntry(row: HistoryRow): HistoryEntry {
 	return {
 		id: row.id,
 		user: toStatUser(row.userId, row),
+		profileName: row.profileName,
 		title: toPlayTitle(row),
 		platform: toPlatform(row),
 		startedAt: row.startedAt.toISOString(),

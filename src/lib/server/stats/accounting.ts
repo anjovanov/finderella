@@ -86,6 +86,7 @@ export function settle(
 
 export interface PlayIdentity {
 	userId: string | null;
+	profileId: string | null;
 	userAgent: string | null;
 	movieId: string | null;
 	episodeId: string | null;
@@ -93,7 +94,7 @@ export interface PlayIdentity {
 
 /**
  * A new session continues an existing history row when it is the same viewer
- * (guests: the same browser) watching the same movie/episode, and the row was
+ * (the same account profile; guests: the same browser) watching the same movie/episode, and the row was
  * active recently — quality/audio switches, reloads, a device reconnecting.
  */
 export function canContinuePlay(
@@ -102,6 +103,7 @@ export function canContinuePlay(
 	now: number
 ): boolean {
 	if (row.userId !== next.userId) return false;
+	if (row.profileId !== next.profileId) return false;
 	if (row.userId === null && row.userAgent !== next.userAgent) return false;
 	const sameTitle = next.movieId
 		? row.movieId === next.movieId

@@ -8,14 +8,17 @@
 		DashboardSquare01Icon,
 		Logout01Icon,
 		Menu01Icon,
-		Settings01Icon
+		Settings01Icon,
+		UserMultiple02Icon
 	} from '@hugeicons/core-free-icons';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as NavigationMenu from '$lib/components/ui/navigation-menu';
 	import * as Sheet from '$lib/components/ui/sheet';
+	import ProfileAvatar from '$lib/components/profile-avatar.svelte';
 	import SearchBox from '$lib/components/search-box.svelte';
+	import type { ProfileSummary } from '$lib/data/profiles';
 	import { cn } from '$lib/utils.js';
 
 	interface HeaderUser {
@@ -25,8 +28,22 @@
 		isAdmin: boolean;
 	}
 
-	/** null = a guest browsing a public hub. */
-	let { user }: { user: HeaderUser | null } = $props();
+	/**
+	 * null = a guest browsing a public hub. `profile` is the one this sign-in
+	 * watches as (null on the account pages reachable before picking one);
+	 * `profiles` are all of the account's, for the switcher.
+	 */
+	let {
+		user,
+		profile = null,
+		profiles = []
+	}: {
+		user: HeaderUser | null;
+		profile?: ProfileSummary | null;
+		profiles?: ProfileSummary[];
+	} = $props();
+
+	const otherProfiles = $derived(profiles.filter((p) => p.id !== profile?.id));
 
 	// `path` is compared against page.url.pathname (resolve() yields relative
 	// hrefs during SSR, so hrefs can't be used for the active check).
@@ -41,6 +58,16 @@
 
 	let mobileOpen = $state(false);
 	let logoutForm = $state<HTMLFormElement | null>(null);
+	let switchForm = $state<HTMLFormElement | null>(null);
+	// Read by the form's enhance callback, never rendered: no $state needed.
+	let switchTo = '';
+
+	/** Posts to the picker's action; it redirects back here and every load re-runs. */
+	function switchProfile(id: string) {
+		switchTo = id;
+		mobileOpen = false;
+		switchForm?.requestSubmit();
+	}
 
 	const initials = $derived.by(() => {
 		if (!user) return '';
@@ -71,6 +98,18 @@
 			method="POST"
 			action={resolve('/logout')}
 			use:enhance
+			class="hidden"
+		></form>
+		<!-- Profile switcher (menu + sheet): /profiles?/select redirects back to this
+		     page. The fields are filled at submit time, from the clicked item. -->
+		<form
+			bind:this={switchForm}
+			method="POST"
+			action="{resolve('/profiles')}?/select"
+			use:enhance={({ formData }) => {
+				formData.set('profileId', switchTo);
+				formData.set('redirectTo', page.url.pathname + page.url.search);
+			}}
 			class="hidden"
 		></form>
 	{/if}
@@ -123,24 +162,60 @@
 								{...props}
 								type="button"
 								aria-label="Account menu"
-								class="shrink-0 rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								class={cn(
+									'shrink-0 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+									profile ? 'rounded-lg' : 'rounded-full'
+								)}
 							>
-								<Avatar.Root>
-									{#if user.image}
-										<Avatar.Image src={user.image} alt={user.name} />
-									{/if}
-									<Avatar.Fallback class="bg-primary/15 text-xs font-semibold text-primary">
-										{initials}
-									</Avatar.Fallback>
-								</Avatar.Root>
+								{#if profile}
+									<ProfileAvatar
+										name={profile.name}
+										color={profile.avatarColor}
+										icon={profile.avatarIcon}
+										size="sm"
+									/>
+								{:else}
+									<Avatar.Root>
+										{#if user.image}
+											<Avatar.Image src={user.image} alt={user.name} />
+										{/if}
+										<Avatar.Fallback class="bg-primary/15 text-xs font-semibold text-primary">
+											{initials}
+										</Avatar.Fallback>
+									</Avatar.Root>
+								{/if}
 							</button>
 						{/snippet}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end" class="min-w-56">
 						<DropdownMenu.Label class="flex flex-col gap-0.5">
-							<span class="truncate text-sm font-medium text-foreground">{user.name}</span>
+							<span class="truncate text-sm font-medium text-foreground">
+								{profile?.name ?? user.name}
+							</span>
 							<span class="truncate">{user.email}</span>
 						</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
+							{#each otherProfiles as other (other.id)}
+								<DropdownMenu.Item onSelect={() => switchProfile(other.id)}>
+									<ProfileAvatar
+										name={other.name}
+										color={other.avatarColor}
+										icon={other.avatarIcon}
+										size="xs"
+									/>
+									<span class="truncate">{other.name}</span>
+								</DropdownMenu.Item>
+							{/each}
+							<DropdownMenu.Item>
+								{#snippet child({ props })}
+									<a href="{resolve('/profiles')}?manage" {...props}>
+										<HugeiconsIcon icon={UserMultiple02Icon} />
+										Manage profiles
+									</a>
+								{/snippet}
+							</DropdownMenu.Item>
+						</DropdownMenu.Group>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Group>
 							<DropdownMenu.Item>
@@ -187,7 +262,11 @@
 				<Sheet.Header>
 					<Sheet.Title class="tracking-[0.25em] text-primary">FINDERELLA</Sheet.Title>
 					<Sheet.Description class="truncate">
-						{user ? user.email : 'Browsing as a guest'}
+						{#if user}
+							{profile ? `${profile.name} · ${user.email}` : user.email}
+						{:else}
+							Browsing as a guest
+						{/if}
 					</Sheet.Description>
 				</Sheet.Header>
 				<div class="flex flex-col gap-2 px-4">
@@ -230,6 +309,31 @@
 							)}
 						>
 							Settings
+						</a>
+						{#if otherProfiles.length > 0}
+							<p class="px-3.5 pt-2 text-xs font-medium text-muted-foreground">Switch profile</p>
+							{#each otherProfiles as other (other.id)}
+								<button
+									type="button"
+									onclick={() => switchProfile(other.id)}
+									class="flex items-center gap-2.5 rounded-4xl px-3.5 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+								>
+									<ProfileAvatar
+										name={other.name}
+										color={other.avatarColor}
+										icon={other.avatarIcon}
+										size="xs"
+									/>
+									<span class="truncate">{other.name}</span>
+								</button>
+							{/each}
+						{/if}
+						<a
+							href="{resolve('/profiles')}?manage"
+							onclick={() => (mobileOpen = false)}
+							class="rounded-4xl px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+						>
+							Manage profiles
 						</a>
 						{#if user.isAdmin}
 							<a

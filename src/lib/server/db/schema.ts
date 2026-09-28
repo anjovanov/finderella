@@ -4,6 +4,6 @@ export * from './gateways.sql';
 export * from './playback.sql';
 export * from './site.sql';
 export * from './watchlist.sql';
-export * from './user-settings.sql';
+export * from './profiles.sql';
 export * from './subtitles.sql';
 export * from './activity.sql';

@@ -4,6 +4,9 @@ import { auth } from '$lib/server/auth';
 import { isAdmin } from '$lib/auth-roles';
 import { loginRequired } from '$lib/server/site-settings';
 import { markSeen } from '$lib/server/stats/seen';
+import { setActiveProfile } from '$lib/server/active-profile';
+import { ensurePrimaryProfile, listProfiles } from '$lib/server/profiles';
+import { pickActiveProfile } from '$lib/data/profiles';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Bridge the gateway WebSocket handler out of the SvelteKit bundle so the
@@ -33,7 +36,13 @@ export const init: ServerInit = async () => {
 const PUBLIC_PREFIXES = ['/login', '/register', '/api/auth', '/api/gateway/pair'];
 
 // Paths that need a session even when the admin has opened the hub to guests.
-const ACCOUNT_PREFIXES = ['/settings', '/logout', '/admin', '/watchlist'];
+const ACCOUNT_PREFIXES = ['/settings', '/logout', '/admin', '/watchlist', '/profiles'];
+
+// Paths a signed-in account can use before picking a profile ("Who's
+// watching?"): the picker (which also manages profiles), account settings,
+// sign-out and admin. /api/* is never redirected — routes that need a
+// profile call requireProfile.
+const PROFILE_EXEMPT_PREFIXES = ['/profiles', '/settings/account', '/logout', '/admin', '/api'];
 
 function matchesPrefix(pathname: string, prefixes: string[]): boolean {
 	return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -62,6 +71,30 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 		event.locals.session = session.session;
 		event.locals.user = session.user;
 		markSeen(session.user.id, event.request.headers.get('user-agent'));
+
+		let profiles = await listProfiles(session.user.id);
+		// Every account has a primary profile (created with the user, and by
+		// migration 0020 for older accounts); recreate it if it's ever missing.
+		if (profiles.length === 0) {
+			await ensurePrimaryProfile(session.user.id, session.user.name);
+			profiles = await listProfiles(session.user.id);
+		}
+		const picked = pickActiveProfile(profiles, session.session.activeProfileId);
+		// A lone profile is used without asking; remember it on the session.
+		if (picked.autoSelect && picked.profile) {
+			await setActiveProfile(session.session.token, picked.profile.id);
+		}
+		event.locals.profiles = profiles;
+		event.locals.profile = picked.profile;
+
+		// Several profiles and none chosen on this sign-in: "Who's watching?".
+		if (!picked.profile && !matchesPrefix(event.url.pathname, PROFILE_EXEMPT_PREFIXES)) {
+			const back = event.url.pathname + event.url.search;
+			redirect(
+				303,
+				back === '/' ? '/profiles' : `/profiles?redirectTo=${encodeURIComponent(back)}`
+			);
+		}
 	}
 
 	if (!event.locals.user && !isPublic(event.url.pathname)) {

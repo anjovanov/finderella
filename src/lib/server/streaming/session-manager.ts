@@ -40,6 +40,8 @@ export interface StartOptions {
 	audioKbps?: number;
 	startSeconds?: number;
 	userAgent?: string | null;
+	/** The viewer's active profile (null for guests); named in history and the activity monitor. */
+	profile?: { id: string; name: string } | null;
 	details?: StreamDetails;
 }
 
@@ -47,6 +49,9 @@ export interface HotSession {
 	id: string;
 	/** null for a guest viewer (public access mode). */
 	userId: string | null;
+	profileId: string | null;
+	/** Name at session start (history keeps it as a snapshot). */
+	profileName: string | null;
 	source: PlayableSource;
 	mode: 'direct' | 'hls';
 	quality: QualityId;
@@ -102,6 +107,7 @@ class SessionManager {
 			.insert(playbackSession)
 			.values({
 				userId,
+				profileId: opts.profile?.id ?? null,
 				mediaFileId: source.file.id,
 				gatewayId: source.gatewayId,
 				mode,
@@ -114,6 +120,8 @@ class SessionManager {
 		const session: HotSession = {
 			id: row.id,
 			userId,
+			profileId: opts.profile?.id ?? null,
+			profileName: opts.profile?.name ?? null,
 			source,
 			mode,
 			quality,

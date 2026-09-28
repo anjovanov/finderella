@@ -1,9 +1,10 @@
 import { fail } from '@sveltejs/kit';
-import { getPreferences, PreferencesPatch, savePreferences } from '$lib/server/user-settings';
+import { getPreferences, PreferencesPatch, savePreferences } from '$lib/server/profile-settings';
 import type { Actions, PageServerLoad } from './$types';
+import { requireProfile } from '$lib/server/profiles';
 
 export const load: PageServerLoad = async ({ locals }) => ({
-	preferences: await getPreferences(locals.user!.id)
+	preferences: await getPreferences(requireProfile(locals).id)
 });
 
 /** The string fields a form posted (missing ones stay undefined, so they're left alone). */
@@ -23,7 +24,7 @@ export const actions: Actions = {
 			fields(await event.request.formData(), ['theme'])
 		);
 		if (!parsed.success) return fail(400, { section: 'appearance', message: 'Pick a theme' });
-		await savePreferences(event.locals.user!.id, parsed.data);
+		await savePreferences(requireProfile(event.locals).id, parsed.data);
 		return { section: 'appearance', saved: true };
 	},
 
@@ -42,7 +43,7 @@ export const actions: Actions = {
 		if (!parsed.success) {
 			return fail(400, { section: 'screensaver', message: 'Pick a value from each list' });
 		}
-		await savePreferences(event.locals.user!.id, parsed.data);
+		await savePreferences(requireProfile(event.locals).id, parsed.data);
 		return { section: 'screensaver', saved: true };
 	}
 };

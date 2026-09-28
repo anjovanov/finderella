@@ -62,7 +62,7 @@
 	<Card.Header>
 		<Card.Title>Appearance</Card.Title>
 		<Card.Description>
-			How Finderella looks on your devices. The player always stays dark.
+			How Finderella looks for this profile, on every device. The player always stays dark.
 		</Card.Description>
 	</Card.Header>
 	<Card.Content>

@@ -63,12 +63,19 @@ describe('canContinuePlay', () => {
 	const now = 1_000_000_000;
 	const row = {
 		userId: 'u1',
+		profileId: 'p1',
 		userAgent: 'ua-a',
 		movieId: 'm1',
 		episodeId: null,
 		lastActiveAt: new Date(now - 60_000)
 	};
-	const next = { userId: 'u1', userAgent: 'ua-b', movieId: 'm1', episodeId: null };
+	const next = {
+		userId: 'u1',
+		profileId: 'p1',
+		userAgent: 'ua-b',
+		movieId: 'm1',
+		episodeId: null
+	};
 
 	it('continues the same viewer on the same title within the window', () => {
 		expect(canContinuePlay(row, next, now)).toBe(true);
@@ -82,10 +89,15 @@ describe('canContinuePlay', () => {
 		expect(canContinuePlay(row, { ...next, userId: 'u2' }, now)).toBe(false);
 	});
 
+	it('starts a new row when another profile of the account watches', () => {
+		expect(canContinuePlay(row, { ...next, profileId: 'p2' }, now)).toBe(false);
+	});
+
 	it('tells guests apart by browser', () => {
-		const guestRow = { ...row, userId: null };
-		expect(canContinuePlay(guestRow, { ...next, userId: null, userAgent: 'ua-a' }, now)).toBe(true);
-		expect(canContinuePlay(guestRow, { ...next, userId: null }, now)).toBe(false);
+		const guestRow = { ...row, userId: null, profileId: null };
+		const guest = { ...next, userId: null, profileId: null };
+		expect(canContinuePlay(guestRow, { ...guest, userAgent: 'ua-a' }, now)).toBe(true);
+		expect(canContinuePlay(guestRow, guest, now)).toBe(false);
 	});
 
 	it('matches episodes by episode id', () => {

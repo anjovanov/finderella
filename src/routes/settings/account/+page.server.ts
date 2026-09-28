@@ -33,13 +33,13 @@ export const actions: Actions = {
 	updateName: async (event) => {
 		const formData = await event.request.formData();
 		const name = formData.get('name')?.toString().trim() ?? '';
-		if (!name) return fail(400, { section: 'profile', message: 'Name is required' });
+		if (!name) return fail(400, { section: 'name', message: 'Name is required' });
 		try {
 			await auth.api.updateUser({ body: { name }, headers: event.request.headers });
 		} catch (error) {
-			return failFrom(error, 'profile');
+			return failFrom(error, 'name');
 		}
-		return { section: 'profile', saved: true };
+		return { section: 'name', saved: true };
 	},
 
 	updateEmail: async (event) => {

@@ -169,7 +169,7 @@
 									<div
 										class="flex min-w-0 items-center justify-between gap-3 text-xs text-muted-foreground"
 									>
-										<UserCell user={stream.user} />
+										<UserCell user={stream.user} profile={stream.profileName} />
 										<span class="shrink-0">
 											{stream.mode === 'direct' ? 'Direct play' : 'Transcoding'} · {stream.device
 												.name}
@@ -205,7 +205,7 @@
 								<div class="flex min-w-0 flex-1 flex-col gap-1">
 									<TitleLink title={entry.title} />
 									<div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-										<UserCell user={entry.user} />
+										<UserCell user={entry.user} profile={entry.profileName} />
 										<span aria-hidden="true">·</span>
 										<span class="shrink-0" title={new Date(entry.startedAt).toLocaleString()}>
 											{formatRelative(entry.startedAt)}

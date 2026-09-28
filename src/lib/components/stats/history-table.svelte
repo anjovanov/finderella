@@ -44,7 +44,9 @@
 					>{dateFormat.format(new Date(entry.startedAt))}</Table.Cell
 				>
 				{#if showUser}
-					<Table.Cell class="max-w-40"><UserCell user={entry.user} /></Table.Cell>
+					<Table.Cell class="max-w-40"
+						><UserCell user={entry.user} profile={entry.profileName} /></Table.Cell
+					>
 				{/if}
 				<Table.Cell class="max-w-64"><TitleLink title={entry.title} /></Table.Cell>
 				<Table.Cell class="max-w-48"><PlatformLabel platform={entry.platform} /></Table.Cell>

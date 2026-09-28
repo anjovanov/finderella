@@ -89,6 +89,7 @@ async function continuableRow(session: HotSession, snap: TitleSnapshot, now: num
 		.select({
 			id: playHistory.id,
 			userId: playHistory.userId,
+			profileId: playHistory.profileId,
 			userAgent: playHistory.userAgent,
 			movieId: playHistory.movieId,
 			episodeId: playHistory.episodeId,
@@ -98,6 +99,10 @@ async function continuableRow(session: HotSession, snap: TitleSnapshot, now: num
 		.where(
 			and(
 				session.userId ? eq(playHistory.userId, session.userId) : isNull(playHistory.userId),
+				// Two profiles of one account watching the same title are two viewings.
+				session.profileId
+					? eq(playHistory.profileId, session.profileId)
+					: isNull(playHistory.profileId),
 				// Guests are told apart by browser only.
 				session.userId || !session.userAgent
 					? undefined
@@ -112,6 +117,7 @@ async function continuableRow(session: HotSession, snap: TitleSnapshot, now: num
 		.limit(1);
 	const identity = {
 		userId: session.userId,
+		profileId: session.profileId,
 		userAgent: session.userAgent,
 		movieId: snap.movieId,
 		episodeId: snap.episodeId
@@ -169,6 +175,8 @@ export async function openPlay(session: HotSession): Promise<void> {
 					...snap,
 					...current,
 					userId: session.userId,
+					profileId: session.profileId,
+					profileName: session.profileName,
 					startedAt: new Date(now),
 					startPosition: session.startSeconds,
 					positionSeconds: session.startSeconds,

@@ -13,6 +13,7 @@ import {
 	uuid
 } from 'drizzle-orm/pg-core';
 import { user } from './auth.schema';
+import { profile } from './profiles.sql';
 import { gateway, library, mediaFile } from './gateways.sql';
 import { episode, movie, series } from './catalog.sql';
 
@@ -33,6 +34,9 @@ export const playHistory = pgTable(
 		id: uuid('id').primaryKey().defaultRandom(),
 		// null = a guest viewer; history goes with its account.
 		userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+		// The profile that watched; profileName is a snapshot so history outlives it.
+		profileId: uuid('profile_id').references(() => profile.id, { onDelete: 'set null' }),
+		profileName: text('profile_name'),
 		kind: playKind('kind').notNull(),
 		movieId: uuid('movie_id').references(() => movie.id, { onDelete: 'set null' }),
 		episodeId: uuid('episode_id').references(() => episode.id, { onDelete: 'set null' }),
@@ -90,6 +94,7 @@ export const playbackSession = pgTable(
 		id: uuid('id').primaryKey().defaultRandom(),
 		// null = a guest viewer (public access mode); the row is still reaped normally.
 		userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+		profileId: uuid('profile_id').references(() => profile.id, { onDelete: 'set null' }),
 		mediaFileId: uuid('media_file_id')
 			.notNull()
 			.references(() => mediaFile.id, { onDelete: 'cascade' }),
@@ -110,14 +115,14 @@ export const playbackSession = pgTable(
 	(t) => [index('playback_session_status_idx').on(t.status)]
 );
 
-/** Per-user watch position; one row per movie / per episode. */
+/** Per-profile watch position; one row per movie / per episode. */
 export const watchProgress = pgTable(
 	'watch_progress',
 	{
 		id: uuid('id').primaryKey().defaultRandom(),
-		userId: text('user_id')
+		profileId: uuid('profile_id')
 			.notNull()
-			.references(() => user.id, { onDelete: 'cascade' }),
+			.references(() => profile.id, { onDelete: 'cascade' }),
 		movieId: uuid('movie_id').references(() => movie.id, { onDelete: 'cascade' }),
 		episodeId: uuid('episode_id').references(() => episode.id, { onDelete: 'cascade' }),
 		// Denormalized so "continue watching" can collapse a series to one row.
@@ -129,11 +134,11 @@ export const watchProgress = pgTable(
 		dismissedAt: timestamp('dismissed_at', { withTimezone: true })
 	},
 	(t) => [
-		uniqueIndex('watch_progress_user_movie')
-			.on(t.userId, t.movieId)
+		uniqueIndex('watch_progress_profile_movie')
+			.on(t.profileId, t.movieId)
 			.where(sql`${t.movieId} is not null`),
-		uniqueIndex('watch_progress_user_episode')
-			.on(t.userId, t.episodeId)
+		uniqueIndex('watch_progress_profile_episode')
+			.on(t.profileId, t.episodeId)
 			.where(sql`${t.episodeId} is not null`)
 	]
 );
