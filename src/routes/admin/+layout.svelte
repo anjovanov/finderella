@@ -9,7 +9,7 @@
 	const titles: Record<string, string> = {
 		'/admin': 'Overview',
 		'/admin/statistics': 'Statistics',
-		'/admin/devices': 'Devices',
+		'/admin/devices': 'Devices & Libraries',
 		'/admin/users': 'Users',
 		'/admin/subtitles': 'Subtitles',
 		'/admin/settings': 'Site settings'

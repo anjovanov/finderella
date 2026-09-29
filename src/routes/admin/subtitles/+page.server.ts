@@ -19,44 +19,54 @@ import {
 } from '$lib/server/subtitles/settings';
 import type { Actions, PageServerLoad } from './$types';
 
+/** Rows per page of the Recent activity table. */
+const ACTIVITY_PAGE_SIZE = 15;
+
 function mask(secret: string | null | undefined): string | null {
 	const value = secret?.trim();
 	if (!value) return null;
 	return value.length <= 4 ? '••••' : `••••${value.slice(-4)}`;
 }
 
-export const load: PageServerLoad = async () => {
-	const settings = await getSubtitleProviderSettings();
-	const [recent, [counts]] = await Promise.all([
+export const load: PageServerLoad = async ({ url }) => {
+	const [settings, [counts]] = await Promise.all([
+		getSubtitleProviderSettings(),
 		db
 			.select({
-				id: subtitleDownload.id,
-				language: subtitleDownload.language,
-				provider: subtitleDownload.provider,
-				releaseName: subtitleDownload.releaseName,
-				status: subtitleDownload.status,
-				error: subtitleDownload.error,
-				source: subtitleDownload.source,
-				createdAt: subtitleDownload.createdAt,
-				relPath: mediaFile.relPath,
-				movieTitle: movie.title,
-				seriesTitle: series.title,
-				episodeNumber: episode.number
-			})
-			.from(subtitleDownload)
-			.innerJoin(mediaFile, eq(mediaFile.id, subtitleDownload.mediaFileId))
-			.leftJoin(movie, eq(movie.id, mediaFile.movieId))
-			.leftJoin(episode, eq(episode.id, mediaFile.episodeId))
-			.leftJoin(series, eq(series.id, episode.seriesId))
-			.orderBy(desc(subtitleDownload.createdAt))
-			.limit(50),
-		db
-			.select({
+				total: sql<number>`count(*)`.mapWith(Number),
 				downloaded: sql<number>`count(*) filter (where ${subtitleDownload.status} = 'downloaded')`,
 				notFound: sql<number>`count(*) filter (where ${subtitleDownload.status} = 'not_found')`
 			})
 			.from(subtitleDownload)
 	]);
+	// Page through the log: out-of-range ?page= values clamp to the nearest page.
+	const total = counts?.total ?? 0;
+	const pages = Math.max(1, Math.ceil(total / ACTIVITY_PAGE_SIZE));
+	const requested = Math.floor(Number(url.searchParams.get('page')) || 1);
+	const page = Math.min(Math.max(1, requested), pages);
+	const recent = await db
+		.select({
+			id: subtitleDownload.id,
+			language: subtitleDownload.language,
+			provider: subtitleDownload.provider,
+			releaseName: subtitleDownload.releaseName,
+			status: subtitleDownload.status,
+			error: subtitleDownload.error,
+			source: subtitleDownload.source,
+			createdAt: subtitleDownload.createdAt,
+			relPath: mediaFile.relPath,
+			movieTitle: movie.title,
+			seriesTitle: series.title,
+			episodeNumber: episode.number
+		})
+		.from(subtitleDownload)
+		.innerJoin(mediaFile, eq(mediaFile.id, subtitleDownload.mediaFileId))
+		.leftJoin(movie, eq(movie.id, mediaFile.movieId))
+		.leftJoin(episode, eq(episode.id, mediaFile.episodeId))
+		.leftJoin(series, eq(series.id, episode.seriesId))
+		.orderBy(desc(subtitleDownload.createdAt), desc(subtitleDownload.id))
+		.limit(ACTIVITY_PAGE_SIZE)
+		.offset((page - 1) * ACTIVITY_PAGE_SIZE);
 	return {
 		providers: {
 			opensubtitles: {
@@ -87,6 +97,7 @@ export const load: PageServerLoad = async () => {
 				row.movieTitle ??
 				(row.seriesTitle ? `${row.seriesTitle} · E${row.episodeNumber}` : row.relPath)
 		})),
+		recentPage: { total, page, perPage: ACTIVITY_PAGE_SIZE },
 		totals: { downloaded: Number(counts?.downloaded ?? 0), notFound: Number(counts?.notFound ?? 0) }
 	};
 };

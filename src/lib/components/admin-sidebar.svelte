@@ -21,7 +21,12 @@
 			icon: Analytics01Icon,
 			exact: false
 		},
-		{ href: resolve('/admin/devices'), label: 'Devices', icon: HardDriveIcon, exact: false },
+		{
+			href: resolve('/admin/devices'),
+			label: 'Devices & Libraries',
+			icon: HardDriveIcon,
+			exact: false
+		},
 		{ href: resolve('/admin/users'), label: 'Users', icon: UserGroupIcon, exact: false },
 		{ href: resolve('/admin/subtitles'), label: 'Subtitles', icon: SubtitleIcon, exact: false },
 		{ href: resolve('/admin/settings'), label: 'Site settings', icon: Settings01Icon, exact: false }

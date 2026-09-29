@@ -6,6 +6,7 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { AlertCircleIcon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
 	import PasswordInput from '$lib/components/password-input.svelte';
+	import TablePagination from '$lib/components/stats/table-pagination.svelte';
 	import * as Alert from '$lib/components/ui/alert';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -597,4 +598,14 @@
 			</Table.Root>
 		{/if}
 	</Card.Content>
+	{#if data.recentPage.total > data.recentPage.perPage}
+		<Card.Footer>
+			<TablePagination
+				total={data.recentPage.total}
+				perPage={data.recentPage.perPage}
+				page={data.recentPage.page}
+				noScroll
+			/>
+		</Card.Footer>
+	{/if}
 </Card.Root>

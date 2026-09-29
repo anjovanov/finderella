@@ -17,6 +17,8 @@ Devices need the updated storage gateway to analyse files; until they're updated
 
 **Site settings** (no schema change). The page now uses the same width as the other admin pages, with the cards in two columns under Access. **Remove titles without files** asks in a dialog (it used the browser's confirm box), and results and errors show as alerts at the top of the page.
 
+**Admin navigation and Subtitles page** (no schema change). The sidebar item **Devices** is now **Devices & Libraries** (so is the breadcrumb). The Subtitles page's **Recent activity** table pages through the whole download log, 15 rows per page (it showed only the latest 50 before).
+
 ## 2026-09-28
 
 **Profiles** (migrations `0020` + `0021`: new tables `profile` and `profile_settings`, which replaces `user_settings`; `watch_progress` and `watchlist` are keyed by `profile_id` instead of `user_id`; `play_history.profile_id` / `profile_name`, `playback_session.profile_id` and Better Auth's `session.active_profile_id`). An account can have up to **5 profiles**, each with a name, colour and icon.
