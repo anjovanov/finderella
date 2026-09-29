@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto';
-import { count, desc, eq, gt, isNull, and } from 'drizzle-orm';
+import { count, desc, eq, gt, isNull, and, sql } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { gateway, gatewayPairingCode, library, mediaFile } from '$lib/server/db/schema';
@@ -32,7 +32,11 @@ export const load: PageServerLoad = async ({ url }) => {
 			orderBy: [desc(gateway.createdAt)]
 		}),
 		db
-			.select({ libraryId: mediaFile.libraryId, files: count() })
+			.select({
+				libraryId: mediaFile.libraryId,
+				files: count(),
+				bytes: sql<number>`coalesce(sum(${mediaFile.size}), 0)::bigint`.mapWith(Number)
+			})
 			.from(mediaFile)
 			.where(eq(mediaFile.status, 'active'))
 			.groupBy(mediaFile.libraryId),
@@ -45,7 +49,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		getSiteSettings(),
 		listDeviceEvents(logPage)
 	]);
-	const counts = new Map(fileCounts.map((row) => [row.libraryId, row.files]));
+	const counts = new Map(fileCounts.map((row) => [row.libraryId, row]));
 	return {
 		gateways: gateways.map((a) => ({
 			id: a.id,
@@ -62,7 +66,8 @@ export const load: PageServerLoad = async ({ url }) => {
 				rootPath: lib.rootPath,
 				kind: lib.kind,
 				lastScanAt: lib.lastScanAt?.toISOString() ?? null,
-				files: counts.get(lib.id) ?? 0
+				files: counts.get(lib.id)?.files ?? 0,
+				bytes: counts.get(lib.id)?.bytes ?? 0
 			}))
 		})),
 		pendingCodes: pendingCodes.map((c) => ({

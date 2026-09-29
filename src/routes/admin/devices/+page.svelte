@@ -130,14 +130,6 @@
 	</Alert.Root>
 {/if}
 
-{#if job.running || job.finishedAt}
-	<ThumbnailJobCard {job} />
-{/if}
-
-{#if markersJob.running || markersJob.finishedAt}
-	<MarkerJobCard job={markersJob} />
-{/if}
-
 {#if data.gateways.length === 0}
 	<Empty.Root class="border border-dashed">
 		<Empty.Header>
@@ -193,6 +185,14 @@
 			{/each}
 		</ul>
 	</section>
+{/if}
+
+{#if markersJob.running || markersJob.finishedAt}
+	<MarkerJobCard job={markersJob} />
+{/if}
+
+{#if job.running || job.finishedAt}
+	<ThumbnailJobCard {job} />
 {/if}
 
 <ActivityLog events={data.events} />

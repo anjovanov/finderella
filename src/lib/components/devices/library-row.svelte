@@ -13,6 +13,7 @@
 	} from '@hugeicons/core-free-icons';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { formatBytes } from '$lib/data/media-format';
 	import { formatRelative } from '$lib/data/time';
 	import type { DeviceLibrary } from './types';
 
@@ -40,6 +41,7 @@
 	const filesLabel = $derived(
 		`${library.files.toLocaleString()} ${library.files === 1 ? 'file' : 'files'}`
 	);
+	const sizeLabel = $derived(formatBytes(library.bytes));
 	const scannedLabel = $derived(
 		library.lastScanAt ? `Scanned ${formatRelative(library.lastScanAt)}` : 'Not scanned yet'
 	);
@@ -67,12 +69,14 @@
 			{library.rootPath}
 		</p>
 		<p class="mt-0.5 text-xs text-muted-foreground sm:hidden" title={scannedTitle}>
-			{filesLabel} · {scannedLabel}
+			{filesLabel} · {sizeLabel} · {scannedLabel}
 		</p>
 	</div>
 
 	<div class="hidden shrink-0 text-right sm:block">
-		<p class="font-medium tabular-nums">{filesLabel}</p>
+		<p class="font-medium tabular-nums">
+			{filesLabel} <span class="font-normal text-muted-foreground">· {sizeLabel}</span>
+		</p>
 		<p class="text-xs text-muted-foreground" title={scannedTitle}>{scannedLabel}</p>
 	</div>
 

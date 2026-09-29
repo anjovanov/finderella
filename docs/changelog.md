@@ -13,6 +13,8 @@
 
 Devices need the updated storage gateway to analyse files; until they're updated, their files wait (chapters still work).
 
+**Devices page** (no schema change). The unused pairing codes now sit right under the devices, followed by the intro & credits and thumbnail job cards, then the activity log. The activity log shows 15 entries per page (was 20).
+
 ## 2026-09-28
 
 **Profiles** (migrations `0020` + `0021`: new tables `profile` and `profile_settings`, which replaces `user_settings`; `watch_progress` and `watchlist` are keyed by `profile_id` instead of `user_id`; `play_history.profile_id` / `profile_name`, `playback_session.profile_id` and Better Auth's `session.active_profile_id`). An account can have up to **5 profiles**, each with a name, colour and icon.

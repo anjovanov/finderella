@@ -7,6 +7,8 @@ export interface DeviceLibrary {
 	kind: 'movie' | 'series';
 	lastScanAt: string | null;
 	files: number;
+	/** Total size of the library's active files. */
+	bytes: number;
 }
 
 export interface Device {

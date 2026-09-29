@@ -4,7 +4,7 @@ import { deviceEvent, gateway, library, user } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import type { DeviceEventEntry, DeviceEventType } from '$lib/data/device-events';
 
-export const DEVICE_EVENTS_PAGE_SIZE = 20;
+export const DEVICE_EVENTS_PAGE_SIZE = 15;
 
 export interface DeviceEventInput {
 	type: DeviceEventType;
