@@ -15,6 +15,7 @@ import {
 import { SEGMENT_SECONDS } from '$lib/server/streaming/hls-playlist';
 import { sessionManager, type HotSession } from '$lib/server/streaming/session-manager';
 import { listSubtitleTracks } from '$lib/server/streaming/subtitles';
+import { playbackMarkers } from '$lib/server/markers';
 import type { PlayableSource } from '$lib/server/streaming/source-picker';
 import {
 	canTrickplay,
@@ -141,9 +142,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			profile: viewerProfile,
 			details: { audioLabel: chosenAudioLabel }
 		});
-		const [subtitles, trickplay] = await Promise.all([
+		const [subtitles, trickplay, markers] = await Promise.all([
 			listSubtitleTracks(source.file.id, session.id),
-			attachTrickplay(session, source)
+			attachTrickplay(session, source),
+			playbackMarkers(source.file)
 		]);
 		return json({
 			mode: 'direct',
@@ -153,6 +155,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			source: { width: source.file.width, height: source.file.height },
 			subtitles,
 			trickplay,
+			markers,
 			...audioFields
 		});
 	}
@@ -213,9 +216,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		await sessionManager.stop(session.id, 'error');
 		error(502, `device failed to start transcoding: ${(err as Error).message}`);
 	}
-	const [subtitles, trickplay] = await Promise.all([
+	const [subtitles, trickplay, markers] = await Promise.all([
 		listSubtitleTracks(source.file.id, session.id),
-		trickplayPending
+		trickplayPending,
+		playbackMarkers(source.file)
 	]);
 	return json({
 		mode: 'hls',
@@ -225,6 +229,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		source: { width: source.file.width, height: source.file.height },
 		subtitles,
 		trickplay,
+		markers,
 		...audioFields
 	});
 };

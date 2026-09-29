@@ -35,6 +35,16 @@ export const actions: Actions = {
 		return { section: 'audio', saved: true };
 	},
 
+	updateSkip: async (event) => {
+		const parsed = PlaybackSettingsPatch.pick({ skipIntro: true, skipCredits: true }).safeParse(
+			fields(await event.request.formData(), ['skipIntro', 'skipCredits'])
+		);
+		if (!parsed.success)
+			return fail(400, { section: 'skip', message: 'Pick a value from each list' });
+		await savePlaybackSettings(requireProfile(event.locals).id, parsed.data);
+		return { section: 'skip', saved: true };
+	},
+
 	updateAutoplay: async (event) => {
 		const parsed = PlaybackSettingsPatch.pick({ autoplayNext: true }).safeParse(
 			fields(await event.request.formData(), ['autoplayNext'])

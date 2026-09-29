@@ -7,10 +7,13 @@ const SETTINGS_ID = 'default';
 
 export type SiteSettings = Pick<
 	SiteSettingsRow,
-	'allowRegistration' | 'requireLogin' | 'trickplayEnabled' | 'updatedAt'
+	'allowRegistration' | 'requireLogin' | 'trickplayEnabled' | 'markersEnabled' | 'updatedAt'
 >;
 type SiteSettingsPatch = Partial<
-	Pick<SiteSettingsRow, 'allowRegistration' | 'requireLogin' | 'trickplayEnabled'>
+	Pick<
+		SiteSettingsRow,
+		'allowRegistration' | 'requireLogin' | 'trickplayEnabled' | 'markersEnabled'
+	>
 >;
 
 // hooks.server.ts consults the settings on every unauthenticated request; the
@@ -59,6 +62,11 @@ export async function loginRequired(): Promise<boolean> {
 /** Admin switch for seek-bar thumbnails (devices can also opt out with FINDERELLA_TRICKPLAY=0). */
 export async function trickplayEnabled(): Promise<boolean> {
 	return (await getSiteSettings()).trickplayEnabled;
+}
+
+/** Admin switch for Skip intro / Skip credits (devices can opt out of analysis with FINDERELLA_MARKERS=0). */
+export async function markersEnabled(): Promise<boolean> {
+	return (await getSiteSettings()).markersEnabled;
 }
 
 export async function countUsers(): Promise<number> {

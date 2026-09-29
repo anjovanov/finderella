@@ -1,11 +1,12 @@
-import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
-import type { AudioSource, ProbedFile, SubtitleSource } from '@finderella/protocol';
+import { and, eq, isNull, lt, ne, or, sql } from 'drizzle-orm';
+import type { AudioSource, ProbedChapter, ProbedFile, SubtitleSource } from '@finderella/protocol';
 import { db } from '$lib/server/db';
 import {
 	episode,
 	library,
 	mediaAudio,
 	mediaFile,
+	mediaMarker,
 	mediaSubtitle,
 	movie,
 	season,
@@ -18,6 +19,8 @@ import { pruneCatalog } from './prune';
 import { enrichPending, isTmdbConfigured } from '$lib/server/metadata';
 import { queueAutoSubtitleDownload } from '$lib/server/subtitles/bulk';
 import { invalidateSearchIndex } from '$lib/server/search';
+import { chapterMarkers } from '$lib/server/markers/chapters';
+import { queueMarkerAnalysis } from '$lib/server/markers/job';
 
 /**
  * Turns gateway scan reports into catalog rows. Metadata is filename-derived
@@ -171,6 +174,7 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 					height: file.height,
 					durationMs: file.durationMs,
 					bitrate: file.bitrate,
+					...(file.chapters ? { chapters: file.chapters } : {}),
 					status: 'active',
 					scanSeenAt: now,
 					movieId,
@@ -195,10 +199,22 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 						// A changed size/mtime is a different encode: forget its hash.
 						moviehash: sql`case when ${mediaFile.size} = excluded.size and ${mediaFile.mtimeMs} = excluded.mtime_ms then ${mediaFile.moviehash} else null end`,
 						moviehashAt: sql`case when ${mediaFile.size} = excluded.size and ${mediaFile.mtimeMs} = excluded.mtime_ms then ${mediaFile.moviehashAt} else null end`,
+						// …and its intro/credits analysis.
+						markersVersion: sql`case when ${mediaFile.size} = excluded.size and ${mediaFile.mtimeMs} = excluded.mtime_ms then ${mediaFile.markersVersion} else null end`,
+						markersAnalyzedAt: sql`case when ${mediaFile.size} = excluded.size and ${mediaFile.mtimeMs} = excluded.mtime_ms then ${mediaFile.markersAnalyzedAt} else null end`,
+						...(file.chapters ? { chapters: file.chapters } : {}),
 						updatedAt: now
 					}
 				})
-				.returning({ id: mediaFile.id });
+				.returning({ id: mediaFile.id, markersVersion: mediaFile.markersVersion });
+			// Not analysed (new file, or a new encode at the same path): drop stale analysis markers.
+			if (row.markersVersion === null) {
+				await db
+					.delete(mediaMarker)
+					.where(and(eq(mediaMarker.mediaFileId, row.id), ne(mediaMarker.source, 'chapter')));
+			}
+			// Gateways that predate chapter discovery omit the field; keep their markers.
+			if (file.chapters) await replaceChapterMarkers(row.id, file.chapters, file.durationMs);
 			// Gateways that predate subtitle discovery omit the field; keep their rows.
 			if (file.subtitles) await replaceSubtitles(row.id, file.subtitles);
 			// Same for audio-track discovery.
@@ -240,6 +256,22 @@ async function replaceSubtitles(mediaFileId: string, subtitles: SubtitleSource[]
 						}
 			)
 		);
+	});
+}
+
+/** Intro/credits named by the container's chapters: swapped on every scan that reports them. */
+async function replaceChapterMarkers(
+	mediaFileId: string,
+	chapters: ProbedChapter[],
+	durationMs: number | undefined
+): Promise<void> {
+	const markers = chapterMarkers(chapters, durationMs);
+	await db.transaction(async (tx) => {
+		await tx
+			.delete(mediaMarker)
+			.where(and(eq(mediaMarker.mediaFileId, mediaFileId), eq(mediaMarker.source, 'chapter')));
+		if (markers.length === 0) return;
+		await tx.insert(mediaMarker).values(markers.map((m) => ({ mediaFileId, ...m })));
 	});
 }
 
@@ -309,4 +341,6 @@ export async function finalizeScan(
 			log.error({ err }, 'auto subtitle download failed')
 		);
 	}
+	// New episodes/movies get intro/credits detection (background, single-flight).
+	queueMarkerAnalysis();
 }

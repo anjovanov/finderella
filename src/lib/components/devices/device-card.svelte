@@ -12,12 +12,14 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { formatRelative } from '$lib/data/time';
 	import LibraryRow from './library-row.svelte';
-	import { thumbnailBlocker, type Device, type DeviceLibrary } from './types';
+	import { markersBlocker, thumbnailBlocker, type Device, type DeviceLibrary } from './types';
 
 	let {
 		device,
 		trickplayEnabled,
 		jobRunning,
+		markersEnabled,
+		markersJobRunning,
 		onRename,
 		onRevoke,
 		onAddLibrary,
@@ -26,6 +28,8 @@
 		device: Device;
 		trickplayEnabled: boolean;
 		jobRunning: boolean;
+		markersEnabled: boolean;
+		markersJobRunning: boolean;
 		onRename: () => void;
 		onRevoke: () => void;
 		onAddLibrary: () => void;
@@ -33,6 +37,9 @@
 	} = $props();
 
 	const blocker = $derived(thumbnailBlocker(device, { enabled: trickplayEnabled, jobRunning }));
+	const markersBlock = $derived(
+		markersBlocker(device, { enabled: markersEnabled, jobRunning: markersJobRunning })
+	);
 	const pairedLabel = $derived(
 		new Date(device.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })
 	);
@@ -109,6 +116,7 @@
 					{library}
 					online={device.online}
 					thumbnailBlocker={blocker}
+					markersBlocker={markersBlock}
 					onRemove={() => onRemoveLibrary(library)}
 				/>
 			{/each}

@@ -5,6 +5,7 @@
  */
 
 import { DEFAULT_AUDIO_LANGUAGE, normalizeAudioLanguage } from '$lib/audio-preference';
+import { isSkipMode, type SkipMode } from '$lib/data/markers';
 
 /** Episodes in a row, autoplayed without input, before "Still watching?". */
 export const STILL_WATCHING_EPISODES = [2, 3, 4, 5, 6] as const;
@@ -74,6 +75,10 @@ export interface PlaybackSettings {
 	audioChannels: AudioChannels;
 	/** Start the next episode when one ends. */
 	autoplayNext: boolean;
+	/** Intros: show a Skip intro button, skip them automatically, or neither. */
+	skipIntro: SkipMode;
+	/** Closing credits: the same choice (series credits lead into the next episode). */
+	skipCredits: SkipMode;
 	stillWatching: StillWatchingSettings;
 }
 
@@ -81,6 +86,8 @@ export const DEFAULT_PLAYBACK_SETTINGS: PlaybackSettings = {
 	audioLanguage: DEFAULT_AUDIO_LANGUAGE,
 	audioChannels: 'auto',
 	autoplayNext: true,
+	skipIntro: 'show',
+	skipCredits: 'show',
 	stillWatching: { enabled: false, episodes: 3, minutes: 120 }
 };
 
@@ -93,6 +100,8 @@ export function normalizePlaybackSettings(raw: {
 	audioLanguage?: unknown;
 	audioChannels?: unknown;
 	autoplayNext?: unknown;
+	skipIntro?: unknown;
+	skipCredits?: unknown;
 	stillWatching?: { enabled?: unknown; episodes?: unknown; minutes?: unknown };
 }): PlaybackSettings {
 	const fallback = DEFAULT_PLAYBACK_SETTINGS;
@@ -102,6 +111,8 @@ export function normalizePlaybackSettings(raw: {
 			? (raw.audioChannels as AudioChannels)
 			: fallback.audioChannels,
 		autoplayNext: typeof raw.autoplayNext === 'boolean' ? raw.autoplayNext : fallback.autoplayNext,
+		skipIntro: isSkipMode(raw.skipIntro) ? raw.skipIntro : fallback.skipIntro,
+		skipCredits: isSkipMode(raw.skipCredits) ? raw.skipCredits : fallback.skipCredits,
 		stillWatching: {
 			enabled:
 				typeof raw.stillWatching?.enabled === 'boolean'

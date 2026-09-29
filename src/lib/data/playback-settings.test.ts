@@ -15,12 +15,16 @@ describe('playback settings', () => {
 				audioLanguage: 'ja',
 				audioChannels: 'surround',
 				autoplayNext: false,
+				skipIntro: 'auto',
+				skipCredits: 'off',
 				stillWatching: { enabled: true, episodes: 2, minutes: 180 }
 			})
 		).toEqual({
 			audioLanguage: 'ja',
 			audioChannels: 'surround',
 			autoplayNext: false,
+			skipIntro: 'auto',
+			skipCredits: 'off',
 			stillWatching: { enabled: true, episodes: 2, minutes: 180 }
 		});
 		expect(
@@ -28,6 +32,8 @@ describe('playback settings', () => {
 				audioLanguage: 'jpn',
 				audioChannels: '7.1',
 				autoplayNext: 'no',
+				skipIntro: 'always',
+				skipCredits: true,
 				stillWatching: { enabled: 1, episodes: 7, minutes: 90 }
 			})
 		).toEqual(DEFAULT_PLAYBACK_SETTINGS);

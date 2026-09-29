@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { countOrphans, pruneCatalog } from '$lib/server/catalog/prune';
 import { enrichPending, isTmdbConfigured, metadataStatus } from '$lib/server/metadata';
+import { queueMarkerAnalysis } from '$lib/server/markers/job';
 import { getSiteSettings, updateSiteSettings } from '$lib/server/site-settings';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -14,7 +15,8 @@ export const load: PageServerLoad = async () => {
 		settings: {
 			allowRegistration: settings.allowRegistration,
 			requireLogin: settings.requireLogin,
-			trickplayEnabled: settings.trickplayEnabled
+			trickplayEnabled: settings.trickplayEnabled,
+			markersEnabled: settings.markersEnabled
 		},
 		orphans,
 		metadata
@@ -37,6 +39,16 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const trickplayEnabled = formData.get('trickplayEnabled')?.toString() === 'true';
 		await updateSiteSettings({ trickplayEnabled });
+		return { saved: true };
+	},
+
+	// Its own action too, for the same reason.
+	updateMarkers: async (event) => {
+		const formData = await event.request.formData();
+		const markersEnabled = formData.get('markersEnabled')?.toString() === 'true';
+		await updateSiteSettings({ markersEnabled });
+		// Catch up on whatever was scanned while it was off.
+		if (markersEnabled) queueMarkerAnalysis();
 		return { saved: true };
 	},
 

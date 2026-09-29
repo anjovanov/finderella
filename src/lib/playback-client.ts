@@ -6,6 +6,7 @@
  */
 
 import type { AudioTrack, SubtitleTrack } from './data/types';
+import type { PlaybackMarkers } from './data/markers';
 import type { PlayerState } from './data/stats';
 import type { QualityId } from './playback-quality';
 import { DEFAULT_PLAYBACK_SETTINGS, type AudioChannels } from './data/playback-settings';
@@ -22,6 +23,8 @@ export interface PlaybackDescriptor {
 	subtitles: SubtitleTrack[];
 	/** Seek-bar thumbnail track (WebVTT + sprite sheets) under this session; null when the device can't make them. */
 	trickplay: { vttSrc: string } | null;
+	/** Intro / credits of the file (source seconds = video.currentTime); null when none are known. */
+	markers: PlaybackMarkers | null;
 	/** Audio streams of the file (empty when its device can't switch them). */
 	audioTracks: AudioTrack[];
 	/** The stream this session plays; null when the file has none listed. */

@@ -12,7 +12,9 @@ export const DEVICE_EVENT_TYPES = [
 	'scan.started',
 	'scan.finished',
 	'thumbnails.started',
-	'thumbnails.finished'
+	'thumbnails.finished',
+	'markers.started',
+	'markers.finished'
 ] as const;
 export type DeviceEventType = (typeof DEVICE_EVENT_TYPES)[number];
 
@@ -36,14 +38,16 @@ export const DEVICE_EVENT_LABELS: Record<DeviceEventType, string> = {
 	'scan.started': 'Scan started',
 	'scan.finished': 'Scan finished',
 	'thumbnails.started': 'Thumbnails started',
-	'thumbnails.finished': 'Thumbnails finished'
+	'thumbnails.finished': 'Thumbnails finished',
+	'markers.started': 'Intro & credits detection started',
+	'markers.finished': 'Intro & credits detection finished'
 };
 
 /** Which part of the system an event is about (drives the icon and tint). */
-export function deviceEventGroup(
-	type: DeviceEventType
-): 'device' | 'library' | 'scan' | 'thumbnails' {
-	return type.split('.')[0] as 'device' | 'library' | 'scan' | 'thumbnails';
+export type DeviceEventGroup = 'device' | 'library' | 'scan' | 'thumbnails' | 'markers';
+
+export function deviceEventGroup(type: DeviceEventType): DeviceEventGroup {
+	return type.split('.')[0] as DeviceEventGroup;
 }
 
 function num(value: unknown): number | null {
@@ -114,6 +118,21 @@ export function describeDeviceEvent(
 			if (ms !== null) parts.push(`took ${formatElapsed(ms)}`);
 			const error = str(d.error);
 			if (error) parts.push(error);
+			return parts.join(' · ') || null;
+		}
+		case 'markers.finished': {
+			const parts: string[] = [];
+			if (d.stopped === true) parts.push('Stopped early');
+			const processed = num(d.processed);
+			const intros = num(d.intros);
+			const credits = num(d.credits);
+			const failed = num(d.failed);
+			const ms = num(d.durationMs);
+			if (processed !== null) parts.push(`${plural(processed, 'file')} analysed`);
+			if (intros !== null) parts.push(`${plural(intros, 'intro')}`);
+			if (credits !== null) parts.push(`${credits.toLocaleString('en-US')} with credits`);
+			if (failed) parts.push(`${failed.toLocaleString('en-US')} failed`);
+			if (ms !== null) parts.push(`took ${formatElapsed(ms)}`);
 			return parts.join(' · ') || null;
 		}
 		default:

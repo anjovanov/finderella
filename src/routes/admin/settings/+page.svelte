@@ -14,6 +14,8 @@
 	let requireLogin = $derived(data.settings.requireLogin);
 	let trickplayEnabled = $derived(data.settings.trickplayEnabled);
 	let trickplayForm = $state<HTMLFormElement | null>(null);
+	let markersEnabled = $derived(data.settings.markersEnabled);
+	let markersForm = $state<HTMLFormElement | null>(null);
 
 	async function submitSettings() {
 		await tick(); // let the hidden inputs pick up the new switch state
@@ -25,6 +27,12 @@
 	async function submitTrickplay() {
 		await tick();
 		trickplayForm?.requestSubmit();
+	}
+	let savingMarkers = $state(false);
+
+	async function submitMarkers() {
+		await tick();
+		markersForm?.requestSubmit();
 	}
 </script>
 
@@ -135,6 +143,53 @@
 						bind:checked={trickplayEnabled}
 						disabled={savingTrickplay}
 						onCheckedChange={submitTrickplay}
+					/>
+				</Field.Field>
+			</Field.Group>
+		</form>
+	</Card.Content>
+</Card.Root>
+
+<!-- Intro / credits markers -->
+<Card.Root>
+	<Card.Header>
+		<Card.Title>Skip intro & credits</Card.Title>
+		<Card.Description
+			>Skip buttons on the player when an intro or the credits start.</Card.Description
+		>
+	</Card.Header>
+	<Card.Content>
+		<form
+			bind:this={markersForm}
+			method="POST"
+			action="?/updateMarkers"
+			use:enhance={() => {
+				savingMarkers = true;
+				return async ({ update }) => {
+					savingMarkers = false;
+					await update();
+				};
+			}}
+		>
+			<input type="hidden" name="markersEnabled" value={markersEnabled ? 'true' : 'false'} />
+			<Field.Group>
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label for="markers-enabled">Detect intros & credits</Field.Label>
+						<Field.Description>
+							After each scan, the device holding the files compares the audio of every episode in a
+							season to find the intro and closing theme they share, and looks for rolling credits
+							at the end of movies. Chapters named <span class="font-mono">Intro</span> or
+							<span class="font-mono">Credits</span> are used as they are. Viewers choose between a
+							button and skipping automatically in their playback settings. A single device can opt
+							out with <span class="font-mono">FINDERELLA_MARKERS=0</span>.
+						</Field.Description>
+					</Field.Content>
+					<Switch
+						id="markers-enabled"
+						bind:checked={markersEnabled}
+						disabled={savingMarkers}
+						onCheckedChange={submitMarkers}
 					/>
 				</Field.Field>
 			</Field.Group>

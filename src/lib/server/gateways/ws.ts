@@ -16,9 +16,12 @@ import { gateway, user } from '$lib/server/db/schema';
 import { ADMIN_ROLE } from '$lib/auth-roles';
 import { enqueueScanWork, finalizeScan, ingestScanBatch } from '$lib/server/catalog/ingest';
 import { log } from '$lib/server/log';
+import { scheduleMarkerAnalysis } from '$lib/server/markers/job';
 import { registry, type ConnectedGateway } from './registry';
 
 const wss = new WebSocketServer({ noServer: true });
+/** Let a (re)connecting device settle before the intro/credits job queues work on it. */
+const MARKERS_AFTER_HELLO_MS = 30_000;
 
 type GatewayRow = typeof gateway.$inferSelect;
 
@@ -155,6 +158,8 @@ function handleMessage(
 				})
 				.where(eq(gateway.id, row.id))
 				.catch((err) => log.error({ err }, 'failed to persist gateway hello'));
+			// Files that were waiting for this device get their intro/credits analysis.
+			if (message.capabilities.markers) scheduleMarkerAnalysis(MARKERS_AFTER_HELLO_MS);
 			ws.send(
 				JSON.stringify({
 					id: connected.nextId(),

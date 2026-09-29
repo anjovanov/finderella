@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
+		AudioWave01Icon,
 		CheckmarkCircle02Icon,
 		FolderAddIcon,
+		Forward01Icon,
 		FolderRemoveIcon,
 		Image01Icon,
 		ImageDone01Icon,
@@ -37,7 +39,9 @@
 		'scan.started': RefreshIcon,
 		'scan.finished': CheckmarkCircle02Icon,
 		'thumbnails.started': Image01Icon,
-		'thumbnails.finished': ImageDone01Icon
+		'thumbnails.finished': ImageDone01Icon,
+		'markers.started': AudioWave01Icon,
+		'markers.finished': Forward01Icon
 	};
 	/** Removals read red; completions read in the accent; the rest stay neutral. */
 	function tone(type: DeviceEventType): string {
@@ -53,7 +57,7 @@
 	<Card.Header>
 		<Card.Title>Activity log</Card.Title>
 		<Card.Description>
-			Pairings, libraries, scans and thumbnail runs on every device, newest first.
+			Pairings, libraries, scans, thumbnail and intro & credits runs on every device, newest first.
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="overflow-x-auto">

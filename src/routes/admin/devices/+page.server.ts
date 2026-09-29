@@ -7,6 +7,7 @@ import { registry } from '$lib/server/gateways/registry';
 import { listDeviceEvents, recordDeviceEvent } from '$lib/server/gateways/events';
 import { triggerScan } from '$lib/server/gateways/scan';
 import { getSiteSettings } from '$lib/server/site-settings';
+import { markersJobStatus, startMarkersForLibrary, stopMarkersJob } from '$lib/server/markers/job';
 import {
 	startTrickplayBulk,
 	stopTrickplayBulk,
@@ -52,6 +53,7 @@ export const load: PageServerLoad = async ({ url }) => {
 			online: registry.isOnline(a.id),
 			gatewayVersion: a.gatewayVersion,
 			trickplay: a.capabilities?.trickplay ?? false,
+			markers: a.capabilities?.markers ?? false,
 			lastSeenAt: a.lastSeenAt?.toISOString() ?? null,
 			createdAt: a.createdAt.toISOString(),
 			libraries: a.libraries.map((lib) => ({
@@ -70,6 +72,8 @@ export const load: PageServerLoad = async ({ url }) => {
 		})),
 		trickplayJob: trickplayBulkStatus(),
 		trickplayEnabled: siteSettings.trickplayEnabled,
+		markersJob: markersJobStatus(),
+		markersEnabled: siteSettings.markersEnabled,
 		events
 	};
 };
@@ -174,6 +178,34 @@ export const actions: Actions = {
 	stopTrickplay: async () => {
 		stopTrickplayBulk();
 		return { trickplayStopped: true };
+	},
+
+	detectMarkers: async (event) => {
+		const formData = await event.request.formData();
+		const libraryId = formData.get('libraryId')?.toString() ?? '';
+		if (!libraryId) return fail(400, { message: 'Missing library' });
+		const outcome = await startMarkersForLibrary(libraryId, event.locals.user!.id);
+		switch (outcome) {
+			case 'started':
+				return { markersStarted: libraryId };
+			case 'busy':
+				return fail(409, { message: 'Intro & credits detection is already running' });
+			case 'disabled':
+				return fail(409, { message: 'Skip intro & credits is turned off in Site settings' });
+			case 'offline':
+				return fail(409, { message: 'Device is offline' });
+			case 'unsupported':
+				return fail(501, {
+					message: 'Update the gateway on this device to detect intros & credits'
+				});
+			case 'not-found':
+				return fail(404, { message: 'Library not found' });
+		}
+	},
+
+	stopMarkers: async () => {
+		stopMarkersJob();
+		return { markersStopped: true };
 	},
 
 	renameGateway: async (event) => {

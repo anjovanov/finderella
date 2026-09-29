@@ -197,6 +197,9 @@
 		sessionId={playback.sessionId}
 		canFindSubtitles={data.canFindSubtitles}
 		trickplaySrc={playback.trickplay?.vttSrc ?? null}
+		markers={playback.markers}
+		skipIntro={playbackSettings.skipIntro}
+		skipCredits={playbackSettings.skipCredits}
 		onSubtitlesChanged={(tracks) => {
 			// In place: replacing the object would re-source the player's video.
 			if (playback) playback.subtitles = tracks;

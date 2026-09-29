@@ -6,6 +6,8 @@ import { DEFAULT_LIMITS, MAX_SUBTITLE_PUT_BYTES, SUBTITLE_EXTENSIONS } from '@fi
 import { GatewayConnection } from './connection.js';
 import { configPath, loadConfig, saveConfig } from './config.js';
 import { FileTransfer, type Transfer } from './file-reader.js';
+import { MarkersQueue } from './markers/queue.js';
+import { normalizeSpec } from './markers/spec.js';
 import { detectTools, ffmpegPath } from './probe.js';
 import { runScan } from './scanner.js';
 import { StreamTransfer } from './stream-transfer.js';
@@ -130,6 +132,7 @@ program
 		const transfers = new Map<number, Transfer>();
 		const sessions = new Map<string, TranscodeSession>();
 		const trickplay = new TrickplayQueue({ ffmpegBin: ffmpegPath, log });
+		const markers = new MarkersQueue({ ffmpegBin: ffmpegPath, log });
 		// Only file/HLS transfers count against maxConcurrentTransfers: a subtitle
 		// stream can idle for minutes and must never make segment fetches "busy".
 		let fileTransfers = 0;
@@ -256,6 +259,26 @@ program
 						}
 						void trickplay
 							.ensure(abs, message.priority)
+							.then((data) => conn.send({ type: 'resp', re: message.id, ok: true, data }))
+							.catch((err: Error) => {
+								conn.send({ type: 'resp', re: message.id, ok: false, error: err.message });
+							});
+						break;
+					}
+					case 'markers.analyze': {
+						const root = resolve(message.rootPath);
+						const abs = resolveInRoot(root, message.relPath);
+						if (!abs) {
+							conn.send({
+								type: 'resp',
+								re: message.id,
+								ok: false,
+								error: 'path escapes library root'
+							});
+							break;
+						}
+						void markers
+							.ensure(abs, normalizeSpec(message))
 							.then((data) => conn.send({ type: 'resp', re: message.id, ok: true, data }))
 							.catch((err: Error) => {
 								conn.send({ type: 'resp', re: message.id, ok: false, error: err.message });

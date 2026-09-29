@@ -15,29 +15,55 @@
 	import ActivityLog from '$lib/components/devices/activity-log.svelte';
 	import DeviceCard from '$lib/components/devices/device-card.svelte';
 	import PairingDialog from '$lib/components/devices/pairing-dialog.svelte';
+	import MarkerJobCard from '$lib/components/devices/marker-job-card.svelte';
 	import ThumbnailJobCard from '$lib/components/devices/thumbnail-job-card.svelte';
-	import type { Device, DeviceLibrary, ThumbnailJob } from '$lib/components/devices/types';
+	import type {
+		Device,
+		DeviceLibrary,
+		JobSnapshot,
+		MarkersJob,
+		ThumbnailJob
+	} from '$lib/components/devices/types';
 	import { formatRelative } from '$lib/data/time';
 	import { DialogForm } from '$lib/dialog-form.svelte';
 
 	let { data, form } = $props();
 
-	// Live thumbnail-job progress: poll while a run is active, then refresh the page data once.
+	// Live job progress: poll while a run is active, then refresh the page data once.
 	let job = $derived<ThumbnailJob>(data.trickplayJob);
-	onMount(() => {
-		let wasRunning = job.running;
+	let markersJob = $derived<MarkersJob>(data.markersJob);
+
+	function pollJob<T extends JobSnapshot>(url: string, get: () => T, set: (next: T) => void) {
+		let wasRunning = get().running;
 		const timer = setInterval(async () => {
-			if (!job.running && !wasRunning) return;
+			if (!get().running && !wasRunning) return;
 			try {
-				const res = await fetch('/admin/devices/trickplay-status');
-				if (res.ok) job = await res.json();
+				const res = await fetch(url);
+				if (res.ok) set(await res.json());
 			} catch {
 				// keep the last snapshot
 			}
-			if (wasRunning && !job.running) await invalidateAll();
-			wasRunning = job.running;
+			if (wasRunning && !get().running) await invalidateAll();
+			wasRunning = get().running;
 		}, 2000);
 		return () => clearInterval(timer);
+	}
+
+	onMount(() => {
+		const stopThumbnails = pollJob(
+			'/admin/devices/trickplay-status',
+			() => job,
+			(next) => (job = next)
+		);
+		const stopMarkers = pollJob(
+			'/admin/devices/markers-status',
+			() => markersJob,
+			(next) => (markersJob = next)
+		);
+		return () => {
+			stopThumbnails();
+			stopMarkers();
+		};
 	});
 
 	const summary = $derived.by(() => {
@@ -108,6 +134,10 @@
 	<ThumbnailJobCard {job} />
 {/if}
 
+{#if markersJob.running || markersJob.finishedAt}
+	<MarkerJobCard job={markersJob} />
+{/if}
+
 {#if data.gateways.length === 0}
 	<Empty.Root class="border border-dashed">
 		<Empty.Header>
@@ -133,6 +163,8 @@
 			{device}
 			trickplayEnabled={data.trickplayEnabled}
 			jobRunning={job.running}
+			markersEnabled={data.markersEnabled}
+			markersJobRunning={markersJob.running}
 			onRename={() => rename.show(device)}
 			onAddLibrary={() => {
 				addKind = 'movie';

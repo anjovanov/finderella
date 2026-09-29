@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { GatewayCapabilities, ProbedFile } from '@finderella/protocol';
 import { embeddedAudio, type FfprobeAudioStream } from './audio/embedded.js';
+import { probedChapters, type FfprobeChapter } from './markers/chapters.js';
 import { embeddedSubtitles, type FfprobeSubtitleStream } from './subtitles/embedded.js';
 
 const execFileAsync = promisify(execFile);
@@ -103,7 +104,9 @@ export async function detectTools(): Promise<ToolAvailability> {
 				resolvedFfprobe !== null &&
 				process.env.FINDERELLA_TRICKPLAY !== '0',
 			// Picking the audio stream only matters for HLS transcodes.
-			audioSelect: resolvedFfmpeg !== null
+			audioSelect: resolvedFfmpeg !== null,
+			// Intro/credits analysis only decodes with ffmpeg; FINDERELLA_MARKERS=0 opts a weak device out.
+			markers: resolvedFfmpeg !== null && process.env.FINDERELLA_MARKERS !== '0'
 		},
 		ffprobe: resolvedFfprobe !== null
 	};
@@ -118,6 +121,7 @@ interface FfprobeStream extends FfprobeSubtitleStream {
 interface FfprobeOutput {
 	streams?: FfprobeStream[];
 	format?: { duration?: string; bit_rate?: string };
+	chapters?: FfprobeChapter[];
 }
 
 /** HDR transfer characteristics (PQ / HLG) that need tone-mapping for an SDR output. */
@@ -226,6 +230,7 @@ export async function probeFile(
 			| 'bitrate'
 			| 'subtitles'
 			| 'audioTracks'
+			| 'chapters'
 		>
 	>
 > {
@@ -239,6 +244,7 @@ export async function probeFile(
 			'json',
 			'-show_format',
 			'-show_streams',
+			'-show_chapters',
 			absPath
 		]);
 		const parsed = JSON.parse(stdout) as FfprobeOutput;
@@ -256,7 +262,9 @@ export async function probeFile(
 			bitrate: Number.isFinite(bitrate) ? bitrate : undefined,
 			subtitles: subtitles.length > 0 ? subtitles : undefined,
 			// Always an array once ffprobe answered, so a file that lost its tracks clears the hub's rows.
-			audioTracks: embeddedAudio(parsed.streams as FfprobeAudioStream[] | undefined)
+			audioTracks: embeddedAudio(parsed.streams as FfprobeAudioStream[] | undefined),
+			// Same for chapters: a remux that dropped them clears the hub's chapter markers.
+			chapters: probedChapters(parsed.chapters)
 		};
 	} catch {
 		return {};

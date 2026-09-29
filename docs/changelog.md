@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-29
+
+**Skip intro & Skip credits** (migration `0022`: new table `media_marker`; `media_file.chapters`, `markers_version`, `markers_analyzed_at`, `markers_error`; `site_settings.markers_enabled`; `profile_settings.skip_intro` / `skip_credits`). The player shows **Skip intro** while an intro plays and, when the credits start, **Next episode** (series, with a 10-second countdown that moves on when autoplay is on, and **Watch credits** to stay) or **Skip credits** (movies, or credits followed by a scene). `s` presses the button.
+
+- **How intros and credits are found:**
+  - Chapters named Intro/Opening/OP or Credits/Ending/ED/Outro are used as they are, straight from the scan.
+  - Series: the device holding the files fingerprints the first ~10 minutes and the last ~6 minutes of every episode's audio. The hub compares each episode with up to four others of the season; a stretch at least two of them share is the intro (or the closing theme). Cold opens are fine, and a recap only one other episode shares is ignored.
+  - Rolling credits on black are found from the last minutes' keyframes (movies, and series whose endings differ). These are less certain, so they only ever get a button.
+- **When:** after every scan, when a device connects, and from **Detect intros & credits** in a library's menu on the Devices page (with a progress card and activity-log entries). The device's results are cached, so re-checking a season when a new episode arrives is quick. About 2–3 seconds per episode on a desktop.
+- **Settings:** each profile chooses, for intros and for credits: show a skip button (default), skip automatically, or off (Settings → Playback). Automatic skips only act on chapters and audio matches, offer "Watch intro" to undo, and never end a movie. Admins can turn the feature off under Site settings. A device can opt out with `FINDERELLA_MARKERS=0`.
+
+Devices need the updated storage gateway to analyse files; until they're updated, their files wait (chapters still work).
+
 ## 2026-09-28
 
 **Profiles** (migrations `0020` + `0021`: new tables `profile` and `profile_settings`, which replaces `user_settings`; `watch_progress` and `watchlist` are keyed by `profile_id` instead of `user_id`; `play_history.profile_id` / `profile_name`, `playback_session.profile_id` and Better Auth's `session.active_profile_id`). An account can have up to **5 profiles**, each with a name, colour and icon.

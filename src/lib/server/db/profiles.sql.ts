@@ -68,6 +68,9 @@ export const profileSettings = pgTable('profile_settings', {
 	audioChannels: text('audio_channels').notNull().default('auto'),
 	/** Start the next episode when one ends (the player's Autoplay switch). */
 	autoplayNext: boolean('autoplay_next').notNull().default(true),
+	/** 'show' | 'auto' | 'off' (see SKIP_MODES in $lib/data/markers). */
+	skipIntro: text('skip_intro').notNull().default('show'),
+	skipCredits: text('skip_credits').notNull().default('show'),
 	/** "Still watching?" prompt; thresholds are STILL_WATCHING_EPISODES / _MINUTES presets. */
 	stillWatchingEnabled: boolean('still_watching_enabled').notNull().default(false),
 	stillWatchingEpisodes: integer('still_watching_episodes').notNull().default(3),

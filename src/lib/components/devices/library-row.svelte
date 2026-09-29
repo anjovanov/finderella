@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
+		AudioWave01Icon,
 		Delete02Icon,
 		Film01Icon,
 		Image01Icon,
@@ -19,17 +20,21 @@
 		library,
 		online,
 		thumbnailBlocker,
+		markersBlocker,
 		onRemove
 	}: {
 		library: DeviceLibrary;
 		online: boolean;
 		/** Why thumbnails can't be generated right now; null = they can. */
 		thumbnailBlocker: string | null;
+		/** Why intro/credits detection can't run right now; null = it can. */
+		markersBlocker: string | null;
 		onRemove: () => void;
 	} = $props();
 
 	let scanning = $state(false);
 	let thumbnailForm = $state<HTMLFormElement>();
+	let markersForm = $state<HTMLFormElement>();
 
 	const kindLabel = $derived(library.kind === 'series' ? 'Series' : 'Movies');
 	const filesLabel = $derived(
@@ -109,6 +114,10 @@
 		<input type="hidden" name="libraryId" value={library.id} />
 	</form>
 
+	<form bind:this={markersForm} method="POST" action="?/detectMarkers" class="hidden" use:enhance>
+		<input type="hidden" name="libraryId" value={library.id} />
+	</form>
+
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
@@ -127,6 +136,18 @@
 					<span>Generate trickplay thumbnails</span>
 					<span class="text-xs text-muted-foreground">
 						{thumbnailBlocker ?? 'Seek-bar previews for every file'}
+					</span>
+				</div>
+			</DropdownMenu.Item>
+			<DropdownMenu.Item
+				disabled={markersBlocker !== null}
+				onSelect={() => markersForm?.requestSubmit()}
+			>
+				<HugeiconsIcon icon={AudioWave01Icon} />
+				<div class="flex flex-col">
+					<span>Detect intros & credits</span>
+					<span class="text-xs text-muted-foreground">
+						{markersBlocker ?? 'Re-analyse every file for Skip intro / Skip credits'}
 					</span>
 				</div>
 			</DropdownMenu.Item>

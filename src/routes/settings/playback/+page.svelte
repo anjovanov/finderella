@@ -8,6 +8,7 @@
 	import { LANGUAGES } from '@finderella/protocol/languages';
 	import { DEFAULT_AUDIO_LANGUAGE } from '$lib/audio-preference';
 	import { canDecodeSurround, detectOutputChannels } from '$lib/audio-output';
+	import { SKIP_MODE_LABELS, SKIP_MODES, type SkipMode } from '$lib/data/markers';
 	import {
 		AUDIO_CHANNEL_LABELS,
 		AUDIO_CHANNEL_OPTIONS,
@@ -24,6 +25,8 @@
 	let audioLanguage = $derived(data.playbackSettings.audioLanguage);
 	let audioChannels = $derived(data.playbackSettings.audioChannels);
 	let autoplayNext = $derived(data.playbackSettings.autoplayNext);
+	let skipIntro = $derived<SkipMode>(data.playbackSettings.skipIntro);
+	let skipCredits = $derived<SkipMode>(data.playbackSettings.skipCredits);
 	let stillWatching = $derived(data.playbackSettings.stillWatching.enabled);
 	let stillWatchingEpisodes = $derived(String(data.playbackSettings.stillWatching.episodes));
 	let stillWatchingMinutes = $derived(String(data.playbackSettings.stillWatching.minutes));
@@ -51,6 +54,18 @@
 			? '5.1 surround'
 			: 'Stereo';
 	});
+
+	// Explains the selected option of each skip select.
+	const INTRO_DESCRIPTIONS: Record<SkipMode, string> = {
+		show: 'A Skip intro button appears while the intro plays.',
+		auto: 'Intros are skipped as soon as they start, with a moment to undo. Intros that were only guessed still get a button.',
+		off: 'Intros play without a button.'
+	};
+	const CREDITS_DESCRIPTIONS: Record<SkipMode, string> = {
+		show: 'A button appears when the credits start: Next episode for series, Skip credits otherwise.',
+		auto: 'Series move on to the next episode when the credits start (with autoplay on); credits followed by a scene are skipped. Movies still just get a button.',
+		off: 'Credits play without a button; the next episode starts once the episode ends.'
+	};
 
 	// 'default' = the track the file flags as default, which is usually the original language.
 	const ORIGINAL_LANGUAGE = 'Original language';
@@ -138,6 +153,60 @@
 				</Field.Field>
 				<Field.Field>
 					<Button type="submit" variant="secondary" class="w-fit">Save audio settings</Button>
+				</Field.Field>
+			</Field.Group>
+		</form>
+	</Card.Content>
+</Card.Root>
+
+<Card.Root>
+	<Card.Header>
+		<Card.Title>Skip intro & credits</Card.Title>
+		<Card.Description>
+			What happens when an intro or the closing credits start. Titles are analysed after they're
+			added, so new ones may take a while to get these.
+		</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form method="POST" action="?/updateSkip" use:enhance>
+			<Field.Group>
+				<div class="grid gap-4 sm:grid-cols-2">
+					<Field.Field>
+						<Field.Label for="skip-intro">Intros</Field.Label>
+						<Select.Root type="single" name="skipIntro" bind:value={skipIntro}>
+							<Select.Trigger id="skip-intro" class="w-full">
+								{SKIP_MODE_LABELS[skipIntro]}
+							</Select.Trigger>
+							<Select.Content>
+								{#each SKIP_MODES as mode (mode)}
+									<Select.Item value={mode} label={SKIP_MODE_LABELS[mode]} />
+								{/each}
+							</Select.Content>
+						</Select.Root>
+						<Field.Description>{INTRO_DESCRIPTIONS[skipIntro]}</Field.Description>
+					</Field.Field>
+					<Field.Field>
+						<Field.Label for="skip-credits">Credits</Field.Label>
+						<Select.Root type="single" name="skipCredits" bind:value={skipCredits}>
+							<Select.Trigger id="skip-credits" class="w-full">
+								{SKIP_MODE_LABELS[skipCredits]}
+							</Select.Trigger>
+							<Select.Content>
+								{#each SKIP_MODES as mode (mode)}
+									<Select.Item value={mode} label={SKIP_MODE_LABELS[mode]} />
+								{/each}
+							</Select.Content>
+						</Select.Root>
+						<Field.Description>{CREDITS_DESCRIPTIONS[skipCredits]}</Field.Description>
+					</Field.Field>
+				</div>
+				{#if message('skip')}
+					<Field.Error>{message('skip')}</Field.Error>
+				{:else if saved('skip')}
+					<Field.Description>Skip settings saved.</Field.Description>
+				{/if}
+				<Field.Field>
+					<Button type="submit" variant="secondary" class="w-fit">Save skip settings</Button>
 				</Field.Field>
 			</Field.Group>
 		</form>

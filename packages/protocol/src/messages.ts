@@ -31,7 +31,9 @@ export const GatewayCapabilities = z.object({
 	/** Answers `trickplay.ensure` / `trickplay.get` (seek-bar thumbnails; needs ffmpeg + ffprobe). */
 	trickplay: z.boolean().default(false),
 	/** Honours `session.start.audioStreamIndex` (older gateways always transcode the first audio stream). */
-	audioSelect: z.boolean().default(false)
+	audioSelect: z.boolean().default(false),
+	/** Answers `markers.analyze` (audio fingerprints + dark-frame series for intro/credits detection). */
+	markers: z.boolean().default(false)
 });
 export type GatewayCapabilities = z.infer<typeof GatewayCapabilities>;
 
@@ -285,6 +287,78 @@ export const TrickplayGetMessage = base.extend({
 });
 export type TrickplayGetMessage = z.infer<typeof TrickplayGetMessage>;
 
+/* ---------- intro / credits markers ---------- */
+
+/** Longest audio window the gateway fingerprints per region. */
+export const MARKERS_MAX_REGION_MS = 15 * 60_000;
+/** Longest window the gateway samples for dark frames. */
+export const MARKERS_MAX_DARKFRAMES_MS = 20 * 60_000;
+
+/** One audio window to fingerprint (source-timeline milliseconds). */
+export const MarkersRegion = z.object({
+	kind: z.enum(['intro', 'credits']),
+	startMs: z.number().int().nonnegative(),
+	durationMs: z.number().int().positive().max(MARKERS_MAX_REGION_MS)
+});
+export type MarkersRegion = z.infer<typeof MarkersRegion>;
+
+export const MarkersWindow = z.object({
+	startMs: z.number().int().nonnegative(),
+	durationMs: z.number().int().positive().max(MARKERS_MAX_DARKFRAMES_MS)
+});
+export type MarkersWindow = z.infer<typeof MarkersWindow>;
+
+/**
+ * Extract the features the hub needs to find a file's intro and credits:
+ * audio fingerprints for `regions` (compared across a season's episodes on
+ * the hub) and a dark-pixel series over `darkframes` (rolling credits).
+ * Idempotent and single-flight per file identity + request; results are
+ * cached on the device. Answered with `resp` carrying `MarkersAnalyzeResult`
+ * — callers poll until `ready`/`failed`, like `trickplay.ensure`.
+ */
+export const MarkersAnalyzeMessage = base.extend({
+	type: z.literal('markers.analyze'),
+	rootPath: z.string().min(1),
+	relPath: z.string().min(1),
+	/** Absolute ffprobe stream index of the audio to fingerprint; absent = first audio stream. */
+	audioStreamIndex: z.number().int().nonnegative().optional(),
+	regions: z.array(MarkersRegion).max(2).default([]),
+	darkframes: MarkersWindow.optional()
+});
+export type MarkersAnalyzeMessage = z.infer<typeof MarkersAnalyzeMessage>;
+
+export const MarkersAnalysis = z.object({
+	/** Gateway fingerprint algorithm version — only equal versions are comparable. */
+	version: z.number().int().positive(),
+	/** Milliseconds between consecutive fingerprint values. */
+	hopMs: z.number().positive(),
+	regions: z.array(
+		MarkersRegion.extend({
+			/** base64 of little-endian uint32 sub-fingerprints (see fingerprint-codec.ts); 0 = silent frame. */
+			fingerprint: z.string()
+		})
+	),
+	darkframes: z
+		.object({
+			/** Presentation times (source timeline, ms) of the sampled frames. */
+			timesMs: z.array(z.number().int().nonnegative()),
+			/** Percentage of (near-)black pixels per sampled frame, 0..100. */
+			pblack: z.array(z.number().int().min(0).max(100))
+		})
+		.optional()
+});
+export type MarkersAnalysis = z.infer<typeof MarkersAnalysis>;
+
+export const MarkersStatus = z.enum(['ready', 'running', 'queued', 'failed']);
+export type MarkersStatus = z.infer<typeof MarkersStatus>;
+
+export const MarkersAnalyzeResult = z.object({
+	status: MarkersStatus,
+	error: z.string().optional(),
+	analysis: MarkersAnalysis.optional()
+});
+export type MarkersAnalyzeResult = z.infer<typeof MarkersAnalyzeResult>;
+
 export const HubMessage = z.discriminatedUnion('type', [
 	WelcomeMessage,
 	PongMessage,
@@ -298,7 +372,8 @@ export const HubMessage = z.discriminatedUnion('type', [
 	SubtitleGetMessage,
 	SubtitlePutMessage,
 	TrickplayEnsureMessage,
-	TrickplayGetMessage
+	TrickplayGetMessage,
+	MarkersAnalyzeMessage
 ]);
 export type HubMessage = z.infer<typeof HubMessage>;
 

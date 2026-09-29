@@ -40,6 +40,16 @@ describe('describeDeviceEvent', () => {
 		).toBe('0 generated');
 	});
 
+	it('summarises intro & credits runs', () => {
+		expect(
+			describeDeviceEvent({
+				type: 'markers.finished',
+				detail: { processed: 12, intros: 1, credits: 10, failed: 2, durationMs: 90_000 }
+			})
+		).toBe('12 files analysed · 1 intro · 10 with credits · 2 failed · took 1m 30s');
+		expect(describeDeviceEvent({ type: 'markers.started', detail: {} })).toBe(null);
+	});
+
 	it('describes renames, new libraries and removals', () => {
 		expect(
 			describeDeviceEvent({ type: 'device.renamed', detail: { from: 'Old', to: 'New' } })

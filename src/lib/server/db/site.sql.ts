@@ -8,6 +8,8 @@ export const siteSettings = pgTable('site_settings', {
 	requireLogin: boolean('require_login').notNull().default(true),
 	/** Seek-bar thumbnails (trickplay): rendered on devices at first play / via the bulk job. */
 	trickplayEnabled: boolean('trickplay_enabled').notNull().default(true),
+	/** Skip intro / Skip credits: markers served to the player and the background analysis job. */
+	markersEnabled: boolean('markers_enabled').notNull().default(true),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 

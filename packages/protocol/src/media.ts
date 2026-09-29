@@ -71,6 +71,14 @@ export const AudioSource = z.object({
 });
 export type AudioSource = z.infer<typeof AudioSource>;
 
+/** One container chapter (ffprobe `-show_chapters`), used for intro/credits markers. */
+export const ProbedChapter = z.object({
+	startMs: z.number().int().nonnegative(),
+	endMs: z.number().int().nonnegative(),
+	title: z.string().max(200).optional()
+});
+export type ProbedChapter = z.infer<typeof ProbedChapter>;
+
 /**
  * One scanned media file as reported by an gateway. Codec/duration fields are
  * absent when the gateway has no ffprobe (capability reported in `hello`).
@@ -89,7 +97,9 @@ export const ProbedFile = z.object({
 	/** Absent from gateways that predate subtitle discovery (the hub then keeps its rows). */
 	subtitles: z.array(SubtitleSource).optional(),
 	/** Every audio stream. Absent from gateways that predate audio-track discovery (the hub then keeps its rows). */
-	audioTracks: z.array(AudioSource).optional()
+	audioTracks: z.array(AudioSource).optional(),
+	/** Container chapters. Absent from gateways that predate chapter discovery (the hub then keeps its data). */
+	chapters: z.array(ProbedChapter).max(200).optional()
 });
 export type ProbedFile = z.infer<typeof ProbedFile>;
 

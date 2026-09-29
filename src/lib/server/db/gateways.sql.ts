@@ -7,6 +7,7 @@ import {
 	jsonb,
 	pgEnum,
 	pgTable,
+	real,
 	text,
 	timestamp,
 	unique,
@@ -32,6 +33,15 @@ export interface GatewayCapabilitiesJson {
 	trickplay?: boolean;
 	/** Honours `session.start.audioStreamIndex` (older gateways encode the first audio stream). */
 	audioSelect?: boolean;
+	/** Answers `markers.analyze` (intro/credits detection features). */
+	markers?: boolean;
+}
+
+/** A container chapter as stored on `media_file.chapters` (mirrors the protocol's ProbedChapter). */
+export interface MediaChapterJson {
+	startMs: number;
+	endMs: number;
+	title?: string;
 }
 
 /** A paired storage gateway (a device that serves local files to the hub). */
@@ -105,6 +115,16 @@ export const mediaFile = pgTable(
 		/** OpenSubtitles moviehash of this exact encode; cleared when size/mtime change. */
 		moviehash: text('moviehash'),
 		moviehashAt: timestamp('moviehash_at', { withTimezone: true }),
+		/** Container chapters from the last scan (null = gateway predates chapter discovery). No default: see CLAUDE.md. */
+		chapters: jsonb('chapters').$type<MediaChapterJson[]>(),
+		/**
+		 * Intro/credits analysis: the MARKERS_VERSION this file was last analysed
+		 * with (null = pending). Cleared with the analysis markers when size/mtime change.
+		 */
+		markersVersion: integer('markers_version'),
+		markersAnalyzedAt: timestamp('markers_analyzed_at', { withTimezone: true }),
+		/** Why the device couldn't analyse the file (the job doesn't retry it until the version changes). */
+		markersError: text('markers_error'),
 		status: mediaFileStatus('status').notNull().default('active'),
 		// Set on every upsert during a scan; files not seen by a finished scan
 		// are marked missing.
@@ -176,6 +196,30 @@ export const mediaAudio = pgTable(
 );
 
 /**
+ * Intro / credits of a media file, one row per detection source: `chapter`
+ * (container chapter titles, replaced by every scan), `fingerprint` (audio
+ * shared with other episodes of the season) and `darkframes` (rolling
+ * credits on black) — both written by the analysis job. The playback start
+ * route resolves them (chapter > fingerprint > darkframes).
+ */
+export const mediaMarker = pgTable(
+	'media_marker',
+	{
+		id: uuid('id').primaryKey().defaultRandom(),
+		mediaFileId: uuid('media_file_id')
+			.notNull()
+			.references(() => mediaFile.id, { onDelete: 'cascade' }),
+		kind: text('kind', { enum: ['intro', 'credits'] }).notNull(),
+		source: text('source', { enum: ['chapter', 'fingerprint', 'darkframes'] }).notNull(),
+		startMs: integer('start_ms').notNull(),
+		endMs: integer('end_ms').notNull(),
+		confidence: real('confidence').notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(t) => [unique().on(t.mediaFileId, t.kind, t.source)]
+);
+
+/**
  * Audit log of device/library administration. Names are snapshotted and the
  * references go null on delete, so entries outlive a revoked device or a
  * removed library (and the admin who acted).
@@ -213,7 +257,12 @@ export const mediaFileRelations = relations(mediaFile, ({ one, many }) => ({
 	gateway: one(gateway, { fields: [mediaFile.gatewayId], references: [gateway.id] }),
 	movie: one(movie, { fields: [mediaFile.movieId], references: [movie.id] }),
 	episode: one(episode, { fields: [mediaFile.episodeId], references: [episode.id] }),
-	subtitles: many(mediaSubtitle)
+	subtitles: many(mediaSubtitle),
+	markers: many(mediaMarker)
+}));
+
+export const mediaMarkerRelations = relations(mediaMarker, ({ one }) => ({
+	file: one(mediaFile, { fields: [mediaMarker.mediaFileId], references: [mediaFile.id] })
 }));
 
 export const mediaSubtitleRelations = relations(mediaSubtitle, ({ one }) => ({

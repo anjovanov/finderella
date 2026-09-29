@@ -52,8 +52,19 @@
 	import type { SubtitleTarget } from '$lib/subtitles-client';
 	import type { PlaybackSnapshot } from '$lib/playback-client';
 	import type { PlayerState } from '$lib/data/stats';
+	import {
+		activeMarker,
+		CREDITS_COUNTDOWN_SECONDS,
+		creditsCountdown,
+		enteredByPlayback,
+		skipButtonVisible,
+		skipTarget,
+		type PlaybackMarkers,
+		type SkipMode
+	} from '$lib/data/markers';
 	import EpisodesPanel from './episodes-panel.svelte';
 	import FindSubtitlesPanel from './find-subtitles-panel.svelte';
+	import SkipButton from './skip-button.svelte';
 
 	let {
 		title,
@@ -88,7 +99,10 @@
 		onAutoAdvance,
 		onInteraction,
 		stillWatchingDue = false,
-		stillWatchingAfterSeconds = null
+		stillWatchingAfterSeconds = null,
+		markers = null,
+		skipIntro = 'show',
+		skipCredits = 'show'
 	}: {
 		title: string;
 		/** Release year, shown after the title (movies). */
@@ -153,6 +167,12 @@
 		stillWatchingDue?: boolean;
 		/** Movies: pause and ask after this many seconds of playback without input; null = never. */
 		stillWatchingAfterSeconds?: number | null;
+		/** Intro / credits of the file being played (source seconds); null = none known. */
+		markers?: PlaybackMarkers | null;
+		/** The viewer's choice for intros: a Skip intro button, skipping automatically, or nothing. */
+		skipIntro?: SkipMode;
+		/** The same for closing credits ("Next episode" when a series' credits run to the end). */
+		skipCredits?: SkipMode;
 	} = $props();
 
 	// No screensaver over the player, playing or paused.
@@ -219,6 +239,7 @@
 		remainingSeconds = videoEl.duration - videoEl.currentTime;
 		onProgress?.(videoEl.currentTime, videoEl.duration);
 		countWatchTime(videoEl);
+		followMarkers(videoEl);
 	}
 
 	function reportState(state: PlayerState) {
@@ -229,17 +250,6 @@
 			durationSeconds: Number.isFinite(videoEl.duration) ? videoEl.duration : null
 		});
 	}
-
-	const nextCountdown = $derived(
-		!stillWatchingOpen &&
-			autoplayNext &&
-			nextHref &&
-			remainingSeconds !== null &&
-			remainingSeconds > 0 &&
-			remainingSeconds <= 10
-			? Math.ceil(remainingSeconds)
-			: null
-	);
 
 	// Attach the source and start playback whenever the player mounts or is
 	// re-sourced — arriving from a Play button, switching episodes, or
@@ -379,13 +389,19 @@
 		}
 	}
 
-	// Same-route navigation reuses this component instance; the effect above
-	// starts playback once the new episode's source is in.
-	function onVideoEnded() {
-		if (!autoplayNext || !nextHref) return;
-		onAutoAdvance?.();
+	// Same-route navigation reuses the page; the player remounts once the new
+	// episode's session is in. `automatic` = autoplay (not a click), which the
+	// page counts for "Still watching?".
+	function advanceToNext(automatic: boolean) {
+		if (!nextHref || advancing) return;
+		advancing = true;
+		if (automatic) onAutoAdvance?.();
 		/* eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d paths */
-		goto(nextHref).catch(() => {});
+		goto(nextHref).catch(() => (advancing = false));
+	}
+
+	function onVideoEnded() {
+		if (autoplayNext) advanceToNext(true);
 	}
 
 	// Episodes panel (series only). While open, player chrome is pinned visible
@@ -413,6 +429,147 @@
 	// Shown on the row that is actually playing.
 	const delivery = $derived(videoKind === 'hls' ? 'transcoded' : 'direct play');
 	const chromeVisible = $derived(barVisible || menuOpen);
+
+	// Skip intro / Skip credits. `currentTime` drives the button; the automatic
+	// skips run imperatively from timeupdate (below), never from an effect.
+	// Per mount: the player remounts for every session (episode, quality or
+	// audio change), and a remount only auto-skips when it starts at a marker.
+	let currentTime = $state(0);
+	let previousTime: number | null = null;
+	// Plain (not reactive): each marker is skipped automatically at most once per mount.
+	let introAutoSkipped = false;
+	let creditsAutoSkipped = false;
+	let advancing = false;
+	// Where the viewer reached the closing credits (the countdown runs from there).
+	let creditsEntry = $state<number | null>(null);
+	// "Watch credits" dismisses the credits button for this session.
+	let creditsDismissed = $state(false);
+	// After an automatic intro skip: where "Watch intro" goes back to, briefly.
+	let undoIntroAt = $state<number | null>(null);
+	let undoTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => () => clearTimeout(undoTimer));
+
+	const marker = $derived(stillWatchingOpen ? null : activeMarker(currentTime, markers));
+	// Series credits that run to the end lead into the next episode.
+	const creditsLeadToNext = $derived(!!markers?.credits?.toEnd && !!nextHref);
+	const creditsLeft = $derived(
+		marker?.kind === 'credits' &&
+			creditsLeadToNext &&
+			autoplayNext &&
+			skipCredits !== 'off' &&
+			!creditsDismissed &&
+			creditsEntry !== null
+			? creditsCountdown(currentTime, marker.span, creditsEntry)
+			: null
+	);
+
+	type SkipAction = {
+		label: string;
+		run: () => void;
+		progress: number | null;
+		secondary?: { label: string; onclick: () => void };
+	};
+	const skipAction = $derived.by((): SkipAction | null => {
+		if (!marker) return null;
+		if (marker.kind === 'intro') {
+			if (skipIntro === 'off') return null;
+			const span = marker.span;
+			return { label: 'Skip intro', run: () => seekTo(span.end), progress: null };
+		}
+		if (skipCredits === 'off' || creditsDismissed) return null;
+		if (creditsLeadToNext) {
+			return {
+				label: 'Next episode',
+				run: () => advanceToNext(false),
+				progress: creditsLeft === null ? null : 1 - creditsLeft / CREDITS_COUNTDOWN_SECONDS,
+				secondary: { label: 'Watch credits', onclick: () => (creditsDismissed = true) }
+			};
+		}
+		const span = marker.span;
+		return {
+			label: 'Skip credits',
+			run: () => seekTo(skipTarget(span, videoEl?.duration ?? Number.NaN)),
+			progress: null
+		};
+	});
+	const nextCountdown = $derived(
+		!stillWatchingOpen &&
+			creditsLeft === null &&
+			autoplayNext &&
+			nextHref &&
+			remainingSeconds !== null &&
+			remainingSeconds > 0 &&
+			remainingSeconds <= 10
+			? Math.ceil(remainingSeconds)
+			: null
+	);
+
+	const showSkip = $derived(
+		!!skipAction &&
+			!!marker &&
+			!menuOpen &&
+			(creditsLeft !== null || skipButtonVisible(currentTime, marker.span, chromeVisible))
+	);
+
+	function seekTo(seconds: number) {
+		if (!videoEl) return;
+		const max = Number.isFinite(videoEl.duration) ? videoEl.duration : Infinity;
+		videoEl.currentTime = Math.min(max, Math.max(0, seconds));
+	}
+
+	function followMarkers(el: HTMLVideoElement) {
+		const t = el.currentTime;
+		const previous = previousTime;
+		previousTime = t;
+		currentTime = t;
+		const credits = markers?.credits ?? null;
+		if (credits && t >= credits.start && t < credits.end) creditsEntry ??= t;
+		else creditsEntry = null;
+		if (!markers || stillWatchingOpen) return;
+
+		const intro = markers.intro;
+		if (
+			intro &&
+			skipIntro === 'auto' &&
+			intro.autoSkip &&
+			!introAutoSkipped &&
+			enteredByPlayback(previous, t, intro)
+		) {
+			introAutoSkipped = true;
+			seekTo(intro.end);
+			clearTimeout(undoTimer);
+			undoIntroAt = intro.start;
+			undoTimer = setTimeout(() => (undoIntroAt = null), 6000);
+			return;
+		}
+		if (
+			credits &&
+			skipCredits === 'auto' &&
+			credits.autoSkip &&
+			!creditsAutoSkipped &&
+			enteredByPlayback(previous, t, credits)
+		) {
+			if (!credits.toEnd) {
+				// Credits with a scene after them: jump to the scene.
+				creditsAutoSkipped = true;
+				seekTo(credits.end);
+				return;
+			}
+			if (nextHref && autoplayNext) {
+				creditsAutoSkipped = true;
+				advanceToNext(true);
+				return;
+			}
+			// A movie (or autoplay off): never end the title for the viewer.
+		}
+		if (creditsLeft === 0 && !el.paused) advanceToNext(true);
+	}
+
+	function undoIntroSkip() {
+		if (undoIntroAt !== null) seekTo(undoIntroAt);
+		clearTimeout(undoTimer);
+		undoIntroAt = null;
+	}
 
 	// Close on any pointerdown outside the open surface and its trigger.
 	$effect(() => {
@@ -473,6 +630,9 @@
 		} else if ((event.key === 'c' || event.key === 'C') && tracks.length > 0) {
 			event.preventDefault();
 			toggleSubtitles();
+		} else if ((event.key === 's' || event.key === 'S') && skipAction) {
+			event.preventDefault();
+			skipAction.run();
 		}
 	}
 
@@ -914,6 +1074,17 @@
 						</div>
 					</media-controls-group>
 				</media-controls>
+
+				{#if showSkip && skipAction}
+					<SkipButton
+						label={skipAction.label}
+						onclick={skipAction.run}
+						progress={skipAction.progress}
+						secondary={skipAction.secondary}
+					/>
+				{:else if undoIntroAt !== null && !menuOpen}
+					<SkipButton note="Intro skipped" label="Watch intro" back onclick={undoIntroSkip} />
+				{/if}
 
 				{#if nextCountdown !== null}
 					<div

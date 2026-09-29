@@ -4,6 +4,7 @@ import { normalizeLanguage } from '@finderella/protocol';
 import { db } from '$lib/server/db';
 import { profileSettings } from '$lib/server/db/schema';
 import { isAudioLanguage } from '$lib/audio-preference';
+import { SKIP_MODES } from '$lib/data/markers';
 import {
 	AUDIO_CHANNEL_OPTIONS,
 	DEFAULT_PLAYBACK_SETTINGS,
@@ -106,6 +107,8 @@ export const PlaybackSettingsPatch = z.object({
 		.optional(),
 	audioChannels: z.enum(AUDIO_CHANNEL_OPTIONS).optional(),
 	autoplayNext: formBoolean.optional(),
+	skipIntro: z.enum(SKIP_MODES).optional(),
+	skipCredits: z.enum(SKIP_MODES).optional(),
 	stillWatchingEnabled: formBoolean.optional(),
 	stillWatchingEpisodes: z.coerce
 		.number()
@@ -128,6 +131,8 @@ export async function getPlaybackSettings(profileId: string | null): Promise<Pla
 			audioLanguage: true,
 			audioChannels: true,
 			autoplayNext: true,
+			skipIntro: true,
+			skipCredits: true,
 			stillWatchingEnabled: true,
 			stillWatchingEpisodes: true,
 			stillWatchingMinutes: true
@@ -139,6 +144,8 @@ export async function getPlaybackSettings(profileId: string | null): Promise<Pla
 		audioLanguage: row.audioLanguage,
 		audioChannels: row.audioChannels,
 		autoplayNext: row.autoplayNext,
+		skipIntro: row.skipIntro,
+		skipCredits: row.skipCredits,
 		stillWatching: {
 			enabled: row.stillWatchingEnabled,
 			episodes: row.stillWatchingEpisodes,
@@ -157,6 +164,8 @@ export async function savePlaybackSettings(
 		audioLanguage: patch.audioLanguage ?? current.audioLanguage,
 		audioChannels: patch.audioChannels ?? current.audioChannels,
 		autoplayNext: patch.autoplayNext ?? current.autoplayNext,
+		skipIntro: patch.skipIntro ?? current.skipIntro,
+		skipCredits: patch.skipCredits ?? current.skipCredits,
 		stillWatching: {
 			enabled: patch.stillWatchingEnabled ?? current.stillWatching.enabled,
 			episodes: patch.stillWatchingEpisodes ?? current.stillWatching.episodes,
@@ -167,6 +176,8 @@ export async function savePlaybackSettings(
 		audioLanguage: next.audioLanguage,
 		audioChannels: next.audioChannels,
 		autoplayNext: next.autoplayNext,
+		skipIntro: next.skipIntro,
+		skipCredits: next.skipCredits,
 		stillWatchingEnabled: next.stillWatching.enabled,
 		stillWatchingEpisodes: next.stillWatching.episodes,
 		stillWatchingMinutes: next.stillWatching.minutes,
