@@ -158,6 +158,7 @@ function historyQuery() {
 			positionSeconds: playHistory.positionSeconds,
 			durationSeconds: playHistory.durationSeconds,
 			transcoded: playHistory.transcoded,
+			mode: playHistory.mode,
 			quality: playHistory.quality,
 			bytesSent: playHistory.bytesSent
 		})
@@ -185,6 +186,7 @@ function toHistoryEntry(row: HistoryRow): HistoryEntry {
 		positionSeconds: row.positionSeconds,
 		durationSeconds: row.durationSeconds,
 		transcoded: row.transcoded,
+		mode: row.mode,
 		quality: row.quality,
 		bytesSent: row.bytesSent
 	};

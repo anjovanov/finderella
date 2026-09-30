@@ -73,6 +73,8 @@
 		backHref,
 		videoSrc,
 		videoKind = 'file',
+		remux = null,
+		onRemuxFailed,
 		monoDownmix = false,
 		startAt = 0,
 		onProgress,
@@ -111,9 +113,25 @@
 		subtitle?: string;
 		backHref: string;
 		videoSrc: string;
-		/** 'file' = progressive src; 'hls' = m3u8 via hls.js (native on Safari). */
-		videoKind?: 'file' | 'hls';
-		/** Play a direct-play file's audio as mono (audio-channels setting); HLS arrives mono already. */
+		/**
+		 * 'file' = progressive src; 'remux' = the same file, re-wrapped in the
+		 * browser into Media Source Extensions ($lib/remux); 'hls' = m3u8 via
+		 * hls.js (native on Safari).
+		 */
+		videoKind?: 'file' | 'remux' | 'hls';
+		/**
+		 * Remux: the audio stream to play, by position among the file's audio
+		 * streams (null = the first), and the channels a conversion encodes
+		 * (6 = keep 5.1, 2 = stereo, null = copied as-is).
+		 */
+		remux?: { audioOrdinal: number | null; audioChannels: 2 | 6 | null } | null;
+		/**
+		 * Remux: this browser can't play the file after all (an exact codec
+		 * string it turns down, a decode error). The page restarts the session
+		 * as a transcode at `positionSeconds`. Without it, failures go to `onError`.
+		 */
+		onRemuxFailed?: (positionSeconds: number, reason: string) => void;
+		/** Play the file's audio as mono (audio-channels setting) in direct play and remux; HLS arrives mono already. */
 		monoDownmix?: boolean;
 		/** Resume position in seconds, applied when the source loads. */
 		startAt?: number;
@@ -266,12 +284,14 @@
 	const sourceSrc = $derived(videoSrc);
 	const sourceKind = $derived(videoKind);
 	const sourceStartAt = $derived(startAt);
+	const sourceAudioIndex = $derived(remux?.audioOrdinal ?? 0);
+	const sourceAudioChannels = $derived(remux?.audioChannels === 6 ? 6 : 2);
 
 	// Declared before the source effect so the audio graph exists when autoplay
 	// starts. Through a derived so only a changed value reaches the graph, and
 	// setMonoDownmix is idempotent per element anyway: a re-run must never
 	// rebuild it (createMediaElementSource throws on the second call).
-	const wantMono = $derived(monoDownmix && sourceKind === 'file');
+	const wantMono = $derived(monoDownmix && sourceKind !== 'hls');
 	$effect(() => {
 		if (videoEl) setMonoDownmix(videoEl, wantMono);
 	});
@@ -288,6 +308,8 @@
 		const src = sourceSrc;
 		const kind = sourceKind;
 		const startFrom = sourceStartAt;
+		const audioIndex = sourceAudioIndex;
+		const audioChannels = sourceAudioChannels;
 		if (!el) return;
 
 		const resumeAt = startFrom > 0 ? startFrom : null;
@@ -360,6 +382,42 @@
 			};
 		}
 
+		if (kind === 'remux') {
+			let cancelled = false;
+			let player: import('$lib/remux/mse-player').RemuxPlayer | null = null;
+			const fail = (reason: string) => {
+				if (cancelled) return;
+				cancelled = true;
+				const position = el.currentTime > 0 ? el.currentTime : (resumeAt ?? 0);
+				if (onRemuxFailed) onRemuxFailed(position, reason);
+				else onError?.(`The browser could not play this file (${reason}).`);
+			};
+			const onRemuxMediaError = () => fail(el.error?.message || 'decode error');
+			el.addEventListener('error', onRemuxMediaError);
+			void import('$lib/remux/mse-player').then(async ({ RemuxPlayer }) => {
+				if (cancelled) return;
+				player = new RemuxPlayer(el, src, {
+					audioIndex,
+					audioChannels,
+					onError: (err) => fail(err.message)
+				});
+				try {
+					await player.prepare();
+					if (cancelled) return;
+					await player.start(resumeAt ?? 0);
+					if (!cancelled) autoStart();
+				} catch (err) {
+					fail(err instanceof Error ? err.message : String(err));
+				}
+			});
+			return () => {
+				cancelled = true;
+				el.removeEventListener('error', onRemuxMediaError);
+				// Detaches the MediaSource and clears the element's src.
+				player?.destroy();
+			};
+		}
+
 		playNative();
 		return stopNative;
 	});
@@ -427,7 +485,8 @@
 		);
 	});
 	// Shown on the row that is actually playing.
-	const delivery = $derived(videoKind === 'hls' ? 'transcoded' : 'direct play');
+	const DELIVERY_LABELS = { file: 'direct play', remux: 'remuxed', hls: 'transcoded' } as const;
+	const delivery = $derived(DELIVERY_LABELS[videoKind]);
 	const chromeVisible = $derived(barVisible || menuOpen);
 
 	// Skip intro / Skip credits. `currentTime` drives the button; the automatic

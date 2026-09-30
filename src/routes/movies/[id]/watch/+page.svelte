@@ -8,6 +8,7 @@
 		beaconStop,
 		createHeartbeat,
 		createProgressReporter,
+		playerKind,
 		startPlayback,
 		stopPlayback,
 		type PlaybackDescriptor
@@ -74,8 +75,19 @@
 		audioTrackId = track.id;
 	}
 
+	// A remux this browser turned out unable to play: the title restarts as a
+	// transcode at the same position, and stays one for the rest of the visit.
+	let remuxBlockedFor: string | null = $state(null);
+
+	function onRemuxFailed(position: number, reason: string) {
+		console.warn(`[remux] falling back to transcoding: ${reason}`);
+		restartAt = position;
+		remuxBlockedFor = data.movie.id;
+	}
+
 	$effect(() => {
 		const slug = data.movie.id;
+		const allowRemux = remuxBlockedFor !== slug;
 		const chosenQuality = quality;
 		const chosenAudio = audioTrackId;
 		const audioLanguage =
@@ -98,7 +110,8 @@
 				quality: chosenQuality,
 				audioTrackId: chosenAudio,
 				audioLanguage,
-				audioChannels
+				audioChannels,
+				allowRemux
 			},
 			controller.signal
 		)
@@ -149,7 +162,9 @@
 		year={data.movie.year}
 		backHref={mediaHref(data.movie)}
 		videoSrc={playback.src}
-		videoKind={playback.mode === 'hls' ? 'hls' : 'file'}
+		videoKind={playerKind(playback.mode)}
+		remux={playback.remux}
+		{onRemuxFailed}
 		monoDownmix={playbackSettings.audioChannels === 'mono'}
 		startAt={playbackStartAt}
 		onProgress={(position, duration) => {

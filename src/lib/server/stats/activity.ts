@@ -123,7 +123,8 @@ export async function listActiveStreams(): Promise<ActiveStream[]> {
 				bitrate: file.bitrate
 			},
 			audioLabel: s.details.audioLabel ?? null,
-			audioChannels: s.mode === 'hls' ? (s.details.audioChannels ?? null) : null,
+			audioChannels: s.mode !== 'direct' ? (s.details.audioChannels ?? null) : null,
+			remuxAudio: s.mode === 'remux' ? (s.details.remuxAudio ?? null) : null,
 			subtitleLabel: subtitleLabels[i],
 			device: {
 				id: s.source.gatewayId,

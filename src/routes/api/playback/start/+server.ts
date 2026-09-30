@@ -23,10 +23,16 @@ import {
 	trickplayVttSrc,
 	usableGeometry
 } from '$lib/server/trickplay/ensure';
-import { loginRequired, trickplayEnabled } from '$lib/server/site-settings';
+import { loginRequired, remuxEnabled, trickplayEnabled } from '$lib/server/site-settings';
 import { pickEpisodeSource, pickMovieSource } from '$lib/server/streaming/source-picker';
 import { QUALITY_IDS, QUALITY_LADDER, transcodePlan } from '$lib/playback-quality';
 import { requireProfile } from '$lib/server/profiles';
+import {
+	REMUX_AUDIO_CODECS,
+	REMUX_AUDIO_ENCODERS,
+	REMUX_VIDEO_CODECS,
+	remuxPlan
+} from '$lib/data/remux';
 
 /**
  * Playback start must not wait on thumbnails: the device answers from its
@@ -65,7 +71,18 @@ const StartRequest = z.object({
 	/** The viewer's preferred audio language: 'default' or an ISO 639-1 code. */
 	audioLanguage: z.string().min(1).optional(),
 	/** Most channels the viewer wants (audio-channels setting); transcodes are encoded down to it. */
-	maxAudioChannels: z.union([z.literal(1), z.literal(2), z.literal(6)]).default(2)
+	maxAudioChannels: z.union([z.literal(1), z.literal(2), z.literal(6)]).default(2),
+	/** What the browser can remux (see $lib/data/remux); absent = never remux (older clients). */
+	capabilities: z
+		.object({
+			video: z.array(z.enum(REMUX_VIDEO_CODECS)),
+			audio: z.array(z.enum(REMUX_AUDIO_CODECS)),
+			encode: z.array(z.enum(REMUX_AUDIO_ENCODERS)),
+			surround: z.array(z.enum(REMUX_AUDIO_ENCODERS)).default([])
+		})
+		.nullish(),
+	/** false after a remux failed in this browser: go straight to the transcoder. */
+	allowRemux: z.boolean().default(true)
 });
 
 /**
@@ -84,6 +101,10 @@ async function loadAudioRows(source: PlayableSource): Promise<AudioRow[]> {
  * Create a playback session for a title and return what the player should
  * load. Modes:
  *  - direct: browser-compatible file on an online gateway → range proxy
+ *  - remux:  a file whose codecs the browser decodes but whose container
+ *            (MKV, …) or audio (AC-3, a non-first track) it can't play as-is
+ *            → the same range proxy; the browser re-wraps it into
+ *            fragmented MP4 for Media Source Extensions ($lib/remux)
  *  - hls:    anything else → ffmpeg on the gateway, hub-synthesized playlists
  * An explicit `quality` rung forces hls, capped to that rung (see
  * $lib/playback-quality) — the way to fit a remote gateway's uplink.
@@ -109,7 +130,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		quality,
 		audioTrackId,
 		audioLanguage,
-		maxAudioChannels
+		maxAudioChannels,
+		capabilities,
+		allowRemux
 	} = parsed.data;
 	const rung = quality === 'original' ? undefined : QUALITY_LADDER[quality];
 	if (kind === 'series' && !episodeSlug) error(400, 'episodeSlug required for series');
@@ -135,20 +158,46 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const directAudio = !audio || audio.id === directPlayAudio(audioRows)?.id;
 	const chosenAudioLabel = audio ? audioLabel(audio, audioRows.indexOf(audio)) : null;
 
-	if (source.directPlayable && !rung && directAudio) {
-		const session = await sessionManager.start(viewerId, source, 'direct', quality, {
-			startSeconds,
-			userAgent,
-			profile: viewerProfile,
-			details: { audioLabel: chosenAudioLabel }
-		});
+	const direct = source.directPlayable && !rung && directAudio;
+	// Remux: the original file, re-wrapped by the browser — any audio track,
+	// no device CPU. Only at Original quality (a rung needs a real re-encode).
+	// Old gateways without a track list play the first stream: vet that one.
+	// A surround viewer whose 5.1 track the browser can only convert to stereo
+	// gets the transcoder instead (remuxPlan answers null): it outputs 5.1.
+	const remuxAudio = audio
+		? { codec: audio.codec, channels: audio.channels }
+		: source.file.audioCodec
+			? { codec: source.file.audioCodec, channels: null }
+			: null;
+	const remux =
+		!direct && !rung && allowRemux && (await remuxEnabled())
+			? remuxPlan(source.file, remuxAudio, capabilities, maxAudioChannels)
+			: null;
+
+	if (direct || remux) {
+		const session = await sessionManager.start(
+			viewerId,
+			source,
+			remux ? 'remux' : 'direct',
+			quality,
+			{
+				startSeconds,
+				userAgent,
+				profile: viewerProfile,
+				details: {
+					audioLabel: chosenAudioLabel,
+					remuxAudio: remux?.audioAction,
+					audioChannels: remux?.audioChannels ?? undefined
+				}
+			}
+		);
 		const [subtitles, trickplay, markers] = await Promise.all([
 			listSubtitleTracks(source.file.id, session.id),
 			attachTrickplay(session, source),
 			playbackMarkers(source.file)
 		]);
 		return json({
-			mode: 'direct',
+			mode: remux ? 'remux' : 'direct',
 			src: `/api/stream/${session.id}/file`,
 			sessionId: session.id,
 			quality,
@@ -156,6 +205,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			subtitles,
 			trickplay,
 			markers,
+			// The browser picks the stream by its position among the file's
+			// audio streams (null = the first one).
+			remux: remux
+				? {
+						audioOrdinal: audio ? audioRows.indexOf(audio) : null,
+						audioChannels: remux.audioChannels
+					}
+				: null,
 			...audioFields
 		});
 	}
@@ -230,6 +287,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		subtitles,
 		trickplay,
 		markers,
+		remux: null,
 		...audioFields
 	});
 };

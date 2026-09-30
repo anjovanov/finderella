@@ -93,6 +93,14 @@ export interface Episode {
 
 export type MediaItem = Movie | Series;
 
+/**
+ * How a playback session delivers the file: `direct` = the original file,
+ * played by the browser as-is; `remux` = the original file, re-wrapped into
+ * fragmented MP4 in the browser (Media Source Extensions) — nothing is
+ * re-encoded on the device; `hls` = transcoded on the device.
+ */
+export type PlaybackMode = 'direct' | 'remux' | 'hls';
+
 /** A text track the player attaches to the <video> (served as WebVTT per playback session). */
 export interface SubtitleTrack {
 	/** media_subtitle row id — keys the <track> and the stream URL. */

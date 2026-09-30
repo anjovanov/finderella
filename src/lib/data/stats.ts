@@ -3,6 +3,16 @@
  * /admin/statistics pages and the server queries in $lib/server/stats.
  */
 
+import type { RemuxAudioAction } from './remux';
+import type { PlaybackMode } from './types';
+
+/** How a live stream reaches the viewer, as the activity monitor words it. */
+export const STREAM_MODE_LABELS: Record<PlaybackMode, string> = {
+	direct: 'Direct play',
+	remux: 'Remux',
+	hls: 'Transcoding'
+};
+
 export type DeviceType = 'desktop' | 'mobile' | 'tablet' | 'tv' | 'unknown';
 export type PlayerState = 'playing' | 'paused' | 'buffering' | 'unknown';
 
@@ -88,8 +98,8 @@ export interface ActiveStream {
 	durationSeconds: number | null;
 	startedAt: string;
 	platform: Platform;
-	/** 'direct' = the original file; 'hls' = transcoded on the device. */
-	mode: 'direct' | 'hls';
+	/** 'direct' = the original file; 'remux' = the original file re-wrapped in the browser; 'hls' = transcoded on the device. */
+	mode: PlaybackMode;
 	quality: string;
 	/** Frame size of the transcode output (hls) — null for direct play. */
 	streamWidth: number | null;
@@ -102,8 +112,10 @@ export interface ActiveStream {
 		bitrate: number | null;
 	};
 	audioLabel: string | null;
-	/** Output channels of the transcode (hls). */
+	/** Output channels of the transcode (hls) or of the browser's audio conversion (remux). */
 	audioChannels: number | null;
+	/** Remux: whether the browser copies the audio or converts it to stereo. */
+	remuxAudio: RemuxAudioAction | null;
 	subtitleLabel: string | null;
 	device: { id: string; name: string };
 	/** Hub → viewer throughput over the last heartbeat interval. */
@@ -125,7 +137,10 @@ export interface HistoryEntry {
 	pausedSeconds: number;
 	positionSeconds: number;
 	durationSeconds: number | null;
+	/** Any of the viewing's sessions was transcoded (sticks once true). */
 	transcoded: boolean;
+	/** The latest session's delivery; `remux` = re-wrapped in the browser, nothing transcoded. */
+	mode: PlaybackMode;
 	quality: string | null;
 	bytesSent: number;
 }

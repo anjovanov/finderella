@@ -12,7 +12,8 @@ import { sessionManager } from '$lib/server/streaming/session-manager';
  */
 export const GET: RequestHandler = async ({ params, request }) => {
 	const session = sessionManager.get(params.sessionId!);
-	if (!session || session.mode !== 'direct') error(404, 'no such playback session');
+	// Remux sessions read the same file; the browser re-wraps it (Media Source Extensions).
+	if (!session || session.mode === 'hls') error(404, 'no such playback session');
 	sessionManager.touch(session.id);
 
 	const { file, rootPath, gatewayId } = session.source;

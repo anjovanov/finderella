@@ -17,7 +17,8 @@ import { profile } from './profiles.sql';
 import { gateway, library, mediaFile } from './gateways.sql';
 import { episode, movie, series } from './catalog.sql';
 
-export const playbackMode = pgEnum('playback_mode', ['direct', 'hls']);
+/** direct = the file as-is; remux = the file, re-wrapped in the browser (MSE); hls = transcoded on the device. */
+export const playbackMode = pgEnum('playback_mode', ['direct', 'hls', 'remux']);
 export const playbackStatus = pgEnum('playback_status', ['active', 'stopped', 'error']);
 export const playKind = pgEnum('play_kind', ['movie', 'episode']);
 

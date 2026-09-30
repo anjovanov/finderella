@@ -16,7 +16,8 @@ export const load: PageServerLoad = async () => {
 			allowRegistration: settings.allowRegistration,
 			requireLogin: settings.requireLogin,
 			trickplayEnabled: settings.trickplayEnabled,
-			markersEnabled: settings.markersEnabled
+			markersEnabled: settings.markersEnabled,
+			remuxEnabled: settings.remuxEnabled
 		},
 		orphans,
 		metadata
@@ -49,6 +50,14 @@ export const actions: Actions = {
 		await updateSiteSettings({ markersEnabled });
 		// Catch up on whatever was scanned while it was off.
 		if (markersEnabled) queueMarkerAnalysis();
+		return { saved: true };
+	},
+
+	// Its own action too, for the same reason.
+	updateRemux: async (event) => {
+		const formData = await event.request.formData();
+		const remuxEnabled = formData.get('remuxEnabled')?.toString() === 'true';
+		await updateSiteSettings({ remuxEnabled });
 		return { saved: true };
 	},
 

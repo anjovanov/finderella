@@ -5,15 +5,16 @@
  * loads must be side-effect free.)
  */
 
-import type { AudioTrack, SubtitleTrack } from './data/types';
+import type { AudioTrack, PlaybackMode, SubtitleTrack } from './data/types';
 import type { PlaybackMarkers } from './data/markers';
 import type { PlayerState } from './data/stats';
 import type { QualityId } from './playback-quality';
 import { DEFAULT_PLAYBACK_SETTINGS, type AudioChannels } from './data/playback-settings';
 import { maxAudioChannels } from './audio-output';
+import { playbackCapabilities } from './playback-capabilities';
 
 export interface PlaybackDescriptor {
-	mode: 'direct' | 'hls';
+	mode: PlaybackMode;
 	src: string;
 	sessionId: string;
 	quality: QualityId;
@@ -29,6 +30,17 @@ export interface PlaybackDescriptor {
 	audioTracks: AudioTrack[];
 	/** The stream this session plays; null when the file has none listed. */
 	audioTrackId: string | null;
+	/**
+	 * Remux only: which audio stream to use, by position among the file's audio
+	 * streams (null = the first), and the channels a conversion encodes (6 =
+	 * keep 5.1, 2 = stereo; null = the audio is copied, not converted).
+	 */
+	remux: { audioOrdinal: number | null; audioChannels: 2 | 6 | null } | null;
+}
+
+/** The player's source kind for a session mode (direct play is a plain `file` src). */
+export function playerKind(mode: PlaybackMode): 'file' | 'remux' | 'hls' {
+	return mode === 'direct' ? 'file' : mode;
 }
 
 export interface PlaybackTarget {
@@ -45,6 +57,8 @@ export interface PlaybackTarget {
 	audioLanguage?: string;
 	/** The viewer's audio-channels setting; sent as the resolved `maxAudioChannels`. */
 	audioChannels?: AudioChannels;
+	/** false after a remux failed for this title: ask for a transcode instead. */
+	allowRemux?: boolean;
 }
 
 export async function startPlayback(
@@ -52,10 +66,14 @@ export async function startPlayback(
 	signal?: AbortSignal
 ): Promise<PlaybackDescriptor> {
 	const { audioChannels = DEFAULT_PLAYBACK_SETTINGS.audioChannels, ...body } = target;
+	const [channels, capabilities] = await Promise.all([
+		maxAudioChannels(audioChannels),
+		playbackCapabilities()
+	]);
 	const res = await fetch('/api/playback/start', {
 		method: 'POST',
 		headers: { 'content-type': 'application/json' },
-		body: JSON.stringify({ ...body, maxAudioChannels: await maxAudioChannels(audioChannels) }),
+		body: JSON.stringify({ ...body, maxAudioChannels: channels, capabilities }),
 		signal
 	});
 	if (!res.ok) {

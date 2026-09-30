@@ -10,6 +10,8 @@ export const siteSettings = pgTable('site_settings', {
 	trickplayEnabled: boolean('trickplay_enabled').notNull().default(true),
 	/** Skip intro / Skip credits: markers served to the player and the background analysis job. */
 	markersEnabled: boolean('markers_enabled').notNull().default(true),
+	/** Play MKVs & co. by remuxing them in the browser (Media Source Extensions) instead of transcoding. */
+	remuxEnabled: boolean('remux_enabled').notNull().default(true),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 

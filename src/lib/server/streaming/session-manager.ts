@@ -22,6 +22,8 @@ import { parseUserAgent, type ParsedUserAgent } from '$lib/server/stats/user-age
 import type { TrickplayGeometry } from '@finderella/protocol';
 import type { PlayableSource } from './source-picker';
 import type { QualityId } from '$lib/playback-quality';
+import type { PlaybackMode } from '$lib/data/types';
+import type { RemuxAudioAction } from '$lib/data/remux';
 
 export type StopReason = 'client' | 'idle' | 'error' | 'admin';
 
@@ -29,10 +31,12 @@ export type StopReason = 'client' | 'idle' | 'error' | 'admin';
 export interface StreamDetails {
 	/** Label of the audio stream being played ("English (5.1)"). */
 	audioLabel?: string | null;
-	/** HLS: output channels of the transcode. */
+	/** HLS: output channels of the transcode; remux: of the browser's audio conversion. */
 	audioChannels?: number;
 	/** HLS: the transcode's width cap (source width when uncapped). */
 	streamWidth?: number | null;
+	/** Remux: what the browser does with the audio (copies it, or converts it to stereo). */
+	remuxAudio?: RemuxAudioAction;
 }
 
 export interface StartOptions {
@@ -53,7 +57,7 @@ export interface HotSession {
 	/** Name at session start (history keeps it as a snapshot). */
 	profileName: string | null;
 	source: PlayableSource;
-	mode: 'direct' | 'hls';
+	mode: PlaybackMode;
 	quality: QualityId;
 	/** HLS: the audio bitrate the gateway encodes (the rung's stereo budget scaled by channel count). */
 	audioKbps?: number;
@@ -98,7 +102,7 @@ class SessionManager {
 	async start(
 		userId: string | null,
 		source: PlayableSource,
-		mode: 'direct' | 'hls',
+		mode: PlaybackMode,
 		quality: QualityId = 'original',
 		opts: StartOptions = {}
 	): Promise<HotSession> {

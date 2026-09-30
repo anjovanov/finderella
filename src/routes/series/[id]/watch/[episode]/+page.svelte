@@ -8,6 +8,7 @@
 		beaconStop,
 		createHeartbeat,
 		createProgressReporter,
+		playerKind,
 		startPlayback,
 		stopPlayback,
 		type PlaybackDescriptor
@@ -96,11 +97,22 @@
 		audioPick = { episodeId: data.episode.id, trackId: track.id };
 	}
 
+	// A remux this browser turned out unable to play: the episode restarts as a
+	// transcode at the same position. Per episode — the next one tries again.
+	let remuxBlockedFor: string | null = $state(null);
+
+	function onRemuxFailed(position: number, reason: string) {
+		console.warn(`[remux] falling back to transcoding: ${reason}`);
+		restartAt = position;
+		remuxBlockedFor = data.episode.id;
+	}
+
 	// Re-runs per episode (same route component instance is reused on
 	// episode→episode navigation): stops the old session, starts a new one.
 	$effect(() => {
 		const slug = data.show.id;
 		const episodeSlug = data.episode.id;
+		const allowRemux = remuxBlockedFor !== episodeSlug;
 		const chosenQuality = quality;
 		const chosenAudio = audioPick?.episodeId === episodeSlug ? audioPick.trackId : null;
 		const audioLanguage =
@@ -124,7 +136,8 @@
 				quality: chosenQuality,
 				audioTrackId: chosenAudio,
 				audioLanguage,
-				audioChannels
+				audioChannels,
+				allowRemux
 			},
 			controller.signal
 		)
@@ -175,7 +188,9 @@
 		subtitle={episodeLabel}
 		backHref={mediaHref(data.show)}
 		videoSrc={playback.src}
-		videoKind={playback.mode === 'hls' ? 'hls' : 'file'}
+		videoKind={playerKind(playback.mode)}
+		remux={playback.remux}
+		{onRemuxFailed}
 		monoDownmix={playbackSettings.audioChannels === 'mono'}
 		startAt={playbackStartAt}
 		onProgress={(position, duration) => {

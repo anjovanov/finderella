@@ -57,6 +57,8 @@
 								? ` · ${entry.quality}`
 								: ''}</Badge
 						>
+					{:else if entry.mode === 'remux'}
+						<Badge variant="outline">Remux</Badge>
 					{:else}
 						<Badge variant="outline">Direct play</Badge>
 					{/if}

@@ -21,6 +21,8 @@
 	let trickplayForm = $state<HTMLFormElement | null>(null);
 	let markersEnabled = $derived(data.settings.markersEnabled);
 	let markersForm = $state<HTMLFormElement | null>(null);
+	let remuxEnabled = $derived(data.settings.remuxEnabled);
+	let remuxForm = $state<HTMLFormElement | null>(null);
 
 	async function submitSettings() {
 		await tick(); // let the hidden inputs pick up the new switch state
@@ -38,6 +40,12 @@
 	async function submitMarkers() {
 		await tick();
 		markersForm?.requestSubmit();
+	}
+	let savingRemux = $state(false);
+
+	async function submitRemux() {
+		await tick();
+		remuxForm?.requestSubmit();
 	}
 
 	const prune = new DialogForm();
@@ -223,6 +231,51 @@
 							bind:checked={markersEnabled}
 							disabled={savingMarkers}
 							onCheckedChange={submitMarkers}
+						/>
+					</Field.Field>
+				</Field.Group>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- In-browser remux -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>Browser remux</Card.Title>
+			<Card.Description>Play MKVs without transcoding them on the device.</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form
+				bind:this={remuxForm}
+				method="POST"
+				action="?/updateRemux"
+				use:enhance={() => {
+					savingRemux = true;
+					return async ({ update }) => {
+						savingRemux = false;
+						await update();
+					};
+				}}
+			>
+				<input type="hidden" name="remuxEnabled" value={remuxEnabled ? 'true' : 'false'} />
+				<Field.Group>
+					<Field.Field orientation="horizontal">
+						<Field.Content>
+							<Field.Label for="remux-enabled">Remux in the browser</Field.Label>
+							<Field.Description>
+								When the viewer's browser can decode a file's video but not open its container (MKV)
+								or play its audio (AC-3, E-AC-3, a second audio track), the browser re-wraps the
+								original file itself instead of the device transcoding it: original quality, HDR
+								kept, no work for the device. AC-3 and E-AC-3 are converted to stereo in the
+								browser. Anything the browser can't handle still transcodes. Turn this off to
+								transcode everything that can't play directly.
+							</Field.Description>
+						</Field.Content>
+						<Switch
+							id="remux-enabled"
+							bind:checked={remuxEnabled}
+							disabled={savingRemux}
+							onCheckedChange={submitRemux}
 						/>
 					</Field.Field>
 				</Field.Group>

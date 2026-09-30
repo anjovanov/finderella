@@ -50,6 +50,7 @@
 
 	const streamLine = $derived.by(() => {
 		if (stream.mode === 'direct') return 'Direct play';
+		if (stream.mode === 'remux') return 'Remux (in browser)';
 		const output = resolution(stream.streamWidth);
 		// The rung is only worth naming when it isn't what the output came to.
 		const cap =
@@ -63,6 +64,10 @@
 		const source =
 			stream.audioLabel ??
 			(stream.source.audioCodec ? audioCodecLabel(stream.source.audioCodec) : 'None');
+		if (stream.mode === 'remux' && stream.remuxAudio === 'convert') {
+			const channels = channelLabel(stream.audioChannels ?? 2) ?? 'Stereo';
+			return `${source} → ${channels} (converted in browser)`;
+		}
 		if (stream.mode !== 'hls' || !stream.audioChannels) return source;
 		return `${source} → AAC ${channelLabel(stream.audioChannels) ?? ''}`.trim();
 	});

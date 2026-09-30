@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-30
+
+**Browser remux** (migration `0023`: the `playback_mode` enum gains `remux`; `site_settings.remux_enabled`). MKVs (and other files the browser can decode but not open) no longer have to be transcoded on the device. The viewer's browser reads the original file, re-wraps it into fragmented MP4 itself ([Mediabunny](https://mediabunny.dev)) and plays it through Media Source Extensions.
+
+- **What it gets you:** original quality, HDR kept, near-instant start and seeking, and no work for the device (devices without ffmpeg can now play MKVs).
+- **Audio:** played as-is when the browser supports it. AC-3 and E-AC-3 are decoded in the browser (WebAssembly) and converted to stereo Opus or AAC, at the same loudness as a transcode (the stream's own downmix levels are honoured, as ffmpeg does). Viewers whose audio setting resolves to 5.1 (Auto on a surround system, or Surround) keep 5.1: the browser converts to 5.1 Opus when it can, and when it can't, the file is transcoded on the device as before (which outputs 5.1) rather than remuxed in stereo. Copied audio passes through untouched, as in direct play. Any audio track can be chosen without transcoding; direct play is limited to the first one.
+- **When:** only at Original quality, and only when the browser reports it can decode the video (H.264, HEVC, VP9, AV1) and play or convert the audio. The browser checks the exact codec again when it opens the file. If it can't play it after all (10-bit HEVC without hardware support, a decode error), the page restarts at the same position as a transcode. DTS and TrueHD still transcode, and so do quality rungs below Original.
+- **Admin:** a **Browser remux** switch under Site settings (on by default) turns it off hub-wide. The activity monitor, Now playing and History label these streams **Remux**. The "Direct play vs transcode" graph counts them as not transcoded.
+
 ## 2026-09-29
 
 **Skip intro & Skip credits** (migration `0022`: new table `media_marker`; `media_file.chapters`, `markers_version`, `markers_analyzed_at`, `markers_error`; `site_settings.markers_enabled`; `profile_settings.skip_intro` / `skip_credits`). The player shows **Skip intro** while an intro plays and, when the credits start, **Next episode** (series, with a 10-second countdown that moves on when autoplay is on, and **Watch credits** to stay) or **Skip credits** (movies, or credits followed by a scene). `s` presses the button.

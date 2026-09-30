@@ -7,12 +7,17 @@ const SETTINGS_ID = 'default';
 
 export type SiteSettings = Pick<
 	SiteSettingsRow,
-	'allowRegistration' | 'requireLogin' | 'trickplayEnabled' | 'markersEnabled' | 'updatedAt'
+	| 'allowRegistration'
+	| 'requireLogin'
+	| 'trickplayEnabled'
+	| 'markersEnabled'
+	| 'remuxEnabled'
+	| 'updatedAt'
 >;
 type SiteSettingsPatch = Partial<
 	Pick<
 		SiteSettingsRow,
-		'allowRegistration' | 'requireLogin' | 'trickplayEnabled' | 'markersEnabled'
+		'allowRegistration' | 'requireLogin' | 'trickplayEnabled' | 'markersEnabled' | 'remuxEnabled'
 	>
 >;
 
@@ -67,6 +72,11 @@ export async function trickplayEnabled(): Promise<boolean> {
 /** Admin switch for Skip intro / Skip credits (devices can opt out of analysis with FINDERELLA_MARKERS=0). */
 export async function markersEnabled(): Promise<boolean> {
 	return (await getSiteSettings()).markersEnabled;
+}
+
+/** Admin switch for in-browser remux; off = everything the browser can't open directly transcodes. */
+export async function remuxEnabled(): Promise<boolean> {
+	return (await getSiteSettings()).remuxEnabled;
 }
 
 export async function countUsers(): Promise<number> {

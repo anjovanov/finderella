@@ -19,7 +19,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Progress } from '$lib/components/ui/progress';
-	import type { ActiveStream } from '$lib/data/stats';
+	import { STREAM_MODE_LABELS, type ActiveStream } from '$lib/data/stats';
 	import { formatRelative, formatWatchTime } from '$lib/data/time';
 
 	let { data } = $props();
@@ -171,8 +171,7 @@
 									>
 										<UserCell user={stream.user} profile={stream.profileName} />
 										<span class="shrink-0">
-											{stream.mode === 'direct' ? 'Direct play' : 'Transcoding'} · {stream.device
-												.name}
+											{STREAM_MODE_LABELS[stream.mode]} · {stream.device.name}
 										</span>
 									</div>
 								</div>
