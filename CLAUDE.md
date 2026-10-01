@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## MCP servers & skills (use them)
+
+MCP servers (configured in the git-ignored `.mcp.json`) and project skills (`.claude/skills/`) are available. Reach for them whenever the task touches their area. Don't rely on memory for library APIs these projects change often.
+
+- **Svelte / SvelteKit** — **Svelte MCP** (`list-sections` → `get-documentation` for the official docs, `svelte-autofixer` on every new or edited `.svelte` / `.svelte.ts` file until it reports no issues, `playground-link` only when asked) + skills **`svelte-code-writer`** and **`svelte-core-bestpractices`**, loaded before writing or reviewing Svelte code. **Write idiomatic Svelte 5**: runes, `$derived` over effects that sync state, attachments, snippets, context, proper event handling. Don't use hacky workarounds such as `setTimeout`/`tick` to dodge reactivity, `$effect` chains that copy state, manual DOM poking or `untrack` used to silence a loop you don't understand. Check the docs/skills for the idiomatic pattern first. When a workaround is genuinely unavoidable (e.g. the `@videojs/html` beta gotchas below), keep it minimal, comment why, and record it under **Hard-won gotchas**.
+- **UI components** — skill **`shadcn-svelte`** (adding/composing/styling `src/lib/components/ui/**`, maia style, hugeicons) and **`frontend-design`** for new or reworked UI.
+- **Auth** — **Better Auth MCP** (`search_docs` → `get_doc`, resolved against the installed `better-auth` version) + skill **`better-auth-best-practices`** for anything in `auth.ts`, plugins, sessions or the admin plugin.
+- **Validation** — skill **`zod`** when defining or changing schemas (protocol messages, form/API inputs, TMDB/provider responses).
+- **Other libraries** (Drizzle, hls.js, Mediabunny, MiniSearch, LayerChart, Tailwind v4, bits-ui, ffmpeg flags…) — **Context7 MCP** (`resolve-library-id` → `query-docs`) for current API docs before guessing.
+
 ## Project
 
 **Finderella** — a Plex/Jellyfin-style media streaming web app (movies + series) with a **distributed backend**: the SvelteKit app ("hub") runs on a storage-poor VPS; media lives on the user's other devices, each running a Node storage gateway — the media agent (`packages/storage-gateway`, bin `finderella-storage-gateway`) — that dials out to the hub over one WebSocket and serves file ranges + ffmpeg HLS transcodes through that tunnel. Dark cinematic theme (teal accent) by default, with a per-account light theme.
