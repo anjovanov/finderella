@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { invalidate, invalidateAll } from '$app/navigation';
+	import { goto, invalidate, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
@@ -7,6 +7,7 @@
 		BookmarkCheck01Icon,
 		PlayIcon,
 		CheckmarkCircle02Icon,
+		UserMultiple02Icon,
 		Video01Icon
 	} from '@hugeicons/core-free-icons';
 	import { Button } from '$lib/components/ui/button';
@@ -19,6 +20,8 @@
 		type MediaItem
 	} from '$lib/data';
 	import { markAsWatched, setWatchlist } from '$lib/watchlist-client';
+	import { withParty } from '$lib/data/together';
+	import { startParty } from '$lib/together-client';
 	import MetaPills from './meta-pills.svelte';
 	import PosterArt from './poster-art.svelte';
 	import ProgressLine from './progress-line.svelte';
@@ -80,6 +83,30 @@
 			await invalidateAll();
 		} finally {
 			marking = false;
+		}
+	}
+
+	// Watch together: create a party here (paused where Play would start — the
+	// hub looks up the resume point, for episodes too), then open the watch page
+	// in it with the invite link showing.
+	let startingParty = $state(false);
+	let partyError = $state<string | null>(null);
+
+	async function watchTogether() {
+		startingParty = true;
+		partyError = null;
+		try {
+			const code = await startParty({
+				kind: item.kind,
+				slug: item.id,
+				episodeSlug: target?.episode.id
+			});
+			/* eslint-disable-next-line svelte/no-navigation-without-resolve -- watchHref() is resolve()d */
+			await goto(`${withParty(watchHref(item), code)}&invite=1`);
+		} catch (err) {
+			partyError = (err as Error).message;
+		} finally {
+			startingParty = false;
 		}
 	}
 
@@ -176,6 +203,20 @@
 							variant="secondary"
 							size="lg"
 							class="text-muted-foreground hover:text-foreground"
+							disabled={startingParty || !canPlay}
+							onclick={watchTogether}
+						>
+							<HugeiconsIcon
+								icon={UserMultiple02Icon}
+								data-icon="inline-start"
+								class="size-5 text-foreground"
+							/>
+							Watch together
+						</Button>
+						<Button
+							variant="secondary"
+							size="lg"
+							class="text-muted-foreground hover:text-foreground"
 							disabled={fullyWatched || marking || !canPlay}
 							onclick={markWatched}
 						>
@@ -203,6 +244,9 @@
 						</Button>
 					{/if}
 				</div>
+				{#if partyError}
+					<p class="text-sm text-destructive" role="alert">{partyError}</p>
+				{/if}
 			</div>
 		</div>
 	</div>

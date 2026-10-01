@@ -25,6 +25,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		audioLanguage: profileId ? playbackSettings.audioLanguage : null,
 		// Autoplay + "Still watching?" for profiles; null = guest (defaults, autoplay per browser).
 		playbackSettings: profileId ? playbackSettings : null,
-		canFindSubtitles: profileId !== null && providersConfigured
+		canFindSubtitles: profileId !== null && providersConfigured,
+		// Watch parties are for accounts with a profile.
+		canWatchTogether: profileId !== null
 	};
 };

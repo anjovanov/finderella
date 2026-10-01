@@ -37,6 +37,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		// Autoplay + "Still watching?" for profiles; null = guest (defaults, autoplay per browser).
 		playbackSettings: profileId ? playbackSettings : null,
 		canFindSubtitles: profileId !== null && providersConfigured,
+		// Watch parties are for accounts with a profile.
+		canWatchTogether: profileId !== null,
 		// Playback source comes from POST /api/playback/start (client-side).
 		nextEpisodeId: flat[index + 1]?.episode.id
 	};

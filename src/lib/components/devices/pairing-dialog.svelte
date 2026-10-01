@@ -8,7 +8,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
-	import CopyButton from './copy-button.svelte';
+	import CopyButton from '$lib/components/copy-button.svelte';
 
 	let {
 		open = $bindable(false),

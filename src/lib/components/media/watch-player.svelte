@@ -6,6 +6,7 @@
 	import {
 		ArrowLeft01Icon,
 		ArrowRight01Icon,
+		BubbleChatIcon,
 		CastIcon,
 		GoBackward10SecIcon,
 		GoForward10SecIcon,
@@ -17,8 +18,10 @@
 		PlayListIcon,
 		Search01Icon,
 		Settings02Icon,
+		SmileIcon,
 		SubtitleIcon,
 		Tick02Icon,
+		UserMultiple02Icon,
 		VolumeHighIcon,
 		VolumeLowIcon,
 		VolumeOffIcon
@@ -65,6 +68,11 @@
 	import EpisodesPanel from './episodes-panel.svelte';
 	import FindSubtitlesPanel from './find-subtitles-panel.svelte';
 	import SkipButton from './skip-button.svelte';
+	import type { TogetherSession } from '$lib/together/session.svelte';
+	import TogetherBar from '$lib/components/together/together-bar.svelte';
+	import TogetherChat from '$lib/components/together/together-chat.svelte';
+	import TogetherOverlay from '$lib/components/together/together-overlay.svelte';
+	import ReactionPicker from '$lib/components/together/reaction-picker.svelte';
 
 	let {
 		title,
@@ -104,7 +112,12 @@
 		stillWatchingAfterSeconds = null,
 		markers = null,
 		skipIntro = 'show',
-		skipCredits = 'show'
+		skipCredits = 'show',
+		episodeHref,
+		party = null,
+		onInvite,
+		onLeaveParty,
+		onWatchTogether
 	}: {
 		title: string;
 		/** Release year, shown after the title (movies). */
@@ -191,6 +204,19 @@
 		skipIntro?: SkipMode;
 		/** The same for closing credits ("Next episode" when a series' credits run to the end). */
 		skipCredits?: SkipMode;
+		/** Episodes-panel links (a watch party keeps its `?party=` on them). */
+		episodeHref?: (episodeId: string) => string;
+		/**
+		 * A watch party this player belongs to: it drives play/pause/seek on the
+		 * <video> (the player stops auto-starting) and adds the party chrome.
+		 */
+		party?: TogetherSession | null;
+		/** Party: show the invite link. */
+		onInvite?: () => void;
+		/** Party: leave it and keep watching alone. */
+		onLeaveParty?: () => void;
+		/** Solo: offers "Watch together", which turns this viewing into a party. */
+		onWatchTogether?: () => void;
 	} = $props();
 
 	// No screensaver over the player, playing or paused.
@@ -315,8 +341,10 @@
 		const resumeAt = startFrom > 0 ? startFrom : null;
 		// A due "Still watching?" prompt holds the episode at its start. Untracked:
 		// the flag must never become a reason to re-source the video.
+		// In a watch party the party decides when the video runs (TogetherSession.attach).
 		const autoStart = () => {
-			if (!untrack(() => stillWatchingOpen)) el.play().catch(() => {});
+			if (untrack(() => stillWatchingOpen || party)) return;
+			el.play().catch(() => {});
 		};
 
 		const applyResume = () => {
@@ -468,8 +496,18 @@
 	let qualityOpen = $state(false);
 	let subtitlesOpen = $state(false);
 	let findSubtitlesOpen = $state(false);
+	let reactionsOpen = $state(false);
+	let partyMenuOpen = $state(false);
+	// The party chat stays open while people watch, so it doesn't pin the controls.
+	const chatOpen = $derived(party?.chatOpen ?? false);
 	const menuOpen = $derived(
-		episodesOpen || qualityOpen || subtitlesOpen || findSubtitlesOpen || stillWatchingOpen
+		episodesOpen ||
+			qualityOpen ||
+			subtitlesOpen ||
+			findSubtitlesOpen ||
+			stillWatchingOpen ||
+			reactionsOpen ||
+			partyMenuOpen
 	);
 	const hasAudioChoice = $derived(audioTracks.length > 1 && !!onAudioChange);
 	const showSubtitlesButton = $derived(tracks.length > 0 || canFindSubtitles || hasAudioChoice);
@@ -630,15 +668,20 @@
 		undoIntroAt = null;
 	}
 
-	// Close on any pointerdown outside the open surface and its trigger.
+	// Close on any pointerdown outside the open surface and its trigger. The party
+	// chat isn't part of `menuOpen` (it mustn't pin the controls) but closes the same way.
 	$effect(() => {
-		if (!menuOpen) return;
+		if (!menuOpen && !chatOpen) return;
 		const onPointerDown = (event: PointerEvent) => {
 			const target = event.target as Element | null;
 			if (!target?.closest('.episodes-panel, .episodes-trigger')) episodesOpen = false;
 			if (!target?.closest('.quality-menu, .quality-trigger')) qualityOpen = false;
 			if (!target?.closest('.subtitles-menu, .subtitles-trigger')) subtitlesOpen = false;
 			if (!target?.closest('.find-subtitles-panel, .subtitles-trigger')) findSubtitlesOpen = false;
+			if (!target?.closest('.together-reactions, .together-reactions-trigger')) {
+				reactionsOpen = false;
+			}
+			if (!target?.closest('.together-chat, .together-chat-trigger')) party?.setChatOpen(false);
 		};
 		document.addEventListener('pointerdown', onPointerDown, true);
 		return () => document.removeEventListener('pointerdown', onPointerDown, true);
@@ -665,12 +708,17 @@
 			qualityOpen = false;
 			subtitlesOpen = false;
 			findSubtitlesOpen = false;
+			reactionsOpen = false;
+			return;
+		}
+		if (event.key === 'Escape' && chatOpen) {
+			party?.setChatOpen(false);
 			return;
 		}
 		const target = event.target as HTMLElement | null;
 		if (
 			target?.closest(
-				'button, a, input, select, textarea, [role="button"], [role="slider"], [role="menuitemradio"], [contenteditable="true"]'
+				'button, a, input, select, textarea, [role="button"], [role="slider"], [role="menuitem"], [role="menuitemradio"], [contenteditable="true"]'
 			)
 		) {
 			return;
@@ -884,6 +932,7 @@
 				<!-- src is attached programmatically (file/HLS) by the source effect. -->
 				<video
 					bind:this={videoEl}
+					{@attach party?.attach}
 					slot="media"
 					playsinline
 					preload="metadata"
@@ -957,17 +1006,37 @@
 							<span class="truncate text-sm text-white/70 sm:text-base">{subtitle}</span>
 						{/if}
 					</div>
-					{#if nextHref}
-						<Button
-							href={nextHref}
-							variant="secondary"
-							size="lg"
-							class="ml-auto shrink-0 bg-white/15 text-base text-white backdrop-blur hover:bg-white/25"
-						>
-							Next episode
-							<HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" class="size-5" />
-						</Button>
-					{/if}
+					<div class="ml-auto flex shrink-0 items-center gap-2">
+						{#if party && onInvite && onLeaveParty}
+							<TogetherBar
+								{party}
+								{onInvite}
+								onLeave={onLeaveParty}
+								bind:menuOpen={partyMenuOpen}
+							/>
+						{:else if onWatchTogether}
+							<Button
+								variant="secondary"
+								size="lg"
+								class="bg-white/15 text-base text-white backdrop-blur hover:bg-white/25"
+								onclick={onWatchTogether}
+							>
+								<HugeiconsIcon icon={UserMultiple02Icon} data-icon="inline-start" class="size-5" />
+								<span class="hidden sm:inline">Watch together</span>
+							</Button>
+						{/if}
+						{#if nextHref}
+							<Button
+								href={nextHref}
+								variant="secondary"
+								size="lg"
+								class="bg-white/15 text-base text-white backdrop-blur hover:bg-white/25"
+							>
+								Next episode
+								<HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" class="size-5" />
+							</Button>
+						{/if}
+					</div>
 				</div>
 
 				<media-buffering-indicator class="buffering">
@@ -1063,6 +1132,46 @@
 								</button>
 							{/if}
 
+							{#if party}
+								<!-- Anchors the picker above this button (the other menus pin to the right edge). -->
+								<div class="relative">
+									<button
+										type="button"
+										class="ctrl-button together-reactions-trigger"
+										aria-haspopup="menu"
+										aria-expanded={reactionsOpen}
+										aria-label="Send a reaction"
+										onclick={() => (reactionsOpen = !reactionsOpen)}
+									>
+										<HugeiconsIcon icon={SmileIcon} class="size-6" />
+									</button>
+									{#if reactionsOpen}
+										<ReactionPicker
+											onreact={(emoji) => {
+												reactionsOpen = false;
+												party.react(emoji);
+											}}
+										/>
+									{/if}
+								</div>
+								<button
+									type="button"
+									class="ctrl-button together-chat-trigger relative"
+									aria-expanded={chatOpen}
+									aria-label={party.unread ? `Chat, ${party.unread} unread` : 'Chat'}
+									onclick={() => party.setChatOpen(!chatOpen)}
+								>
+									<HugeiconsIcon icon={BubbleChatIcon} class="size-6" />
+									{#if party.unread > 0 && !chatOpen}
+										<span
+											class="absolute top-1 right-1 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] leading-4 font-semibold text-primary-foreground"
+										>
+											{party.unread > 9 ? '9+' : party.unread}
+										</span>
+									{/if}
+								</button>
+							{/if}
+
 							<div class="volume-group">
 								<media-mute-button class="ctrl-button" aria-label="Mute or unmute">
 									<span class="icon icon-vol-high">
@@ -1154,7 +1263,19 @@
 				{/if}
 
 				{#if episodesOpen && show && currentEpisodeId}
-					<EpisodesPanel {show} {currentEpisodeId} onclose={() => (episodesOpen = false)} />
+					<EpisodesPanel
+						{show}
+						{currentEpisodeId}
+						{episodeHref}
+						onclose={() => (episodesOpen = false)}
+					/>
+				{/if}
+
+				{#if party}
+					<TogetherOverlay {party} />
+					{#if chatOpen}
+						<TogetherChat {party} onclose={() => party.setChatOpen(false)} />
+					{/if}
 				{/if}
 
 				{#if qualityOpen && onQualityChange}
@@ -1353,6 +1474,16 @@
 	   imperceptible filter forces the video through normal compositing. */
 	.player-root.is-fullscreen :global(media-container video) {
 		filter: brightness(1.001);
+	}
+
+	/* Dialogs over the player (watch-party invite / end-party confirm) keep their
+	   dimming but not the shadcn overlay's backdrop blur: GPU browsers render a
+	   backdrop-filter over a playing, hardware-decoded video with black boxes and
+	   lines. Overlays are portalled to <body>, hence the :has() from the root. */
+	:global(
+		body:has(.player-root) :is([data-slot='dialog-overlay'], [data-slot='alert-dialog-overlay'])
+	) {
+		backdrop-filter: none;
 	}
 
 	/* Cue placement is done per cue (VTTCue.line, see positionCues); this only

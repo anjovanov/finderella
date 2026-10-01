@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { episodeWatchHref, mediaHref } from '$lib/data';
 	import WatchPlayer from '$lib/components/media/watch-player.svelte';
 	import { exitFullscreen } from '$lib/fullscreen';
@@ -27,6 +28,10 @@
 		stillWatchingDueForEpisode
 	} from '$lib/data/playback-settings';
 	import { loadGuestAutoplay, saveAutoplayNext } from '$lib/playback-preference';
+	import { partySkipMode } from '$lib/data/together';
+	import { WatchParty } from '$lib/together/watch-party.svelte';
+	import InviteDialog from '$lib/components/together/invite-dialog.svelte';
+	import PartyMessage from '$lib/components/together/party-message.svelte';
 
 	let { data } = $props();
 
@@ -40,6 +45,37 @@
 		`S${data.season.number} E${data.episode.number} · ${data.episode.title}`
 	);
 
+	// Watch together: `?party=<code>` joins that party. The group moves between
+	// episodes together: the room's episode change navigates this page, and this
+	// page landing on another episode (autoplay, Next, the episodes panel — their
+	// links keep `?party=`) tells the room.
+	const party = new WatchParty((media) => {
+		if (media.kind !== 'series') return;
+		/* eslint-disable-next-line svelte/no-navigation-without-resolve -- episodeWatchHref() is resolve()d */
+		void goto(party.href(episodeWatchHref(media.slug, media.episodeSlug)));
+	});
+
+	$effect(() => {
+		const session = party.session;
+		const media = { kind: 'series' as const, slug: data.show.id, episodeSlug: data.episode.id };
+		const label = episodeLabel;
+		untrack(() => session?.setPageMedia(media, label));
+	});
+
+	async function watchTogether() {
+		try {
+			await party.start({
+				kind: 'series',
+				slug: data.show.id,
+				episodeSlug: data.episode.id,
+				positionSeconds: lastPosition,
+				playing
+			});
+		} catch (err) {
+			party.message = (err as Error).message;
+		}
+	}
+
 	let playback: PlaybackDescriptor | null = $state(null);
 	let playbackError: string | null = $state(null);
 	let reporter: ReturnType<typeof createProgressReporter> | null = null;
@@ -51,6 +87,7 @@
 	let quality: QualityId = $state(loadStoredQuality());
 	let playbackStartAt = $state(0);
 	let lastPosition = 0;
+	let playing = false;
 	let restartAt: number | null = null;
 
 	function changeQuality(next: QualityId) {
@@ -110,6 +147,8 @@
 	// Re-runs per episode (same route component instance is reused on
 	// episode→episode navigation): stops the old session, starts a new one.
 	$effect(() => {
+		// Joining by link: start where the party is, once we know where that is.
+		if (party.awaiting) return;
 		const slug = data.show.id;
 		const episodeSlug = data.episode.id;
 		const allowRemux = remuxBlockedFor !== episodeSlug;
@@ -118,7 +157,8 @@
 		const audioLanguage =
 			pickedLanguage ?? data.audioLanguage ?? loadAudioPreference() ?? DEFAULT_AUDIO_LANGUAGE;
 		const audioChannels = playbackSettings.audioChannels;
-		const startSeconds = restartAt ?? data.resumeFrom;
+		const partyAt = untrack(() => (party.session?.joined ? party.session.positionNow() : null));
+		const startSeconds = restartAt ?? partyAt ?? data.resumeFrom;
 		restartAt = null;
 		playbackStartAt = startSeconds;
 		playback = null;
@@ -198,7 +238,10 @@
 			reporter?.onProgress(position, duration);
 			heartbeat?.update({ positionSeconds: position, durationSeconds: duration });
 		}}
-		onPlaybackState={(snapshot) => heartbeat?.update(snapshot)}
+		onPlaybackState={(snapshot) => {
+			if (snapshot.state) playing = snapshot.state === 'playing';
+			heartbeat?.update(snapshot);
+		}}
 		onError={onPlaybackError}
 		{quality}
 		sourceWidth={playback.source.width}
@@ -213,20 +256,30 @@
 		canFindSubtitles={data.canFindSubtitles}
 		trickplaySrc={playback.trickplay?.vttSrc ?? null}
 		markers={playback.markers}
-		skipIntro={playbackSettings.skipIntro}
-		skipCredits={playbackSettings.skipCredits}
+		skipIntro={party.code ? partySkipMode(playbackSettings.skipIntro) : playbackSettings.skipIntro}
+		skipCredits={party.code
+			? partySkipMode(playbackSettings.skipCredits)
+			: playbackSettings.skipCredits}
 		onSubtitlesChanged={(tracks) => {
 			// In place: replacing the object would re-source the player's video.
 			if (playback) playback.subtitles = tracks;
 		}}
-		nextHref={data.nextEpisodeId ? episodeWatchHref(data.show.id, data.nextEpisodeId) : undefined}
+		nextHref={data.nextEpisodeId
+			? party.href(episodeWatchHref(data.show.id, data.nextEpisodeId))
+			: undefined}
+		episodeHref={(episodeId) => party.href(episodeWatchHref(data.show.id, episodeId))}
 		{autoplayNext}
 		onAutoplayChange={changeAutoplay}
 		onAutoAdvance={() => autoAdvances++}
 		{onInteraction}
-		stillWatchingDue={stillWatchingDueForEpisode(autoAdvances, playbackSettings.stillWatching)}
+		stillWatchingDue={!party.code &&
+			stillWatchingDueForEpisode(autoAdvances, playbackSettings.stillWatching)}
 		show={data.show}
 		currentEpisodeId={data.episode.id}
+		party={party.session}
+		onInvite={() => (party.inviteOpen = true)}
+		onLeaveParty={() => party.leave()}
+		onWatchTogether={data.canWatchTogether ? watchTogether : undefined}
 	/>
 {:else}
 	<div class="dark fixed inset-0 z-50 flex items-center justify-center bg-black">
@@ -241,7 +294,14 @@
 				</a>
 			</div>
 		{:else}
-			<p class="text-sm text-white/60">Preparing playback…</p>
+			<p class="text-sm text-white/60">
+				{party.awaiting ? 'Joining the watch party…' : 'Preparing playback…'}
+			</p>
 		{/if}
 	</div>
 {/if}
+
+{#if party.code}
+	<InviteDialog code={party.code} bind:open={party.inviteOpen} />
+{/if}
+<PartyMessage message={party.message} />

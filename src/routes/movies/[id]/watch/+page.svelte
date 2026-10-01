@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { mediaHref } from '$lib/data';
 	import WatchPlayer from '$lib/components/media/watch-player.svelte';
 	import { exitFullscreen } from '$lib/fullscreen';
@@ -26,6 +26,10 @@
 		DEFAULT_PLAYBACK_SETTINGS,
 		stillWatchingMovieSeconds
 	} from '$lib/data/playback-settings';
+	import { partySkipMode } from '$lib/data/together';
+	import { WatchParty } from '$lib/together/watch-party.svelte';
+	import InviteDialog from '$lib/components/together/invite-dialog.svelte';
+	import PartyMessage from '$lib/components/together/party-message.svelte';
 
 	let { data } = $props();
 
@@ -38,6 +42,29 @@
 	// Guests get the defaults (their autoplay switch is kept per browser).
 	const playbackSettings = $derived(data.playbackSettings ?? DEFAULT_PLAYBACK_SETTINGS);
 
+	// Watch together: `?party=<code>` joins that party (a movie party never changes title).
+	const party = new WatchParty(() => {});
+
+	$effect(() => {
+		const session = party.session;
+		const slug = data.movie.id;
+		const title = data.movie.title;
+		untrack(() => session?.setPageMedia({ kind: 'movie', slug }, title));
+	});
+
+	async function watchTogether() {
+		try {
+			await party.start({
+				kind: 'movie',
+				slug: data.movie.id,
+				positionSeconds: lastPosition,
+				playing
+			});
+		} catch (err) {
+			party.message = (err as Error).message;
+		}
+	}
+
 	let playback: PlaybackDescriptor | null = $state(null);
 	let playbackError: string | null = $state(null);
 	let reporter: ReturnType<typeof createProgressReporter> | null = null;
@@ -49,6 +76,7 @@
 	let quality: QualityId = $state(loadStoredQuality());
 	let playbackStartAt = $state(0);
 	let lastPosition = 0;
+	let playing = false;
 	let restartAt: number | null = null;
 
 	function changeQuality(next: QualityId) {
@@ -86,6 +114,8 @@
 	}
 
 	$effect(() => {
+		// Joining by link: start where the party is, once we know where that is.
+		if (party.awaiting) return;
 		const slug = data.movie.id;
 		const allowRemux = remuxBlockedFor !== slug;
 		const chosenQuality = quality;
@@ -93,7 +123,8 @@
 		const audioLanguage =
 			pickedLanguage ?? data.audioLanguage ?? loadAudioPreference() ?? DEFAULT_AUDIO_LANGUAGE;
 		const audioChannels = playbackSettings.audioChannels;
-		const startSeconds = restartAt ?? data.resumeFrom;
+		const partyAt = untrack(() => (party.session?.joined ? party.session.positionNow() : null));
+		const startSeconds = restartAt ?? partyAt ?? data.resumeFrom;
 		restartAt = null;
 		playbackStartAt = startSeconds;
 		playback = null;
@@ -172,12 +203,17 @@
 			reporter?.onProgress(position, duration);
 			heartbeat?.update({ positionSeconds: position, durationSeconds: duration });
 		}}
-		onPlaybackState={(snapshot) => heartbeat?.update(snapshot)}
+		onPlaybackState={(snapshot) => {
+			if (snapshot.state) playing = snapshot.state === 'playing';
+			heartbeat?.update(snapshot);
+		}}
 		onError={onPlaybackError}
 		{quality}
 		sourceWidth={playback.source.width}
 		onQualityChange={changeQuality}
-		stillWatchingAfterSeconds={stillWatchingMovieSeconds(playbackSettings.stillWatching)}
+		stillWatchingAfterSeconds={party.code
+			? null
+			: stillWatchingMovieSeconds(playbackSettings.stillWatching)}
 		audioTracks={playback.audioTracks}
 		audioTrackId={playback.audioTrackId}
 		onAudioChange={changeAudio}
@@ -188,8 +224,14 @@
 		canFindSubtitles={data.canFindSubtitles}
 		trickplaySrc={playback.trickplay?.vttSrc ?? null}
 		markers={playback.markers}
-		skipIntro={playbackSettings.skipIntro}
-		skipCredits={playbackSettings.skipCredits}
+		skipIntro={party.code ? partySkipMode(playbackSettings.skipIntro) : playbackSettings.skipIntro}
+		skipCredits={party.code
+			? partySkipMode(playbackSettings.skipCredits)
+			: playbackSettings.skipCredits}
+		party={party.session}
+		onInvite={() => (party.inviteOpen = true)}
+		onLeaveParty={() => party.leave()}
+		onWatchTogether={data.canWatchTogether ? watchTogether : undefined}
 		onSubtitlesChanged={(tracks) => {
 			// In place: replacing the object would re-source the player's video.
 			if (playback) playback.subtitles = tracks;
@@ -208,7 +250,14 @@
 				</a>
 			</div>
 		{:else}
-			<p class="text-sm text-white/60">Preparing playback…</p>
+			<p class="text-sm text-white/60">
+				{party.awaiting ? 'Joining the watch party…' : 'Preparing playback…'}
+			</p>
 		{/if}
 	</div>
 {/if}
+
+{#if party.code}
+	<InviteDialog code={party.code} bind:open={party.inviteOpen} />
+{/if}
+<PartyMessage message={party.message} />

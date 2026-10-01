@@ -12,6 +12,7 @@
 		item,
 		imageUrl,
 		active = false,
+		href,
 		onNavigate
 	}: {
 		episode: Episode;
@@ -22,6 +23,8 @@
 		imageUrl?: string;
 		/** Marks the episode currently being watched (player episodes panel). */
 		active?: boolean;
+		/** Overrides the link (defaults to the episode's watch page). */
+		href?: string;
 		/** Called when the episode link is clicked, before navigation. */
 		onNavigate?: () => void;
 	} = $props();
@@ -33,7 +36,7 @@
 	<!-- episodeWatchHref() returns resolve()d paths -->
 	<!-- eslint-disable svelte/no-navigation-without-resolve -->
 	<a
-		href={episodeWatchHref(item.id, episode.id)}
+		href={href ?? episodeWatchHref(item.id, episode.id)}
 		aria-label="Play {episode.title}"
 		aria-current={active ? 'true' : undefined}
 		onclick={onNavigate}

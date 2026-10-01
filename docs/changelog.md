@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-01
+
+**Watch together** (no schema change). Watch a movie or series with people who aren't in the same room. Start a party with **Watch together** on a title's page or in the player's top bar, then share the link it shows. Anyone with an account on the server can join with it.
+
+- **Shared playback:** anyone in the party can play, pause or seek, and it happens for everyone. When someone jumps or presses play, the group waits a moment until everyone's video has loaded that spot ("Waiting for Ana…"), then starts together. Someone whose connection stalls holds the group briefly, but never for more than about 10 seconds. Small drift is corrected by speeding up or slowing down playback by 5 %, so nobody sees a jump.
+- **Series:** the next episode (autoplay, **Next episode**, the credits countdown or the episodes panel) moves the whole party.
+- **People:** avatars of who's watching sit in the top bar. The ⋮ menu lists them; the host (whoever started the party) can remove someone or end the party for everyone, and anyone can leave and keep watching on their own. Reloading the page rejoins silently.
+- **Chat and reactions:** a chat panel (also showing who paused, skipped or joined) and emoji reactions that float over the video. Both work in fullscreen.
+- **Each viewer keeps their own stream:** quality, audio track and subtitles are personal, and so are progress and history. A party of three watching a transcoded title therefore uses three transcodes on the device.
+- In a party, "skip intros automatically" becomes the Skip button (pressing it skips for everyone), and "Still watching?" is off.
+
+A party ends when its last viewer leaves: right away for Back, **Leave party** or navigating elsewhere, and 15 seconds after closing the tab (a reload within that time rejoins it). Its link then shows "This watch party has ended".
+
+Parties live in the hub's memory: restarting the server ends them, and everyone keeps watching on their own.
+
 ## 2026-09-30
 
 **Browser remux** (migration `0023`: the `playback_mode` enum gains `remux`; `site_settings.remux_enabled`). MKVs (and other files the browser can decode but not open) no longer have to be transcoded on the device. The viewer's browser reads the original file, re-wraps it into fragmented MP4 itself ([Mediabunny](https://mediabunny.dev)) and plays it through Media Source Extensions.

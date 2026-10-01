@@ -9,13 +9,16 @@ import { ensurePrimaryProfile, listProfiles } from '$lib/server/profiles';
 import { pickActiveProfile } from '$lib/data/profiles';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
-// Bridge the gateway WebSocket handler out of the SvelteKit bundle so the
-// production server (server/index.js) can route /gateway/ws upgrades to it.
-// In dev the Vite plugin in vite.config.ts loads the module directly.
+// Bridge the WebSocket handlers out of the SvelteKit bundle so the production
+// server (server/index.js) can route /gateway/ws (storage gateways) and
+// /ws/together (watch parties) upgrades to them. In dev the Vite plugin in
+// vite.config.ts loads the modules directly.
 export const init: ServerInit = async () => {
 	if (building) return;
 	const { handleUpgrade } = await import('$lib/server/gateways/ws');
 	(globalThis as Record<string, unknown>).__finderellaGatewayUpgrade = handleUpgrade;
+	const together = await import('$lib/server/together/ws');
+	(globalThis as Record<string, unknown>).__finderellaTogetherUpgrade = together.handleUpgrade;
 	// Playback-session rows left 'active' by a previous process are dead.
 	const { sessionManager } = await import('$lib/server/streaming/session-manager');
 	await sessionManager.reapOrphans().catch(() => {});
@@ -36,7 +39,16 @@ export const init: ServerInit = async () => {
 const PUBLIC_PREFIXES = ['/login', '/register', '/api/auth', '/api/gateway/pair'];
 
 // Paths that need a session even when the admin has opened the hub to guests.
-const ACCOUNT_PREFIXES = ['/settings', '/logout', '/admin', '/watchlist', '/profiles'];
+// /together (watch-party join links) and /api/together: parties are accounts-only.
+const ACCOUNT_PREFIXES = [
+	'/settings',
+	'/logout',
+	'/admin',
+	'/watchlist',
+	'/profiles',
+	'/together',
+	'/api/together'
+];
 
 // Paths a signed-in account can use before picking a profile ("Who's
 // watching?"): the picker (which also manages profiles), account settings,

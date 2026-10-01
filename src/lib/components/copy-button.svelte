@@ -45,7 +45,8 @@
 >
 	<!-- HugeiconsIcon draws its icon once on mount, hence the {#if}. -->
 	{#if copied}
-		<HugeiconsIcon icon={Tick02Icon} class="text-primary" />
+		<!-- Accent tick, except on the accent-filled default variant where it would vanish. -->
+		<HugeiconsIcon icon={Tick02Icon} class={variant === 'default' ? undefined : 'text-primary'} />
 	{:else}
 		<HugeiconsIcon icon={Copy01Icon} />
 	{/if}

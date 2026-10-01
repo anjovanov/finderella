@@ -9,10 +9,13 @@
 	let {
 		show,
 		currentEpisodeId,
+		episodeHref,
 		onclose
 	}: {
 		show: Series;
 		currentEpisodeId: string;
+		/** Link builder for the cards (defaults to the plain episode watch page). */
+		episodeHref?: (episodeId: string) => string;
 		onclose: () => void;
 	} = $props();
 
@@ -82,6 +85,7 @@
 				item={show}
 				imageUrl={episode.stillUrl ?? season.posterUrl}
 				active={episode.id === currentEpisodeId}
+				href={episodeHref?.(episode.id)}
 				onNavigate={onclose}
 			/>
 		{/each}

@@ -38,3 +38,8 @@ export function episodeWatchHref(seriesId: string, episodeId: string): string {
 export function categoryHref(type: CategoryType, slug: string): string {
 	return resolve('/categories/[type=category]/[slug]', { type, slug });
 }
+
+/** A watch party's shareable join link (path; the invite UI prefixes the origin). */
+export function togetherHref(code: string): string {
+	return resolve('/together/[code]', { code });
+}
