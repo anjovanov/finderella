@@ -7,13 +7,14 @@ import { viewerProfileId } from '$lib/server/profiles';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const profileId = viewerProfileId(locals);
+	const progressPromise = loadProgress(profileId);
 	const [hero, movies, series, recent, watching, progress] = await Promise.all([
 		featured(),
 		listMovies(),
 		listSeries(),
 		recentlyAdded(),
-		continueWatching(profileId),
-		loadProgress(profileId)
+		progressPromise.then((overlay) => continueWatching(profileId, overlay)),
+		progressPromise
 	]);
 	for (const list of [movies, series, recent, watching, hero ? [hero] : []]) {
 		applyProgress(list, progress);

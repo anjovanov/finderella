@@ -17,7 +17,10 @@
 		variant?: 'poster' | 'backdrop';
 		/** `lg` = roomier poster tiles (detail pages' "More like this"). */
 		size?: 'md' | 'lg';
-		/** The home "Continue watching" row: cards offer "Remove from Continue watching". */
+		/**
+		 * The home "Continue watching" row: series cards show and play their episode,
+		 * and cards offer "Remove from Continue watching".
+		 */
 		continueWatching?: boolean;
 	} = $props();
 
@@ -44,7 +47,13 @@
 	</div>
 	<Carousel label={title} {arrowTop} class="-mt-3">
 		{#each items as item (item.id)}
-			<PosterCard {item} {variant} class={cardClass} menu={{ continueWatching }} />
+			<PosterCard
+				{item}
+				{variant}
+				class={cardClass}
+				{continueWatching}
+				menu={{ continueWatching }}
+			/>
 		{/each}
 	</Carousel>
 </section>

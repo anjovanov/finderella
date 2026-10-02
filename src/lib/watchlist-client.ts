@@ -31,7 +31,9 @@ export function dismissContinueWatching(kind: LibraryKind, slug: string): Promis
 	return postJson('/api/progress/dismiss', { kind, slug });
 }
 
-/** Mark a movie / every episode of a series as fully watched. */
-export function markAsWatched(kind: LibraryKind, slug: string): Promise<void> {
-	return postJson('/api/progress/watched', { kind, slug });
+/** Mark a movie, or one episode of a series, as fully watched. */
+export function markAsWatched(
+	target: { kind: 'movie'; slug: string } | { kind: 'series'; slug: string; episodeSlug: string }
+): Promise<void> {
+	return postJson('/api/progress/watched', target);
 }

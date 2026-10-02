@@ -13,7 +13,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import {
 		episodeLabel,
-		flattenEpisodes,
 		formatDurationUnits,
 		playTarget,
 		watchHref,
@@ -55,14 +54,11 @@
 	const signedIn = $derived(page.data.user != null);
 	let watchlistOverride = $state<boolean | null>(null);
 	const inWatchlist = $derived(watchlistOverride ?? item.inWatchlist ?? false);
-	const fullyWatched = $derived.by(() => {
-		if (item.kind === 'movie') return item.progress === 1;
-		const flat = flattenEpisodes(item);
-		return flat.length > 0 && flat.every(({ episode }) => episode.progress === 1);
-	});
+	// Movies only: series are marked one episode at a time (the episode cards' ⋮ menu).
+	const fullyWatched = $derived(item.kind === 'movie' && item.progress === 1);
 	let marking = $state(false);
 	// Under the poster: a bare progress line while a movie is in progress or finished.
-	const showProgress = $derived(item.kind === 'movie' && (fullyWatched || resume !== null));
+	const showProgress = $derived(fullyWatched || (item.kind === 'movie' && resume !== null));
 
 	async function toggleWatchlist() {
 		const next = !inWatchlist;
@@ -78,7 +74,7 @@
 	async function markWatched() {
 		marking = true;
 		try {
-			await markAsWatched(item.kind, item.id);
+			await markAsWatched({ kind: 'movie', slug: item.id });
 			// Re-runs the loader: progress bars fill and the Play label resets.
 			await invalidateAll();
 		} finally {
@@ -213,20 +209,22 @@
 							/>
 							Watch together
 						</Button>
-						<Button
-							variant="secondary"
-							size="lg"
-							class="text-muted-foreground hover:text-foreground"
-							disabled={fullyWatched || marking || !canPlay}
-							onclick={markWatched}
-						>
-							<HugeiconsIcon
-								icon={CheckmarkCircle02Icon}
-								data-icon="inline-start"
-								class="size-5 text-foreground"
-							/>
-							{fullyWatched ? 'Watched' : 'Mark as watched'}
-						</Button>
+						{#if item.kind === 'movie'}
+							<Button
+								variant="secondary"
+								size="lg"
+								class="text-muted-foreground hover:text-foreground"
+								disabled={fullyWatched || marking}
+								onclick={markWatched}
+							>
+								<HugeiconsIcon
+									icon={CheckmarkCircle02Icon}
+									data-icon="inline-start"
+									class="size-5 text-foreground"
+								/>
+								{fullyWatched ? 'Watched' : 'Mark as watched'}
+							</Button>
+						{/if}
 					{/if}
 					{#if item.trailerKey}
 						<Button

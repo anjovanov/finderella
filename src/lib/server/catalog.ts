@@ -58,7 +58,8 @@ function rowToEpisode(row: EpisodeRow): Episode {
 		title: row.title,
 		synopsis: row.synopsis,
 		runtimeMinutes: row.runtimeMinutes,
-		stillUrl: row.stillUrl ?? undefined
+		stillUrl: row.stillUrl ?? undefined,
+		rating: row.rating ?? undefined
 	};
 }
 

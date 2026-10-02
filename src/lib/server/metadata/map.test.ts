@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	collectionSlug,
+	episodeRating,
 	isCanonicalBrandName,
 	mapGenres,
 	movieMaturity,
@@ -211,5 +212,20 @@ describe('studioBrand', () => {
 
 	it('slugs collections', () => {
 		expect(collectionSlug('Harry Potter Collection')).toBe('harry-potter-collection');
+	});
+});
+
+describe('episodeRating', () => {
+	it('rounds the vote average to one decimal', () => {
+		expect(episodeRating(8.264, 120)).toBe(8.3);
+		expect(episodeRating(7, 3)).toBe(7);
+	});
+
+	it('is null while nobody has voted', () => {
+		expect(episodeRating(0, 0)).toBeNull();
+		expect(episodeRating(8.5, 0)).toBeNull();
+		expect(episodeRating(0, 12)).toBeNull();
+		expect(episodeRating(undefined, undefined)).toBeNull();
+		expect(episodeRating(null, null)).toBeNull();
 	});
 });

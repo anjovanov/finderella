@@ -52,6 +52,7 @@
 									season={season.number}
 									item={data.show}
 									imageUrl={episode.stillUrl ?? season.posterUrl}
+									menu
 								/>
 							{/each}
 						</Carousel>

@@ -2,6 +2,18 @@
 
 ## 2026-10-02
 
+**Series page: mark episodes watched, episode ratings** (schema: `episode.rating`, migration `0024_episode_rating`; `METADATA_VERSION` 3).
+
+- The series page no longer has a **Mark as watched** button for the whole series. Each episode card has a ⋮ menu (top left, shown on hover and always on touch screens) with **Mark as watched** for that episode, which reads "Watched" once it is. Marking an episode counts as having just finished it, so Play/Resume and Continue watching move on to the next episode. `POST /api/progress/watched` now takes `{ kind: 'movie', slug }` or `{ kind: 'series', slug, episodeSlug }`. Movies keep their button.
+- Episode cards show their TMDB rating top right, like poster cards. It comes from the season details (`vote_average`; no rating while nobody has voted). The `METADATA_VERSION` bump re-fetches already matched series, seasons included, on the next pass.
+
+**Continue watching plays series episodes** (no schema change).
+
+- On the home page, a series tile in **Continue watching** shows its episode ("S2E4 · Episode title") with that episode's progress bar, and clicking it opens the player for that episode instead of the series page. Movie tiles still open the movie's page, and the series page's Play/Resume is unchanged.
+- The tile's star rating is that episode's TMDB rating, not the series'. An episode without a rating shows no badge.
+- Finishing an episode keeps the series in the row, now pointing at the next episode with no progress bar. A series leaves the row once its last episode is finished or you remove it with ⋮.
+- The tile's episode is the one the series page's Resume button would play (`continueTarget` in `src/lib/data/episodes.ts`, tested); `continueWatching` now takes the profile's progress overlay.
+
 **Admin users and user statistics** (no schema change).
 
 - `/admin/users`: the ⋮ menu has **Change password…**, a dialog that sets a new password through Better Auth's `setUserPassword` and by default also signs the user out everywhere (`revokeUserSessions`). It isn't offered for your own account, which goes through `/settings/account`. The same menu has **Watch statistics**, which opens `/admin/statistics/users/<id>` and is available on every row, your own included. The User column shows how many profiles each account has.

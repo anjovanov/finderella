@@ -169,6 +169,13 @@
       "when": 1790735067743,
       "tag": "0023_remux",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790969569912,
+      "tag": "0024_episode_rating",
+      "breakpoints": true
     }
   ]
 }

@@ -48,6 +48,17 @@ export function playTarget(show: Series): PlayTarget | undefined {
 	return next ? { season: next.season.number, episode: next.episode, resume: true } : fresh;
 }
 
+/**
+ * The episode a "Continue watching" tile plays: `playTarget` while it continues
+ * the viewer's run (an unfinished episode, or the one after a finished one).
+ * `undefined` = the show isn't in progress (never watched, or its last episode
+ * is finished) — decides both whether a series is in the row and where its tile links.
+ */
+export function continueTarget(show: Series): PlayTarget | undefined {
+	const target = playTarget(show);
+	return target?.resume ? target : undefined;
+}
+
 /** "S2E4" — the same shape EpisodeCard prints. */
 export function episodeLabel(season: number, episodeNumber: number): string {
 	return `S${season}E${episodeNumber}`;

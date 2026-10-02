@@ -7,6 +7,7 @@ import { invalidateSearchIndex } from '$lib/server/search';
 import type { CastMember } from '$lib/data/types';
 import {
 	collectionSlug,
+	episodeRating,
 	isCanonicalBrandName,
 	mapGenres,
 	movieMaturity,
@@ -45,9 +46,15 @@ export { isTmdbConfigured };
 /**
  * Bump when enrichment starts storing a new TMDB field. Matched titles below
  * it are re-fetched by their stored tmdb_id on the next (non-forced) pass —
- * no re-search. 2 = networks / studios + collections.
+ * no re-search. 2 = networks / studios + collections, 3 = episode ratings.
  */
-export const METADATA_VERSION = 2;
+export const METADATA_VERSION = 3;
+
+/**
+ * The last METADATA_VERSION that added a season/episode field: series enriched
+ * below it re-fetch their seasons too, not just the series row.
+ */
+const SEASONS_VERSION = 3;
 
 const CONCURRENCY = 2;
 const CAST_LIMIT = 8;
@@ -301,6 +308,7 @@ async function enrichSeasons(
 				if (match.overview) values.synopsis = match.overview;
 				if (ep.runtimeMinutes === 0 && match.runtime) values.runtimeMinutes = match.runtime;
 				values.stillUrl = imageUrl(match.still_path, STILL_SIZE);
+				values.rating = episodeRating(match.vote_average, match.vote_count);
 			}
 			await db.update(episode).set(values).where(eq(episode.id, ep.id));
 		}
@@ -322,8 +330,12 @@ export async function enrichSeries(
 	}
 	if (!opts.force && isCurrent(row)) return;
 	// Enriched before METADATA_VERSION: refresh the series row only — its
-	// seasons and episodes are already filled.
-	const versionOnly = !opts.force && row.metadataUpdatedAt !== null && row.tmdbId !== null;
+	// seasons and episodes are already filled, unless a season/episode field is new.
+	const versionOnly =
+		!opts.force &&
+		row.metadataUpdatedAt !== null &&
+		row.tmdbId !== null &&
+		row.metadataVersion >= SEASONS_VERSION;
 
 	let tmdbId = opts.force ? null : row.tmdbId;
 	if (!tmdbId) {

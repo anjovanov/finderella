@@ -157,6 +157,8 @@ export const episode = pgTable(
 		synopsis: text('synopsis').notNull().default(''),
 		runtimeMinutes: integer('runtime_minutes').notNull().default(0),
 		stillUrl: text('still_url'),
+		// TMDB vote average (0–10, one decimal); null = not rated yet.
+		rating: real('rating'),
 		// Set once a TMDB season fetch has processed this episode (matched or not).
 		metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true })
 	},

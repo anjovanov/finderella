@@ -31,7 +31,7 @@ MCP servers (configured in the git-ignored `.mcp.json`) and project skills (`.cl
 - **Audio** — every stream in `media_audio`; `pickAudioTrack`/`transcodeAudio` in `src/lib/server/streaming/audio.ts`; per-profile language + max channels; mono = Web Audio downmix (`src/lib/audio-downmix.ts`).
 - **Trickplay** — gateway renders JPEG sprite sheets (`packages/storage-gateway/src/trickplay/`), hub synthesizes the thumbnails VTT (`src/lib/server/trickplay/`).
 - **Skip intro / credits** — chapters + gateway audio fingerprints + dark frames (`packages/storage-gateway/src/markers/`, hub `src/lib/server/markers/`), served as `markers` by playback start; player helpers in `src/lib/data/markers.ts`.
-- **Progress & watchlist** — `src/lib/server/progress.ts` (positions, continue watching, dismiss, mark watched, `applyProgress` overlay incl. `inWatchlist`), `src/lib/server/watchlist.ts`, `/watchlist`, ⋮ `card-menu.svelte`.
+- **Progress & watchlist** — `src/lib/server/progress.ts` (positions, continue watching — series tiles play `continueTarget`'s episode, dismiss, mark watched (movies, or one episode — never a whole series), `applyProgress` overlay incl. `inWatchlist`), `src/lib/server/watchlist.ts`, `/watchlist`, ⋮ `card-menu.svelte`.
 - **Profiles** — up to 5 per account, Netflix-style picker/manager at `/profiles`; active profile = Better Auth session field `activeProfileId`. All viewer data hangs off `profile_id` (see Conventions).
 - **Auth / roles / admin** — Better Auth `admin()` plugin (`src/lib/auth-roles.ts`); first account = admin; admin dashboard `/admin/*` (Overview, Devices + activity log, Users, Subtitles, Statistics, Site settings).
 - **Settings** — `/settings/account` (account-level) and per-profile `/settings/{preferences,subtitles,playback}`; a new section = sibling route + an entry in the layout's `sections` list.
@@ -81,7 +81,7 @@ MCP servers (configured in the git-ignored `.mcp.json`) and project skills (`.cl
 ### Database / Drizzle
 
 - `fs.stat().mtimeMs` is fractional; `bigint` columns reject it — round before insert.
-- `watch_progress` and `watchlist` use partial unique indexes: `onConflictDoUpdate` needs the matching `targetWhere` (a bare `onConflictDoNothing()` doesn't). A **multi-row** upsert (`markWatched` for a series) must `set` from `sql\`excluded.*\``(a plain object writes one value to every row);`markWatched`staggers`updated_at`so the last episode is newest (else`playTarget`shows "Resume S1E1").`desc()`on a nullable column puts NULLs first —`bestMovieFile`uses`nulls last`.
+- `watch_progress` and `watchlist` use partial unique indexes: `onConflictDoUpdate` needs the matching `targetWhere` (a bare `onConflictDoNothing()` doesn't). A **multi-row** upsert must `set` from `` sql`excluded.*` `` (a plain object writes one value to every row). `desc()` on a nullable column puts NULLs first — `bestMovieFile` uses `nulls last`.
 - **No DB-level defaults on array columns** (`cast_members`/`genres` use `.$default(() => [])`): drizzle-kit introspects `'{""}'` and `db:push` re-proposes the ALTER forever. Same reason the profile-name unique index is plain `(user_id, name)` (it can't diff `lower(name)`; the app checks case-insensitively).
 - drizzle-kit asks an interactive rename question when one diff drops and adds a table/column, and can't prompt in a non-TTY shell — split such changes into two generations (as `0020`/`0021` did; to apply them to a `db:push`-managed dev DB with data, run both SQL files with `psql` after stripping `--> statement-breakpoint`, then `db:push` must report no changes).
 
@@ -154,6 +154,7 @@ MCP servers (configured in the git-ignored `.mcp.json`) and project skills (`.cl
 ### Dev server
 
 - The Vite plugin `ssrLoadModule`s `gateways/ws.ts` at WebSocket **upgrade** time, so a connected gateway runs pre-edit handlers (ingest, `finalizeScan`, …) until it reconnects. Editing `@finderella/protocol` re-instantiates `gateways/registry.ts`, so gateways connected before the edit look offline until they reconnect.
+- Saving an edit under `hooks.server.ts`'s import graph re-runs `init`, which runs `enrichPending`. When a `METADATA_VERSION` bump comes with a new column, apply the migration **before** saving the enrichment edit. Otherwise series rows get stamped at the new version while their episode updates fail on the missing column, and they never retry. To recover, set `metadata_version` back on those series and let `init` run again.
 - `GATEWAY_DEV_TOKEN` self-registers a "Dev Gateway" (dev only; needs one user first). Real gateways pair via `/admin/devices` → `npx finderella-storage-gateway pair --hub <url> --code <code>`.
 
 ## Commands

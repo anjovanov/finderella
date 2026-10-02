@@ -85,6 +85,8 @@ export interface Episode {
 	runtimeMinutes: number;
 	/** Episode still (landscape). */
 	stillUrl?: string;
+	/** TMDB rating, 0–10 with one decimal; unset = not rated. */
+	rating?: number;
 	/** 0–1 of the viewer's last playback of this episode. */
 	progress?: number;
 	/** Technical details of the episode's best file (series detail loader only). */

@@ -3,7 +3,13 @@
 	import { StarIcon } from '@hugeicons/core-free-icons';
 	import { cn } from '$lib/utils.js';
 	import { Badge } from '$lib/components/ui/badge';
-	import { mediaHref, type MediaItem } from '$lib/data';
+	import {
+		continueTarget,
+		episodeLabel,
+		episodeWatchHref,
+		mediaHref,
+		type MediaItem
+	} from '$lib/data';
 	import CardMenu from './card-menu.svelte';
 	import PosterArt from './poster-art.svelte';
 	import ProgressLine from './progress-line.svelte';
@@ -13,6 +19,7 @@
 		variant = 'poster',
 		class: className,
 		showKind = false,
+		continueWatching = false,
 		menu
 	}: {
 		item: MediaItem;
@@ -20,9 +27,19 @@
 		class?: string;
 		/** Label the card Movie/Series (mixed lists such as search results). */
 		showKind?: boolean;
+		/** Home "Continue watching" tile: a series shows and links to its next-in-line episode. */
+		continueWatching?: boolean;
 		/** Extra entries for the ⋮ menu (signed-in viewers only). */
 		menu?: { continueWatching?: boolean };
 	} = $props();
+
+	const target = $derived(
+		continueWatching && item.kind === 'series' ? continueTarget(item) : undefined
+	);
+	const href = $derived(target ? episodeWatchHref(item.id, target.episode.id) : mediaHref(item));
+	// An episode tile rates the episode; an unrated episode shows no badge rather
+	// than the series rating next to its "S2E4" label.
+	const rating = $derived(target ? target.episode.rating : item.rating);
 </script>
 
 <!-- The ⋮ menu button can't live inside the link (interactive content inside
@@ -34,28 +51,34 @@
 		className
 	)}
 >
-	<!-- mediaHref() returns resolve()d paths -->
+	<!-- mediaHref()/episodeWatchHref() return resolve()d paths -->
 	<!-- eslint-disable svelte/no-navigation-without-resolve -->
-	<a href={mediaHref(item)} class="flex flex-col gap-2 outline-none">
+	<a {href} class="flex flex-col gap-2 outline-none">
 		<div
 			class="relative overflow-hidden rounded-xl ring-1 ring-border transition-all duration-200 group-focus-within:ring-2 group-focus-within:ring-primary group-hover:scale-[1.015] group-hover:ring-2 group-hover:ring-primary"
 		>
 			<PosterArt {item} {variant} showTitle />
-			<span
-				class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm"
-			>
-				<HugeiconsIcon icon={StarIcon} class="size-3 text-yellow-400" />
-				{item.rating.toFixed(1)}
-			</span>
+			{#if rating !== undefined}
+				<span
+					class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm"
+				>
+					<HugeiconsIcon icon={StarIcon} class="size-3 text-yellow-400" />
+					{rating.toFixed(1)}
+				</span>
+			{/if}
 		</div>
-		<ProgressLine fraction={item.progress} />
+		<ProgressLine fraction={target ? target.episode.progress : item.progress} />
 		<div class="flex flex-col">
 			<span class="truncate text-sm font-medium group-hover:text-primary">{item.title}</span>
 			<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
 				<span class="truncate">
-					{item.year}{item.kind === 'series'
-						? ` · ${item.seasons.length} season${item.seasons.length === 1 ? '' : 's'}`
-						: ''}
+					{#if target}
+						{episodeLabel(target.season, target.episode.number)} · {target.episode.title}
+					{:else}
+						{item.year}{item.kind === 'series'
+							? ` · ${item.seasons.length} season${item.seasons.length === 1 ? '' : 's'}`
+							: ''}
+					{/if}
 				</span>
 				{#if showKind}
 					<Badge variant="outline" class="h-4 px-1.5 text-[10px]">

@@ -190,7 +190,9 @@ export const TvSeason = z.object({
 				name: z.string().nullish(),
 				overview: z.string().nullish(),
 				runtime: z.number().nullish(),
-				still_path: z.string().nullish()
+				still_path: z.string().nullish(),
+				vote_average: z.number().nullish(),
+				vote_count: z.number().nullish()
 			})
 		)
 		.nullish()

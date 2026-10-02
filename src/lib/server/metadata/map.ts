@@ -123,6 +123,18 @@ export function normalizeTitle(title: string): string {
 		.trim();
 }
 
+/**
+ * An episode's TMDB vote average rounded to one decimal, or null while nobody
+ * has voted (TMDB reports 0 then, which isn't a rating).
+ */
+export function episodeRating(
+	voteAverage: number | null | undefined,
+	voteCount: number | null | undefined
+): number | null {
+	if (!voteCount || !voteAverage || voteAverage <= 0) return null;
+	return Math.round(voteAverage * 10) / 10;
+}
+
 export function yearOf(date: string | null | undefined): number | undefined {
 	const match = /^(\d{4})/.exec(date ?? '');
 	return match ? Number(match[1]) : undefined;

@@ -1,8 +1,9 @@
-import { and, asc, desc, eq, inArray, isNull, max, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, max, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { episode, mediaFile, movie, season, series, watchProgress } from '$lib/server/db/schema';
+import { episode, mediaFile, movie, series, watchProgress } from '$lib/server/db/schema';
 import { bestMovieFile, getMovieBySlug, getSeriesBySlug } from '$lib/server/catalog';
 import { loadWatchlistKeys, watchlistKey } from '$lib/server/watchlist';
+import { continueTarget } from '$lib/data/episodes';
 import { inProgress, progressFraction } from '$lib/data/progress';
 import type { MediaItem } from '$lib/data/types';
 
@@ -120,11 +121,19 @@ export async function episodeResumePosition(
 }
 
 /**
- * "Continue watching" row: most recently watched in-progress titles, one entry
- * per movie/series, newest first. Titles the viewer dismissed stay hidden
- * until they play them again (`saveProgress` clears `dismissedAt`).
+ * "Continue watching" row: most recently watched titles that are still in
+ * progress, one entry per movie/series, newest first. A movie needs an
+ * unfinished position; a series is in the row while `continueTarget` has an
+ * episode for it (finishing an episode moves the tile on to the next one; the
+ * show's last episode finished drops it). `overlay` must be this profile's
+ * `loadProgress`. Titles the viewer dismissed stay hidden until they play them
+ * again (`saveProgress` clears `dismissedAt`).
  */
-export async function continueWatching(profileId: string | null, limit = 12): Promise<MediaItem[]> {
+export async function continueWatching(
+	profileId: string | null,
+	overlay: ProgressOverlay,
+	limit = 12
+): Promise<MediaItem[]> {
 	if (!profileId) return [];
 	const rows = await db.query.watchProgress.findMany({
 		where: and(eq(watchProgress.profileId, profileId), isNull(watchProgress.dismissedAt)),
@@ -134,19 +143,21 @@ export async function continueWatching(profileId: string | null, limit = 12): Pr
 	const items: MediaItem[] = [];
 	const seen = new Set<string>();
 	for (const row of rows) {
-		if (!inProgress(row.positionSeconds, row.durationSeconds)) continue;
 		if (row.movieId) {
+			if (!inProgress(row.positionSeconds, row.durationSeconds)) continue;
 			const movieRow = await db.query.movie.findFirst({ where: eq(movie.id, row.movieId) });
 			if (!movieRow || seen.has(`m:${movieRow.slug}`)) continue;
 			seen.add(`m:${movieRow.slug}`);
 			const item = await getMovieBySlug(movieRow.slug);
 			if (item) items.push(item);
 		} else if (row.seriesId) {
+			// Same rule as `loadProgress`'s latest episode: a few seconds in doesn't count.
+			if (progressFraction(row.positionSeconds, row.durationSeconds) === undefined) continue;
 			const seriesRow = await db.query.series.findFirst({ where: eq(series.id, row.seriesId) });
 			if (!seriesRow || seen.has(`s:${seriesRow.slug}`)) continue;
 			seen.add(`s:${seriesRow.slug}`);
 			const item = await getSeriesBySlug(seriesRow.slug);
-			if (item) items.push(item);
+			if (item && continueTarget(applyProgress([item], overlay)[0])) items.push(item);
 		}
 		if (items.length >= limit) break;
 	}
@@ -188,18 +199,18 @@ function finishedSeconds(durationMs: number | null | undefined, runtimeMinutes: 
 }
 
 /**
- * One-way "seen it": writes a finished position for the movie, or for every
- * episode of the series. Returns false when the slug is unknown or the series
- * has no episodes.
+ * One-way "seen it": writes a finished position for the movie, or for one
+ * episode of a series (stamped now, so it becomes the viewer's latest episode
+ * and Play/Resume moves on to the next one). Whole series can't be marked at
+ * once. Returns false when the slug is unknown.
  */
 export async function markWatched(
 	profileId: string,
-	kind: 'movie' | 'series',
-	slug: string
+	target: { kind: 'movie'; slug: string } | { kind: 'series'; slug: string; episodeSlug: string }
 ): Promise<boolean> {
 	const now = new Date();
-	if (kind === 'movie') {
-		const row = await db.query.movie.findFirst({ where: eq(movie.slug, slug) });
+	if (target.kind === 'movie') {
+		const row = await db.query.movie.findFirst({ where: eq(movie.slug, target.slug) });
 		if (!row) return false;
 		const file = await bestMovieFile(row.id);
 		const seconds = finishedSeconds(file?.durationMs, row.runtimeMinutes);
@@ -224,54 +235,34 @@ export async function markWatched(
 			});
 		return true;
 	}
-	const seriesRow = await db.query.series.findFirst({ where: eq(series.slug, slug) });
+	const seriesRow = await db.query.series.findFirst({ where: eq(series.slug, target.slug) });
 	if (!seriesRow) return false;
-	const episodes = await db
-		.select({ id: episode.id, runtimeMinutes: episode.runtimeMinutes })
-		.from(episode)
-		.innerJoin(season, eq(episode.seasonId, season.id))
-		.where(eq(episode.seriesId, seriesRow.id))
-		.orderBy(asc(season.number), asc(episode.number));
-	if (episodes.length === 0) return false;
-	const durations = await db
-		.select({ episodeId: mediaFile.episodeId, durationMs: max(mediaFile.durationMs) })
+	const episodeRow = await db.query.episode.findFirst({
+		where: and(eq(episode.seriesId, seriesRow.id), eq(episode.slug, target.episodeSlug))
+	});
+	if (!episodeRow) return false;
+	const [file] = await db
+		.select({ durationMs: max(mediaFile.durationMs) })
 		.from(mediaFile)
-		.where(
-			and(
-				inArray(
-					mediaFile.episodeId,
-					episodes.map((e) => e.id)
-				),
-				eq(mediaFile.status, 'active')
-			)
-		)
-		.groupBy(mediaFile.episodeId);
-	const durationByEpisode = new Map(durations.map((d) => [d.episodeId, d.durationMs]));
-	// updatedAt is staggered in episode order so the last episode is the
-	// "latest" one: loadProgress reads newest-first and playTarget then falls
-	// through to a fresh "Play" from the start instead of "Resume S1E1".
-	const values = episodes.map((ep, i) => {
-		const seconds = finishedSeconds(durationByEpisode.get(ep.id), ep.runtimeMinutes);
-		return {
+		.where(and(eq(mediaFile.episodeId, episodeRow.id), eq(mediaFile.status, 'active')));
+	const seconds = finishedSeconds(file?.durationMs, episodeRow.runtimeMinutes);
+	await db
+		.insert(watchProgress)
+		.values({
 			profileId,
-			episodeId: ep.id,
+			episodeId: episodeRow.id,
 			seriesId: seriesRow.id,
 			positionSeconds: seconds,
 			durationSeconds: seconds,
-			updatedAt: new Date(now.getTime() - (episodes.length - 1 - i))
-		};
-	});
-	await db
-		.insert(watchProgress)
-		.values(values)
+			updatedAt: now
+		})
 		.onConflictDoUpdate({
 			target: [watchProgress.profileId, watchProgress.episodeId],
 			targetWhere: sql`${watchProgress.episodeId} is not null`,
-			// Multi-row upsert: each conflict must take its own row's values.
 			set: {
-				positionSeconds: sql`excluded.position_seconds`,
-				durationSeconds: sql`excluded.duration_seconds`,
-				updatedAt: sql`excluded.updated_at`,
+				positionSeconds: seconds,
+				durationSeconds: seconds,
+				updatedAt: now,
 				dismissedAt: null
 			}
 		});

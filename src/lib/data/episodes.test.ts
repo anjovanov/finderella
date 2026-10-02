@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { episodeLabel, flattenEpisodes, playTarget } from './episodes';
+import { continueTarget, episodeLabel, flattenEpisodes, playTarget } from './episodes';
 import type { Episode, Season, Series } from './types';
 
 function ep(id: string, number: number, progress?: number): Episode {
@@ -92,5 +92,30 @@ describe('playTarget', () => {
 	it('returns undefined instead of throwing for a show without episodes', () => {
 		expect(playTarget(show([]))).toBeUndefined();
 		expect(playTarget(show([season(1, [])], 's1e1'))).toBeUndefined();
+	});
+});
+
+describe('continueTarget', () => {
+	it('resumes the most recently watched episode when it is unfinished', () => {
+		const target = continueTarget(show(twoSeasons({ s1e2: 0.42 }), 's1e2'));
+		expect(target).toMatchObject({ season: 1, resume: true });
+		expect(target?.episode.id).toBe('s1e2');
+	});
+
+	it('moves on to the next episode, across a season boundary, once the latest is finished', () => {
+		expect(continueTarget(show(twoSeasons({ s1e1: 1 }), 's1e1'))?.episode.id).toBe('s1e2');
+		const target = continueTarget(show(twoSeasons({ s1e2: 1 }), 's1e2'));
+		expect(target).toMatchObject({ season: 2, resume: true });
+		expect(target?.episode.id).toBe('s2e1');
+	});
+
+	it('is undefined for a show the viewer has not started', () => {
+		expect(continueTarget(show(twoSeasons()))).toBeUndefined();
+		expect(continueTarget(show(twoSeasons(), 'ghost'))).toBeUndefined();
+		expect(continueTarget(show([]))).toBeUndefined();
+	});
+
+	it('is undefined once the last episode of the show is finished', () => {
+		expect(continueTarget(show(twoSeasons({ s2e2: 1 }), 's2e2'))).toBeUndefined();
 	});
 });
