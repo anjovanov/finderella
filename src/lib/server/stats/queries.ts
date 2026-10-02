@@ -452,9 +452,13 @@ export async function graphData(days: number, tz: string): Promise<GraphData> {
 // ── history ─────────────────────────────────────────────────────────────────
 
 export const HISTORY_PAGE_SIZE = 25;
+/** "Recent history" on a user's statistics page. */
+export const USER_HISTORY_PAGE_SIZE = 15;
 
 export interface HistoryFilter {
 	page: number;
+	/** Rows per page; HISTORY_PAGE_SIZE when absent. */
+	perPage?: number;
 	/** A user id, 'guest', or undefined for everyone. */
 	userId?: string;
 	kind?: 'movie' | 'episode';
@@ -474,15 +478,16 @@ export async function history(filter: HistoryFilter): Promise<HistoryPage> {
 		filter.days ? since(filter.days, filter.tz) : undefined
 	);
 	const page = Math.max(1, filter.page);
+	const perPage = filter.perPage ?? HISTORY_PAGE_SIZE;
 	const [[{ total }], rows] = await Promise.all([
 		db.select({ total: count() }).from(playHistory).where(where),
 		historyQuery()
 			.where(where)
 			.orderBy(desc(playHistory.startedAt))
-			.limit(HISTORY_PAGE_SIZE)
-			.offset((page - 1) * HISTORY_PAGE_SIZE)
+			.limit(perPage)
+			.offset((page - 1) * perPage)
 	]);
-	return { entries: rows.map(toHistoryEntry), total, page, perPage: HISTORY_PAGE_SIZE };
+	return { entries: rows.map(toHistoryEntry), total, page, perPage };
 }
 
 // ── users ───────────────────────────────────────────────────────────────────

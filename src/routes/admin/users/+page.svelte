@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		AlertCircleIcon,
+		Analytics01Icon,
 		CheckmarkCircle02Icon,
 		Delete02Icon,
+		LockPasswordIcon,
 		MoreVerticalIcon,
 		ShieldUserIcon,
 		UserAdd01Icon,
@@ -20,6 +23,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Field from '$lib/components/ui/field';
@@ -41,11 +45,18 @@
 	const create = new DialogForm();
 	const ban = new DialogForm<Account>();
 	const remove = new DialogForm<Account>();
+	const password = new DialogForm<Account>();
+	let signOutEverywhere = $state(true);
 	let newRole = $state('user');
 	const newRoleLabel = $derived(roleOptions.find((r) => r.value === newRole)?.label ?? 'User');
 
 	const admins = $derived(data.users.filter((u) => u.isAdmin).length);
 	const banned = $derived(data.users.filter((u) => u.banned).length);
+	const passwordChangedFor = $derived(
+		form && 'passwordChanged' in form
+			? data.users.find((u) => u.id === form.passwordChanged)
+			: undefined
+	);
 
 	// Role changes and unbans need no confirmation: one hidden form, pointed at the action
 	// and filled in before it submits.
@@ -103,6 +114,14 @@
 		<Alert.Title>Created an account for {form.created}.</Alert.Title>
 		<Alert.Description>They can sign in with the password you set.</Alert.Description>
 	</Alert.Root>
+{:else if passwordChangedFor}
+	<Alert.Root>
+		<HugeiconsIcon icon={CheckmarkCircle02Icon} class="text-primary" />
+		<Alert.Title>Changed the password for {passwordChangedFor.name}.</Alert.Title>
+		{#if form && 'signedOut' in form && form.signedOut}
+			<Alert.Description>They were signed out everywhere.</Alert.Description>
+		{/if}
+	</Alert.Root>
 {/if}
 
 <Card.Root>
@@ -144,7 +163,10 @@
 												>(you)</span
 											>{/if}
 									</span>
-									<span class="truncate text-xs text-muted-foreground">{u.email}</span>
+									<span class="truncate text-xs text-muted-foreground">
+										{u.email} · {u.profiles}
+										{u.profiles === 1 ? 'profile' : 'profiles'}
+									</span>
 								</div>
 							</div>
 						</Table.Cell>
@@ -178,6 +200,15 @@
 									{/snippet}
 								</DropdownMenu.Trigger>
 								<DropdownMenu.Content align="end" class="min-w-52">
+									<DropdownMenu.Item>
+										{#snippet child({ props })}
+											<a href={resolve('/admin/statistics/users/[id]', { id: u.id })} {...props}>
+												<HugeiconsIcon icon={Analytics01Icon} />
+												Watch statistics
+											</a>
+										{/snippet}
+									</DropdownMenu.Item>
+									<DropdownMenu.Separator />
 									{#if isMe}
 										<DropdownMenu.Label class="text-xs font-normal text-muted-foreground">
 											You can't change your own account here.
@@ -194,6 +225,15 @@
 												<HugeiconsIcon icon={ShieldUserIcon} />
 												Make admin
 											{/if}
+										</DropdownMenu.Item>
+										<DropdownMenu.Item
+											onSelect={() => {
+												signOutEverywhere = true;
+												password.show(u);
+											}}
+										>
+											<HugeiconsIcon icon={LockPasswordIcon} />
+											Change password…
 										</DropdownMenu.Item>
 										{#if u.banned}
 											<DropdownMenu.Item onSelect={() => runQuick('?/unban', u.id)}>
@@ -284,6 +324,63 @@
 				</Button>
 			</Dialog.Footer>
 		</form>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Change password -->
+<Dialog.Root bind:open={password.open}>
+	<Dialog.Content>
+		{#if password.target}
+			<form
+				method="POST"
+				action="?/setPassword"
+				class="flex flex-col gap-6"
+				use:enhance={password.submit}
+			>
+				<Dialog.Header>
+					<Dialog.Title>Change {password.target.name}'s password</Dialog.Title>
+					<Dialog.Description>
+						Set a new password for {password.target.email}. Let them know what it is.
+					</Dialog.Description>
+				</Dialog.Header>
+				<input type="hidden" name="userId" value={password.target.id} />
+				<Field.Group>
+					<Field.Field data-invalid={password.error ? true : undefined}>
+						<Field.Label for="set-password">New password</Field.Label>
+						<PasswordInput
+							id="set-password"
+							name="password"
+							autocomplete="new-password"
+							minlength={8}
+							required
+						/>
+						<Field.Description>At least 8 characters.</Field.Description>
+						{#if password.error}<Field.Error>{password.error}</Field.Error>{/if}
+					</Field.Field>
+					<Field.Field orientation="horizontal">
+						<!-- Submits signOut=true only while checked; absent = keep their sessions. -->
+						<Checkbox
+							id="set-password-sign-out"
+							name="signOut"
+							value="true"
+							bind:checked={signOutEverywhere}
+						/>
+						<Field.Content>
+							<Field.Label for="set-password-sign-out">Sign them out everywhere</Field.Label>
+							<Field.Description>
+								Ends their current sessions, so they have to sign in with the new password.
+							</Field.Description>
+						</Field.Content>
+					</Field.Field>
+				</Field.Group>
+				<Dialog.Footer>
+					<Button type="button" variant="outline" onclick={password.close}>Cancel</Button>
+					<Button type="submit" disabled={password.busy}>
+						{password.busy ? 'Saving…' : 'Change password'}
+					</Button>
+				</Dialog.Footer>
+			</form>
+		{/if}
 	</Dialog.Content>
 </Dialog.Root>
 

@@ -1,20 +1,24 @@
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { ADMIN_ROLE, isAdmin, USER_ROLE } from '$lib/auth-roles';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { gateway, gatewayPairingCode } from '$lib/server/db/schema';
+import { gateway, gatewayPairingCode, profile } from '$lib/server/db/schema';
 import { isLastActiveAdmin } from '$lib/server/users';
 import type { Actions, PageServerLoad } from './$types';
 
 const ROLES = new Set([USER_ROLE, ADMIN_ROLE]);
 
 export const load: PageServerLoad = async (event) => {
-	const { users } = await auth.api.listUsers({
-		query: { limit: 200, sortBy: 'createdAt', sortDirection: 'desc' },
-		headers: event.request.headers
-	});
+	const [{ users }, profileCounts] = await Promise.all([
+		auth.api.listUsers({
+			query: { limit: 200, sortBy: 'createdAt', sortDirection: 'desc' },
+			headers: event.request.headers
+		}),
+		db.select({ userId: profile.userId, n: count() }).from(profile).groupBy(profile.userId)
+	]);
+	const profilesOf = new Map(profileCounts.map((p) => [p.userId, p.n]));
 	return {
 		me: event.locals.user!.id,
 		users: users.map((u) => ({
@@ -25,6 +29,7 @@ export const load: PageServerLoad = async (event) => {
 			isAdmin: isAdmin(u),
 			banned: !!u.banned,
 			banReason: u.banReason ?? null,
+			profiles: profilesOf.get(u.id) ?? 0,
 			createdAt: u.createdAt.toISOString()
 		}))
 	};
@@ -84,6 +89,32 @@ export const actions: Actions = {
 			return failFrom(error);
 		}
 		return { updated: userId };
+	},
+
+	setPassword: async (event) => {
+		const formData = await event.request.formData();
+		const userId = formData.get('userId')?.toString() ?? '';
+		const password = formData.get('password')?.toString() ?? '';
+		const signOut = formData.get('signOut') === 'true';
+		if (!userId) return fail(400, { message: 'Missing user' });
+		if (userId === event.locals.user!.id) {
+			return fail(400, { message: 'Change your own password in Settings' });
+		}
+		if (password.length < 8)
+			return fail(400, { message: 'Password must be at least 8 characters' });
+		try {
+			// setUserPassword leaves the target's sessions alone; revoking them is opt-in.
+			await auth.api.setUserPassword({
+				body: { userId, newPassword: password },
+				headers: event.request.headers
+			});
+			if (signOut) {
+				await auth.api.revokeUserSessions({ body: { userId }, headers: event.request.headers });
+			}
+		} catch (error) {
+			return failFrom(error);
+		}
+		return { passwordChanged: userId, signedOut: signOut };
 	},
 
 	ban: async (event) => {

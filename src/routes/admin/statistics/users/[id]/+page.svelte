@@ -9,6 +9,7 @@
 	import HistoryTable from '$lib/components/stats/history-table.svelte';
 	import PlatformLabel from '$lib/components/stats/platform-label.svelte';
 	import StatTile from '$lib/components/stats/stat-tile.svelte';
+	import TablePagination from '$lib/components/stats/table-pagination.svelte';
 	import TitleLink from '$lib/components/stats/title-link.svelte';
 	import TopList from '$lib/components/stats/top-list.svelte';
 	import { formatRelative, formatWatchTime } from '$lib/data/time';
@@ -25,6 +26,8 @@
 			.map((part) => part[0]?.toUpperCase() ?? '')
 			.join('') || '?'
 	);
+	const first = $derived((data.recent.page - 1) * data.recent.perPage + 1);
+	const last = $derived(Math.min(data.recent.total, data.recent.page * data.recent.perPage));
 </script>
 
 <svelte:head>
@@ -117,15 +120,16 @@
 		<Card.Header>
 			<Card.Title>Recent history</Card.Title>
 			<Card.Description>
-				{#if data.recent.total > data.recent.entries.length}
+				{#if data.recent.total}
+					{first}–{last} of {data.recent.total.toLocaleString()} plays ·
 					<a
 						href="{resolve('/admin/statistics/history')}?user={encodeURIComponent(row.user.id)}"
 						class="underline-offset-4 hover:underline"
 					>
-						See all {data.recent.total.toLocaleString()} plays
+						View in history
 					</a>
 				{:else}
-					{data.recent.total.toLocaleString()} plays
+					No plays yet.
 				{/if}
 			</Card.Description>
 		</Card.Header>
@@ -133,6 +137,16 @@
 			<Card.Content class="overflow-x-auto">
 				<HistoryTable entries={data.recent.entries} showUser={false} />
 			</Card.Content>
+		{/if}
+		{#if data.recent.total > data.recent.perPage}
+			<Card.Footer>
+				<TablePagination
+					total={data.recent.total}
+					perPage={data.recent.perPage}
+					page={data.recent.page}
+					noScroll
+				/>
+			</Card.Footer>
 		{/if}
 	</Card.Root>
 </div>

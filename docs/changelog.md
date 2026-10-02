@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-02
+
+**Admin users and user statistics** (no schema change).
+
+- `/admin/users`: the ⋮ menu has **Change password…**, a dialog that sets a new password through Better Auth's `setUserPassword` and by default also signs the user out everywhere (`revokeUserSessions`). It isn't offered for your own account, which goes through `/settings/account`. The same menu has **Watch statistics**, which opens `/admin/statistics/users/<id>` and is available on every row, your own included. The User column shows how many profiles each account has.
+- `/admin/statistics/users/<id>`: **Recent history** is paginated at 15 plays per page (`?page=`, `USER_HISTORY_PAGE_SIZE`; `history()` now takes an optional `perPage`).
+
 ## 2026-10-01
 
 **Watch together** (no schema change). Watch a movie or series with people who aren't in the same room. Start a party with **Watch together** on a title's page or in the player's top bar, then share the link it shows. Anyone with an account on the server can join with it.
