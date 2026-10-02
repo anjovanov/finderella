@@ -95,7 +95,8 @@ Useful scripts: `npm test` (protocol/parser/mp4 unit tests), `npm run check`
 Workspace layout: the repo root is the SvelteKit hub; `packages/protocol` holds
 the shared zod message schemas and binary framing; `packages/storage-gateway` is the
 storage-gateway CLI (`finderella-storage-gateway`, the media agent). See
-`CLAUDE.md` for architecture details and hard-won gotchas.
+`docs/architecture.md` for architecture details and `CLAUDE.md` for conventions and
+hard-won gotchas.
 
 ## Releasing the storage gateway
 
