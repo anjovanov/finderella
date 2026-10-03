@@ -20,6 +20,7 @@
 		type ProfileIcon,
 		type ProfileSummary
 	} from '$lib/data/profiles';
+	import { canAddProfile } from '$lib/data/account-limits';
 	import { DialogForm } from '$lib/dialog-form.svelte';
 	import { cn } from '$lib/utils.js';
 
@@ -36,7 +37,7 @@
 	);
 	let busy = $state(false);
 
-	const canAdd = $derived(data.profiles.length < data.maxProfiles);
+	const canAdd = $derived(canAddProfile(data.profiles.length, data.maxProfiles));
 
 	// One dialog for add + edit: `editor.target` is the profile being edited, null = new.
 	const editor = new DialogForm<ProfileSummary>();
@@ -91,8 +92,10 @@
 		</h1>
 		{#if managing}
 			<p class="text-sm text-muted-foreground sm:text-base">
-				Choose a profile to rename it or change its look. Up to {data.maxProfiles} people can share this
-				account, each with their own progress, watchlist and settings.
+				Choose a profile to rename it or change its look. {data.maxProfiles === null
+					? 'Several people'
+					: `Up to ${data.maxProfiles} people`} can share this account, each with their own progress,
+				watchlist and settings.
 			</p>
 		{/if}
 	</div>

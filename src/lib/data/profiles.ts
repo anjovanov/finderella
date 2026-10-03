@@ -4,7 +4,6 @@
  * the server stores them in the `profile` table (see $lib/server/profiles).
  */
 
-export const MAX_PROFILES = 5;
 export const PROFILE_NAME_MAX = 30;
 
 /** Avatar backgrounds. Mid-lightness so white text/icons read in both themes. */

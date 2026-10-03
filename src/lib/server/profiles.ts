@@ -3,10 +3,11 @@ import { and, asc, count, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '$lib/server/db';
 import { profile } from '$lib/server/db/schema';
+import { profileLimit } from '$lib/server/site-settings';
+import { canAddProfile } from '$lib/data/account-limits';
 import {
 	isProfileColor,
 	isProfileIcon,
-	MAX_PROFILES,
 	normalizeAvatar,
 	PROFILE_NAME_MAX,
 	type ProfileSummary
@@ -92,9 +93,14 @@ async function nameTaken(userId: string, name: string, exceptId?: string): Promi
 const DUPLICATE_NAME = 'Another profile on this account already has that name.';
 
 export async function createProfile(userId: string, input: ProfileInput): Promise<ProfileSummary> {
-	const [{ n }] = await db.select({ n: count() }).from(profile).where(eq(profile.userId, userId));
-	if (n >= MAX_PROFILES)
-		throw new ProfileError(`An account can have up to ${MAX_PROFILES} profiles.`);
+	const [[{ n }], limit] = await Promise.all([
+		db.select({ n: count() }).from(profile).where(eq(profile.userId, userId)),
+		profileLimit()
+	]);
+	// An admin-set cap (site settings). Lowering it never deletes profiles;
+	// an account over it just can't add more.
+	if (!canAddProfile(n, limit))
+		throw new ProfileError(`An account can have up to ${limit} profiles.`);
 	if (await nameTaken(userId, input.name)) throw new ProfileError(DUPLICATE_NAME);
 	try {
 		const [row] = await db

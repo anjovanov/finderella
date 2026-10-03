@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { MAX_PROFILES, safeRedirectPath } from '$lib/data/profiles';
+import { safeRedirectPath } from '$lib/data/profiles';
+import { profileLimit } from '$lib/server/site-settings';
 import {
 	createProfile,
 	deleteProfile,
@@ -23,7 +24,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	return {
 		profiles,
 		activeId: locals.profile?.id ?? null,
-		maxProfiles: MAX_PROFILES,
+		// null = no admin-set limit.
+		maxProfiles: await profileLimit(),
 		manage: url.searchParams.has('manage'),
 		redirectTo: safeRedirectPath(url.searchParams.get('redirectTo'))
 	};

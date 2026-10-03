@@ -12,12 +12,20 @@ export type SiteSettings = Pick<
 	| 'trickplayEnabled'
 	| 'markersEnabled'
 	| 'remuxEnabled'
+	| 'maxSessionsPerAccount'
+	| 'maxProfilesPerAccount'
 	| 'updatedAt'
 >;
 type SiteSettingsPatch = Partial<
 	Pick<
 		SiteSettingsRow,
-		'allowRegistration' | 'requireLogin' | 'trickplayEnabled' | 'markersEnabled' | 'remuxEnabled'
+		| 'allowRegistration'
+		| 'requireLogin'
+		| 'trickplayEnabled'
+		| 'markersEnabled'
+		| 'remuxEnabled'
+		| 'maxSessionsPerAccount'
+		| 'maxProfilesPerAccount'
 	>
 >;
 
@@ -77,6 +85,16 @@ export async function markersEnabled(): Promise<boolean> {
 /** Admin switch for in-browser remux; off = everything the browser can't open directly transcodes. */
 export async function remuxEnabled(): Promise<boolean> {
 	return (await getSiteSettings()).remuxEnabled;
+}
+
+/** Signed-in devices allowed per account; null = unlimited. */
+export async function sessionLimit(): Promise<number | null> {
+	return (await getSiteSettings()).maxSessionsPerAccount;
+}
+
+/** Profiles allowed per account; null = unlimited. */
+export async function profileLimit(): Promise<number | null> {
+	return (await getSiteSettings()).maxProfilesPerAccount;
 }
 
 export async function countUsers(): Promise<number> {

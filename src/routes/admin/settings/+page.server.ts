@@ -1,4 +1,6 @@
 import { fail } from '@sveltejs/kit';
+import { z } from 'zod';
+import { LIMIT_MAX, LIMIT_MIN } from '$lib/data/account-limits';
 import { countOrphans, pruneCatalog } from '$lib/server/catalog/prune';
 import { enrichPending, isTmdbConfigured, metadataStatus } from '$lib/server/metadata';
 import { queueMarkerAnalysis } from '$lib/server/markers/job';
@@ -17,14 +19,45 @@ export const load: PageServerLoad = async () => {
 			requireLogin: settings.requireLogin,
 			trickplayEnabled: settings.trickplayEnabled,
 			markersEnabled: settings.markersEnabled,
-			remuxEnabled: settings.remuxEnabled
+			remuxEnabled: settings.remuxEnabled,
+			maxSessionsPerAccount: settings.maxSessionsPerAccount,
+			maxProfilesPerAccount: settings.maxProfilesPerAccount
 		},
 		orphans,
 		metadata
 	};
 };
 
+const Limit = z.coerce.number().int().min(LIMIT_MIN).max(LIMIT_MAX);
+
+/** `<key>Enabled` off = unlimited (null); on = `<key>` must be a whole number in range. */
+function readLimit(form: FormData, key: string, label: string) {
+	if (form.get(`${key}Enabled`) !== 'true') return { ok: true as const, value: null };
+	const parsed = Limit.safeParse(form.get(key));
+	return parsed.success
+		? { ok: true as const, value: parsed.data }
+		: {
+				ok: false as const,
+				message: `${label} must be a whole number from ${LIMIT_MIN} to ${LIMIT_MAX}.`
+			};
+}
+
 export const actions: Actions = {
+	// Its own action and form, like the switches below: a shared form would
+	// overwrite settings that weren't posted.
+	updateLimits: async (event) => {
+		const formData = await event.request.formData();
+		const sessions = readLimit(formData, 'maxSessions', 'Signed-in devices');
+		if (!sessions.ok) return fail(400, { limitsError: sessions.message });
+		const profiles = readLimit(formData, 'maxProfiles', 'Profiles');
+		if (!profiles.ok) return fail(400, { limitsError: profiles.message });
+		await updateSiteSettings({
+			maxSessionsPerAccount: sessions.value,
+			maxProfilesPerAccount: profiles.value
+		});
+		return { limitsSaved: true };
+	},
+
 	updateSettings: async (event) => {
 		const formData = await event.request.formData();
 		// Both switches live in one form, so both values arrive together.

@@ -183,6 +183,13 @@
       "when": 1791011001070,
       "tag": "0025_session_last_active",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791014872243,
+      "tag": "0026_account_limits",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,13 @@
 
 ## 2026-10-03
 
+**Account limits** (schema: `site_settings.max_sessions_per_account`, `site_settings.max_profiles_per_account`, migration `0026_account_limits`).
+
+- New **Account limits** card in Admin → Site settings, with two limits that apply to every account, administrators included:
+  - **Signed-in devices per account** (default: unlimited). When an account signs in on one device too many, the device it used longest ago is signed out automatically, so nobody is locked out. Lowering the limit doesn't sign anyone out right away; the account is brought down to it at its next sign-in. **Settings → Devices** tells users the limit.
+  - **Profiles per account** (default: 5, the old fixed cap). Admins can raise it, lower it or turn it off. An account over a lowered limit keeps all its profiles but can't add more.
+- Each limit is a switch (off = unlimited) and a number from 1 to 99.
+
 **Signed-in devices** (schema: `session.last_active_at`, migration `0025_session_last_active`).
 
 - New account settings section **Devices** (`/settings/devices`) lists every browser and device your account is signed in on, as "Chrome on Windows", "Safari on iOS" and so on, with when each was last used ("Last used 3 hours ago"). The one you're using is marked **This device**.

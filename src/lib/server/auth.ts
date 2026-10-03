@@ -7,7 +7,9 @@ import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { roleForNewUser, USER_ROLE } from '$lib/auth-roles';
 import { db } from '$lib/server/db';
+import { log } from '$lib/server/log';
 import { ensurePrimaryProfile } from '$lib/server/profiles';
+import { enforceSessionLimit } from '$lib/server/session-limit';
 import { countUsers, registrationOpen } from '$lib/server/site-settings';
 
 export const auth = betterAuth({
@@ -54,6 +56,24 @@ export const auth = betterAuth({
 				// admin-created users alike); hooks.server.ts re-creates a missing one.
 				after: async (user) => {
 					await ensurePrimaryProfile(user.id, user.name);
+				}
+			}
+		},
+		session: {
+			create: {
+				// The admin's signed-in device limit: a new sign-in signs out the
+				// least recently used sessions. Best effort — a failure here must
+				// never fail the sign-in itself.
+				after: async (session, ctx) => {
+					if (!ctx) {
+						log.warn({ userId: session.userId }, 'session limit skipped: no auth context');
+						return;
+					}
+					try {
+						await enforceSessionLimit(session, ctx.context.internalAdapter);
+					} catch (err) {
+						log.warn({ err, userId: session.userId }, 'could not enforce the session limit');
+					}
 				}
 			}
 		}

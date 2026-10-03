@@ -3,12 +3,15 @@ import { APIError } from 'better-auth/api';
 import { sortAccountSessions } from '$lib/data/account-sessions';
 import { listAccountSessions, sessionTokenFor } from '$lib/server/account-sessions';
 import { auth } from '$lib/server/auth';
+import { sessionLimit } from '$lib/server/site-settings';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	return {
-		sessions: sortAccountSessions(await listAccountSessions(locals.user!.id, locals.session!.id))
-	};
+	const [sessions, limit] = await Promise.all([
+		listAccountSessions(locals.user!.id, locals.session!.id),
+		sessionLimit()
+	]);
+	return { sessions: sortAccountSessions(sessions), sessionLimit: limit };
 };
 
 function failFrom(error: unknown) {

@@ -49,6 +49,11 @@
 		<Card.Title>Devices</Card.Title>
 		<Card.Description>
 			Where your account is signed in. A device you sign out has to sign in again.
+			{#if data.sessionLimit !== null}
+				Up to {data.sessionLimit}
+				{data.sessionLimit === 1 ? 'device' : 'devices'} can be signed in at once; signing in on another
+				signs out the one used longest ago.
+			{/if}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content>

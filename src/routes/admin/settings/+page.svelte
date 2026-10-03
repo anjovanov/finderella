@@ -9,7 +9,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Field from '$lib/components/ui/field';
+	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
+	import { DEFAULT_MAX_PROFILES, LIMIT_MAX, LIMIT_MIN } from '$lib/data/account-limits';
 	import { DialogForm } from '$lib/dialog-form.svelte';
 
 	let { data, form } = $props();
@@ -47,6 +49,15 @@
 		await tick();
 		remuxForm?.requestSubmit();
 	}
+
+	// Account limits: a switch per limit (off = unlimited) and the number,
+	// kept while the switch is off so turning it back on restores it.
+	const DEFAULT_MAX_SESSIONS = 3;
+	let sessionsLimited = $derived(data.settings.maxSessionsPerAccount !== null);
+	let maxSessions = $derived(data.settings.maxSessionsPerAccount ?? DEFAULT_MAX_SESSIONS);
+	let profilesLimited = $derived(data.settings.maxProfilesPerAccount !== null);
+	let maxProfiles = $derived(data.settings.maxProfilesPerAccount ?? DEFAULT_MAX_PROFILES);
+	let savingLimits = $state(false);
 
 	const prune = new DialogForm();
 	const noOrphans = $derived(data.orphans.movies === 0 && data.orphans.series === 0);
@@ -138,6 +149,93 @@
 						disabled={saving}
 						onCheckedChange={submitSettings}
 					/>
+				</Field.Field>
+			</Field.Group>
+		</form>
+	</Card.Content>
+</Card.Root>
+
+<!-- Account limits -->
+<Card.Root>
+	<Card.Header>
+		<Card.Title>Account limits</Card.Title>
+		<Card.Description>
+			Apply to every account, administrators included. Lowering a limit never deletes anything.
+		</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form
+			method="POST"
+			action="?/updateLimits"
+			use:enhance={() => {
+				savingLimits = true;
+				return async ({ update }) => {
+					savingLimits = false;
+					await update({ reset: false });
+				};
+			}}
+		>
+			<input type="hidden" name="maxSessionsEnabled" value={sessionsLimited ? 'true' : 'false'} />
+			<input type="hidden" name="maxProfilesEnabled" value={profilesLimited ? 'true' : 'false'} />
+			<Field.Group>
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label for="limit-sessions">Limit signed-in devices per account</Field.Label>
+						<Field.Description>
+							Signing in on one device too many signs out the one used longest ago. An account
+							already over a lower limit is brought down to it at its next sign-in. Off = unlimited.
+						</Field.Description>
+					</Field.Content>
+					<Switch id="limit-sessions" bind:checked={sessionsLimited} disabled={savingLimits} />
+				</Field.Field>
+				{#if sessionsLimited}
+					<Field.Field orientation="horizontal">
+						<Field.Label for="max-sessions">Devices per account</Field.Label>
+						<Input
+							id="max-sessions"
+							name="maxSessions"
+							type="number"
+							min={LIMIT_MIN}
+							max={LIMIT_MAX}
+							step={1}
+							required
+							class="w-24"
+							bind:value={maxSessions}
+						/>
+					</Field.Field>
+				{/if}
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label for="limit-profiles">Limit profiles per account</Field.Label>
+						<Field.Description>
+							Accounts over a lower limit keep their profiles but can't add more. Off = unlimited.
+						</Field.Description>
+					</Field.Content>
+					<Switch id="limit-profiles" bind:checked={profilesLimited} disabled={savingLimits} />
+				</Field.Field>
+				{#if profilesLimited}
+					<Field.Field orientation="horizontal">
+						<Field.Label for="max-profiles">Profiles per account</Field.Label>
+						<Input
+							id="max-profiles"
+							name="maxProfiles"
+							type="number"
+							min={LIMIT_MIN}
+							max={LIMIT_MAX}
+							step={1}
+							required
+							class="w-24"
+							bind:value={maxProfiles}
+						/>
+					</Field.Field>
+				{/if}
+				<Field.Field orientation="horizontal">
+					<Button type="submit" variant="secondary" disabled={savingLimits}>Save limits</Button>
+					{#if form && 'limitsError' in form}
+						<Field.Error>{form.limitsError}</Field.Error>
+					{:else if form && 'limitsSaved' in form}
+						<Field.Description>Limits saved.</Field.Description>
+					{/if}
 				</Field.Field>
 			</Field.Group>
 		</form>

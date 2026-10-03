@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 /** Hub-wide settings. A single row (`id = 'default'`), created on first read. */
 export const siteSettings = pgTable('site_settings', {
@@ -12,6 +12,10 @@ export const siteSettings = pgTable('site_settings', {
 	markersEnabled: boolean('markers_enabled').notNull().default(true),
 	/** Play MKVs & co. by remuxing them in the browser (Media Source Extensions) instead of transcoding. */
 	remuxEnabled: boolean('remux_enabled').notNull().default(true),
+	/** Signed-in devices per account; a sign-in beyond it signs out the least recently used. null = unlimited. */
+	maxSessionsPerAccount: integer('max_sessions_per_account'),
+	/** Profiles per account (DEFAULT_MAX_PROFILES in $lib/data/account-limits). null = unlimited. */
+	maxProfilesPerAccount: integer('max_profiles_per_account').default(5),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
