@@ -36,7 +36,7 @@
 
 <section class="flex flex-col gap-3">
 	<div class="page-gutter">
-		<h2 class="text-lg font-semibold tracking-tight">
+		<h2 class="text-xl font-semibold tracking-tight sm:text-2xl">
 			{#if href}
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolve()d paths -->
 				<a {href} class="hover:text-primary">{title}</a>

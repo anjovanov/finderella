@@ -130,7 +130,8 @@
 		@apply bg-background text-foreground;
 	}
 	html {
-		@apply font-sans;
+		/* No rubber-band overscroll: it dragged the sticky navbar down and exposed a blank strip. */
+		@apply overscroll-y-none font-sans;
 	}
 	html {
 		color-scheme: light;

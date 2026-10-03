@@ -147,11 +147,15 @@
 					class={cn(
 						'rounded-full',
 						isActive('/watchlist')
-							? 'bg-accent text-foreground'
+							? 'text-foreground hover:bg-transparent'
 							: 'text-muted-foreground hover:text-foreground'
 					)}
 				>
-					<HugeiconsIcon icon={Bookmark01Icon} class="size-5" />
+					<!-- Hugeicons' free set is stroke-only: the active state fills the outline path. -->
+					<HugeiconsIcon
+						icon={Bookmark01Icon}
+						class={cn('size-5', isActive('/watchlist') && '[&_path]:fill-current')}
+					/>
 				</Button>
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
