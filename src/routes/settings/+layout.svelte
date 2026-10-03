@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
+		ComputerIcon,
 		PaintBoardIcon,
 		PlayCircleIcon,
 		SubtitleIcon,
@@ -21,6 +22,12 @@
 			path: '/settings/account',
 			label: 'Account',
 			icon: UserIcon
+		},
+		{
+			href: resolve('/settings/devices'),
+			path: '/settings/devices',
+			label: 'Devices',
+			icon: ComputerIcon
 		}
 	];
 	const profileSections = [

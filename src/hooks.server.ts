@@ -4,6 +4,7 @@ import { auth } from '$lib/server/auth';
 import { isAdmin } from '$lib/auth-roles';
 import { loginRequired } from '$lib/server/site-settings';
 import { markSeen } from '$lib/server/stats/seen';
+import { markSessionActive } from '$lib/server/account-sessions';
 import { setActiveProfile } from '$lib/server/active-profile';
 import { ensurePrimaryProfile, listProfiles } from '$lib/server/profiles';
 import { pickActiveProfile } from '$lib/data/profiles';
@@ -54,7 +55,14 @@ const ACCOUNT_PREFIXES = [
 // watching?"): the picker (which also manages profiles), account settings,
 // sign-out and admin. /api/* is never redirected — routes that need a
 // profile call requireProfile.
-const PROFILE_EXEMPT_PREFIXES = ['/profiles', '/settings/account', '/logout', '/admin', '/api'];
+const PROFILE_EXEMPT_PREFIXES = [
+	'/profiles',
+	'/settings/account',
+	'/settings/devices',
+	'/logout',
+	'/admin',
+	'/api'
+];
 
 function matchesPrefix(pathname: string, prefixes: string[]): boolean {
 	return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -83,6 +91,7 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 		event.locals.session = session.session;
 		event.locals.user = session.user;
 		markSeen(session.user.id, event.request.headers.get('user-agent'));
+		markSessionActive(session.session, event.request.headers.get('user-agent'));
 
 		let profiles = await listProfiles(session.user.id);
 		// Every account has a primary profile (created with the user, and by

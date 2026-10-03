@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-03
+
+**Signed-in devices** (schema: `session.last_active_at`, migration `0025_session_last_active`).
+
+- New account settings section **Devices** (`/settings/devices`) lists every browser and device your account is signed in on, as "Chrome on Windows", "Safari on iOS" and so on, with when each was last used ("Last used 3 hours ago"). The one you're using is marked **This device**.
+- Each device shows its OS logo with the browser's logo in the corner (e.g. Linux + Firefox), in the text colour. Devices without a matching logo show a phone/computer/TV icon and a generic browser icon.
+- **Sign out** next to a device ends that session; it has to sign in again. **Sign out all other devices** does it for every device except this one, after a confirmation.
+- "Last used" is accurate to about 5 minutes: a new server-only session field, `lastActiveAt`, is stamped by the auth hook at most every 5 minutes per session. Only browser, OS and that time are shown, never IP addresses.
+- Fix: signing in or registering through the `/login` and `/register` pages now records the browser's user agent and IP on the session; they were saved empty, so those devices showed as "Unknown device". Sessions that are already signed in get their user agent filled in on their next request.
+
 ## 2026-10-02
 
 **Series page: mark episodes watched, episode ratings** (schema: `episode.rating`, migration `0024_episode_rating`; `METADATA_VERSION` 3).

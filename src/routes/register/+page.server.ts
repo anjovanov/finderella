@@ -34,7 +34,11 @@ export const actions: Actions = {
 		try {
 			// Closed registration is enforced inside Better Auth (hooks.before in
 			// src/lib/server/auth.ts) so the raw API endpoint is covered too.
-			await auth.api.signUpEmail({ body: { email, password, name } });
+			// Headers: the session's user agent and IP, as in the /login action.
+			await auth.api.signUpEmail({
+				body: { email, password, name },
+				headers: event.request.headers
+			});
 		} catch (error) {
 			if (error instanceof APIError) {
 				const status = error.statusCode === 403 ? 403 : 400;

@@ -21,7 +21,11 @@ export const auth = betterAuth({
 			// Per device like any streaming service, gone on sign-out. Written by
 			// the server only (`input: false` keeps /update-session from setting
 			// it) and validated against the user's profiles on every request.
-			activeProfileId: { type: 'string', required: false, input: false }
+			activeProfileId: { type: 'string', required: false, input: false },
+			// "Last used" on /settings/devices. Better Auth's own updatedAt moves
+			// only on the daily refresh, so markSessionActive
+			// ($lib/server/account-sessions) stamps this every few minutes.
+			lastActiveAt: { type: 'date', required: false, input: false }
 		}
 	},
 	hooks: {
