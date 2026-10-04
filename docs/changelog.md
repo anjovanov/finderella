@@ -2,6 +2,12 @@
 
 ## 2026-10-04
 
+**Settings save as you change them** (no schema change).
+
+- Settings → Preferences, Subtitles and Playback no longer have Save buttons: picking an option, flipping a switch or moving the subtitle position slider saves it straight away. A small "Saving… / Saved" note in each card's header confirms it, or shows why a change didn't save, and puts the control back on the saved value.
+- Fix: refreshing one of these pages, or Admin → Branding, in Firefox could show unsaved picks from before the refresh instead of the saved settings.
+- Without JavaScript the pages still work, with a Save button per card.
+
 **Branding** (schema: `site_settings.app_name`, `tagline`, `accent`, `body_font`, `heading_font`, migration `0029_branding`).
 
 - New admin page **Admin → Branding** (`/admin/branding`) to rebrand the server:

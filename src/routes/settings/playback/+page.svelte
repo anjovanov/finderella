@@ -1,11 +1,12 @@
 <script lang="ts">
 	import PageTitle from '$lib/components/page-title.svelte';
-	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Field from '$lib/components/ui/field';
 	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
+	import SaveStatus from '$lib/components/save-status.svelte';
+	import { SettingsSaver } from '$lib/settings-saver.svelte';
 	import { LANGUAGES } from '@finderella/protocol/languages';
 	import { DEFAULT_AUDIO_LANGUAGE } from '$lib/audio-preference';
 	import { canDecodeSurround, detectOutputChannels } from '$lib/audio-output';
@@ -22,6 +23,13 @@
 	} from '$lib/data/playback-settings';
 
 	let { data, form } = $props();
+
+	// Every control saves itself as it changes (one action per card); `form`
+	// only reports a no-JS post.
+	const audio = new SettingsSaver('?/updatePlayback');
+	const skip = new SettingsSaver('?/updateSkip');
+	const autoplay = new SettingsSaver('?/updateAutoplay');
+	const stillWatchingSaver = new SettingsSaver('?/updateStillWatching');
 
 	let audioLanguage = $derived(data.playbackSettings.audioLanguage);
 	let audioChannels = $derived(data.playbackSettings.audioChannels);
@@ -98,13 +106,20 @@
 			Which audio track plays when a title has several, for example a dub and the original language,
 			and how many channels you hear.
 		</Card.Description>
+		<Card.Action><SaveStatus saver={audio} /></Card.Action>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updatePlayback" use:enhance>
+		<!-- autocomplete="off" on these forms: no restoring stale picks on reload (see CLAUDE.md). -->
+		<form method="POST" action="?/updatePlayback" autocomplete="off">
 			<Field.Group>
 				<Field.Field data-invalid={message('audio') ? true : undefined}>
 					<Field.Label for="audio-language">Preferred audio language</Field.Label>
-					<Select.Root type="single" name="audioLanguage" bind:value={audioLanguage}>
+					<Select.Root
+						type="single"
+						name="audioLanguage"
+						bind:value={audioLanguage}
+						onValueChange={(audioLanguage) => audio.save({ audioLanguage })}
+					>
 						<Select.Trigger id="audio-language" class="w-full sm:w-72">
 							{languageLabel(audioLanguage)}
 						</Select.Trigger>
@@ -129,7 +144,12 @@
 				</Field.Field>
 				<Field.Field>
 					<Field.Label for="audio-channels">Maximum audio channels</Field.Label>
-					<Select.Root type="single" name="audioChannels" bind:value={audioChannels}>
+					<Select.Root
+						type="single"
+						name="audioChannels"
+						bind:value={audioChannels}
+						onValueChange={(audioChannels) => audio.save({ audioChannels })}
+					>
 						<Select.Trigger id="audio-channels" class="w-full sm:w-72">
 							{AUDIO_CHANNEL_LABELS[audioChannels]}
 						</Select.Trigger>
@@ -150,9 +170,9 @@
 						{/if}
 					</Field.Description>
 				</Field.Field>
-				<Field.Field>
+				<noscript>
 					<Button type="submit" variant="secondary" class="w-fit">Save audio settings</Button>
-				</Field.Field>
+				</noscript>
 			</Field.Group>
 		</form>
 	</Card.Content>
@@ -165,14 +185,20 @@
 			What happens when an intro or the closing credits start. Titles are analysed after they're
 			added, so new ones may take a while to get these.
 		</Card.Description>
+		<Card.Action><SaveStatus saver={skip} /></Card.Action>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updateSkip" use:enhance>
+		<form method="POST" action="?/updateSkip" autocomplete="off">
 			<Field.Group>
 				<div class="grid gap-4 sm:grid-cols-2">
 					<Field.Field>
 						<Field.Label for="skip-intro">Intros</Field.Label>
-						<Select.Root type="single" name="skipIntro" bind:value={skipIntro}>
+						<Select.Root
+							type="single"
+							name="skipIntro"
+							bind:value={skipIntro}
+							onValueChange={(skipIntro) => skip.save({ skipIntro })}
+						>
 							<Select.Trigger id="skip-intro" class="w-full">
 								{SKIP_MODE_LABELS[skipIntro]}
 							</Select.Trigger>
@@ -186,7 +212,12 @@
 					</Field.Field>
 					<Field.Field>
 						<Field.Label for="skip-credits">Credits</Field.Label>
-						<Select.Root type="single" name="skipCredits" bind:value={skipCredits}>
+						<Select.Root
+							type="single"
+							name="skipCredits"
+							bind:value={skipCredits}
+							onValueChange={(skipCredits) => skip.save({ skipCredits })}
+						>
 							<Select.Trigger id="skip-credits" class="w-full">
 								{SKIP_MODE_LABELS[skipCredits]}
 							</Select.Trigger>
@@ -204,9 +235,9 @@
 				{:else if saved('skip')}
 					<Field.Description>Skip settings saved.</Field.Description>
 				{/if}
-				<Field.Field>
+				<noscript>
 					<Button type="submit" variant="secondary" class="w-fit">Save skip settings</Button>
-				</Field.Field>
+				</noscript>
 			</Field.Group>
 		</form>
 	</Card.Content>
@@ -216,9 +247,10 @@
 	<Card.Header>
 		<Card.Title>Series</Card.Title>
 		<Card.Description>What happens when an episode ends.</Card.Description>
+		<Card.Action><SaveStatus saver={autoplay} /></Card.Action>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updateAutoplay" use:enhance>
+		<form method="POST" action="?/updateAutoplay" autocomplete="off">
 			<Field.Group>
 				<Field.Field orientation="horizontal">
 					<Field.Content>
@@ -230,16 +262,20 @@
 					</Field.Content>
 					<!-- The switch carries no form value; the hidden input mirrors it. -->
 					<input type="hidden" name="autoplayNext" value={autoplayNext ? 'true' : 'false'} />
-					<Switch id="autoplay-next" bind:checked={autoplayNext} />
+					<Switch
+						id="autoplay-next"
+						bind:checked={autoplayNext}
+						onCheckedChange={(autoplayNext) => autoplay.save({ autoplayNext })}
+					/>
 				</Field.Field>
 				{#if message('autoplay')}
 					<Field.Error>{message('autoplay')}</Field.Error>
 				{:else if saved('autoplay')}
 					<Field.Description>Series settings saved.</Field.Description>
 				{/if}
-				<Field.Field>
+				<noscript>
 					<Button type="submit" variant="secondary" class="w-fit">Save series settings</Button>
-				</Field.Field>
+				</noscript>
 			</Field.Group>
 		</form>
 	</Card.Content>
@@ -252,9 +288,10 @@
 			Pauses playback and asks before carrying on, so nothing keeps playing to an empty room.
 			Playback only resumes when you choose to continue.
 		</Card.Description>
+		<Card.Action><SaveStatus saver={stillWatchingSaver} /></Card.Action>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updateStillWatching" use:enhance>
+		<form method="POST" action="?/updateStillWatching" autocomplete="off">
 			<Field.Group>
 				<Field.Field orientation="horizontal">
 					<Field.Content>
@@ -268,7 +305,12 @@
 						name="stillWatchingEnabled"
 						value={stillWatching ? 'true' : 'false'}
 					/>
-					<Switch id="still-watching" bind:checked={stillWatching} />
+					<Switch
+						id="still-watching"
+						bind:checked={stillWatching}
+						onCheckedChange={(stillWatchingEnabled) =>
+							stillWatchingSaver.save({ stillWatchingEnabled })}
+					/>
 				</Field.Field>
 				<div class="grid gap-4 sm:grid-cols-2">
 					<Field.Field data-disabled={stillWatching ? undefined : true}>
@@ -277,6 +319,8 @@
 							type="single"
 							name="stillWatchingEpisodes"
 							bind:value={stillWatchingEpisodes}
+							onValueChange={(stillWatchingEpisodes) =>
+								stillWatchingSaver.save({ stillWatchingEpisodes })}
 							disabled={!stillWatching}
 						>
 							<Select.Trigger id="still-watching-episodes" class="w-full">
@@ -296,6 +340,8 @@
 							type="single"
 							name="stillWatchingMinutes"
 							bind:value={stillWatchingMinutes}
+							onValueChange={(stillWatchingMinutes) =>
+								stillWatchingSaver.save({ stillWatchingMinutes })}
 							disabled={!stillWatching}
 						>
 							<Select.Trigger id="still-watching-minutes" class="w-full">
@@ -315,11 +361,11 @@
 				{:else if saved('stillWatching')}
 					<Field.Description>Still watching settings saved.</Field.Description>
 				{/if}
-				<Field.Field>
+				<noscript>
 					<Button type="submit" variant="secondary" class="w-fit"
 						>Save still watching settings</Button
 					>
-				</Field.Field>
+				</noscript>
 			</Field.Group>
 		</form>
 	</Card.Content>

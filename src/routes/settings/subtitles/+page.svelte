@@ -1,11 +1,12 @@
 <script lang="ts">
 	import PageTitle from '$lib/components/page-title.svelte';
-	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Field from '$lib/components/ui/field';
 	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
+	import SaveStatus from '$lib/components/save-status.svelte';
+	import { SettingsSaver } from '$lib/settings-saver.svelte';
 	import { LANGUAGES } from '@finderella/protocol/languages';
 	import {
 		cueStyle,
@@ -18,6 +19,9 @@
 	} from '$lib/data/subtitle-settings';
 
 	let { data, form } = $props();
+
+	// Every control saves itself as it changes; `form` only reports a no-JS post.
+	const saver = new SettingsSaver('?/updateSubtitles');
 
 	// Subtitle form state: seeded from the saved settings, edited live for the preview.
 	let subLanguage = $derived(data.subtitleSettings.language);
@@ -58,17 +62,26 @@
 	<Card.Header>
 		<Card.Title>Subtitles</Card.Title>
 		<Card.Description>
-			Which language turns on automatically, and how subtitles look in the player. Picking a
-			language from the player's menu updates the preference too.
+			Which language turns on automatically, and how subtitles look in the player.
+			<span class="block"
+				>Picking a language from the player's menu updates the preference too.</span
+			>
 		</Card.Description>
+		<Card.Action><SaveStatus {saver} /></Card.Action>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updateSubtitles" use:enhance>
+		<!-- autocomplete="off": no restoring stale picks on reload (see CLAUDE.md). -->
+		<form method="POST" action="?/updateSubtitles" autocomplete="off">
 			<Field.Group>
 				<div class="grid gap-4 sm:grid-cols-2">
 					<Field.Field>
 						<Field.Label for="subtitle-language">Preferred language</Field.Label>
-						<Select.Root type="single" name="language" bind:value={subLanguage}>
+						<Select.Root
+							type="single"
+							name="language"
+							bind:value={subLanguage}
+							onValueChange={(language) => saver.save({ language })}
+						>
 							<Select.Trigger id="subtitle-language" class="w-full">
 								{languageLabel(subLanguage)}
 							</Select.Trigger>
@@ -85,7 +98,12 @@
 					</Field.Field>
 					<Field.Field>
 						<Field.Label for="subtitle-size">Text size</Field.Label>
-						<Select.Root type="single" name="size" bind:value={subSize}>
+						<Select.Root
+							type="single"
+							name="size"
+							bind:value={subSize}
+							onValueChange={(size) => saver.save({ size })}
+						>
 							<Select.Trigger id="subtitle-size" class="w-full">
 								{optionLabel(SUBTITLE_SIZE_OPTIONS, subSize)}
 							</Select.Trigger>
@@ -98,7 +116,12 @@
 					</Field.Field>
 					<Field.Field>
 						<Field.Label for="subtitle-color">Text color</Field.Label>
-						<Select.Root type="single" name="color" bind:value={subColor}>
+						<Select.Root
+							type="single"
+							name="color"
+							bind:value={subColor}
+							onValueChange={(color) => saver.save({ color })}
+						>
 							<Select.Trigger id="subtitle-color" class="w-full">
 								<span class="size-3 rounded-full ring-1 ring-border" style="background: {subColor}"
 								></span>
@@ -119,7 +142,12 @@
 					</Field.Field>
 					<Field.Field>
 						<Field.Label for="subtitle-font">Font</Field.Label>
-						<Select.Root type="single" name="font" bind:value={subFont}>
+						<Select.Root
+							type="single"
+							name="font"
+							bind:value={subFont}
+							onValueChange={(font) => saver.save({ font })}
+						>
 							<Select.Trigger id="subtitle-font" class="w-full">
 								{optionLabel(SUBTITLE_FONT_OPTIONS, subFont)}
 							</Select.Trigger>
@@ -139,7 +167,11 @@
 						</Field.Content>
 						<!-- The switch carries no form value; the hidden input mirrors it. -->
 						<input type="hidden" name="background" value={subBackground ? 'true' : 'false'} />
-						<Switch id="subtitle-background" bind:checked={subBackground} />
+						<Switch
+							id="subtitle-background"
+							bind:checked={subBackground}
+							onCheckedChange={(background) => saver.save({ background })}
+						/>
 					</Field.Field>
 					<Field.Field class="sm:col-span-2">
 						<div class="flex items-baseline justify-between gap-4">
@@ -156,6 +188,7 @@
 							max={MAX_SUBTITLE_LINES}
 							step="1"
 							bind:value={subPosition}
+							onchange={(event) => saver.save({ position: event.currentTarget.value })}
 							class="w-full accent-primary"
 							aria-valuetext={positionLabel(subPosition)}
 						/>
@@ -200,9 +233,9 @@
 						<Field.Description>Subtitle settings saved.</Field.Description>
 					{/if}
 				</Field.Field>
-				<Field.Field>
+				<noscript>
 					<Button type="submit" variant="secondary" class="w-fit">Save subtitle settings</Button>
-				</Field.Field>
+				</noscript>
 			</Field.Group>
 		</form>
 	</Card.Content>
