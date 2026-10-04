@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import LibraryPage from '$lib/components/media/library-page.svelte';
 
 	let { data } = $props();
@@ -11,9 +12,7 @@
 	};
 </script>
 
-<svelte:head>
-	<title>Watchlist · Finderella</title>
-</svelte:head>
+<PageTitle title="Watchlist" />
 
 <LibraryPage
 	title="Watchlist"

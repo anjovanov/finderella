@@ -16,6 +16,13 @@ export const siteSettings = pgTable('site_settings', {
 	maxSessionsPerAccount: integer('max_sessions_per_account'),
 	/** Profiles per account (DEFAULT_MAX_PROFILES in $lib/data/account-limits). null = unlimited. */
 	maxProfilesPerAccount: integer('max_profiles_per_account').default(5),
+	/** Branding (admin → Branding); ids from $lib/data/branding, read through normalizeBranding. */
+	appName: text('app_name').notNull().default('Finderella'),
+	/** Shown on the sign-in / sign-up pages; null = none. */
+	tagline: text('tagline'),
+	accent: text('accent').notNull().default('teal'),
+	bodyFont: text('body_font').notNull().default('figtree'),
+	headingFont: text('heading_font').notNull().default('figtree'),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 

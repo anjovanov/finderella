@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { onMount } from 'svelte';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { ChartHistogramIcon } from '@hugeicons/core-free-icons';
@@ -34,9 +35,7 @@
 	const noun = $derived(metric === 'plays' ? 'Plays' : 'Watch time (hours)');
 </script>
 
-<svelte:head>
-	<title>Statistics · Settings · Finderella</title>
-</svelte:head>
+<PageTitle title="Statistics · Settings" />
 
 {#snippet titleRow(item: TopTitle)}
 	<PosterThumb src={item.posterUrl} class="w-9" />

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { branding } from '$lib/branding';
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
@@ -80,12 +82,14 @@
 	</span>
 {/snippet}
 
-<svelte:head>
-	<title>{managing ? 'Manage profiles' : "Who's watching?"} · Finderella</title>
-</svelte:head>
+<PageTitle title={managing ? 'Manage profiles' : "Who's watching?"} />
 
 <div class="flex min-h-svh page-gutter flex-col items-center justify-center gap-10 py-12">
-	<p class="text-center text-xl font-bold tracking-[0.25em] text-primary">FINDERELLA</p>
+	<p
+		class="max-w-full text-center font-heading text-xl font-bold tracking-[0.25em] break-words text-primary uppercase"
+	>
+		{branding().appName}
+	</p>
 	<div class="flex flex-col items-center gap-3 text-center">
 		<h1 class="text-3xl font-semibold tracking-tight sm:text-5xl">
 			{managing ? 'Manage profiles' : "Who's watching?"}

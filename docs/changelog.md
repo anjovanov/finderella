@@ -2,6 +2,16 @@
 
 ## 2026-10-04
 
+**Branding** (schema: `site_settings.app_name`, `tagline`, `accent`, `body_font`, `heading_font`, migration `0029_branding`).
+
+- New admin page **Admin → Branding** (`/admin/branding`) to rebrand the server:
+  - **Name**: replaces "Finderella" in the navbar, admin sidebar, page titles, screensaver, sign-in/sign-up/profile pages and settings copy.
+  - **Tagline** (optional): shown under the name on the sign-in and create-account pages.
+  - **Accent colour**: eight curated presets (teal, blue, indigo, violet, rose, orange, amber, green), each tuned separately for the light and the dark theme.
+  - **Body and heading fonts**: a curated list of self-hosted fonts (11 sans-serif, plus Playfair Display, Fraunces and Cinzel for headings).
+- A live preview shows the unsaved choices in both themes. Saving restyles the app straight away; **Reset to defaults** brings back Finderella, teal and Figtree.
+- The defaults look exactly as before, except the admin sidebar's active-item accent in the dark theme, which was a leftover violet and is now the accent colour.
+
 **TMDB key in the admin dashboard** (schema: table `metadata_settings`, migration `0028_metadata_settings`).
 
 - The TMDB API key can now be entered in Admin → Site settings → **Metadata**, like the subtitle provider keys. Either a v3 API key or a v4 API Read Access Token works.

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
@@ -31,9 +32,7 @@
 	const now = Date.now();
 </script>
 
-<svelte:head>
-	<title>User statistics · Finderella</title>
-</svelte:head>
+<PageTitle title="User statistics" />
 
 {#snippet header(key: UserSortKey, label: string, align: 'left' | 'right' = 'left')}
 	<Table.Head

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { branding } from '$lib/branding';
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
@@ -96,13 +98,13 @@
 	]);
 </script>
 
-<svelte:head>
-	<title>Admin · Finderella</title>
-</svelte:head>
+<PageTitle title="Admin" />
 
 <div>
 	<h1 class="text-2xl font-semibold">Overview</h1>
-	<p class="text-sm text-muted-foreground">What this Finderella server is serving right now.</p>
+	<p class="text-sm text-muted-foreground">
+		What this {branding().appName} server is serving right now.
+	</p>
 </div>
 
 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">

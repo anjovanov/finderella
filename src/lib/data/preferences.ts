@@ -12,7 +12,7 @@ export type ScreensaverKind = (typeof SCREENSAVER_KINDS)[number];
 
 export const SCREENSAVER_KIND_OPTIONS: { value: ScreensaverKind; label: string }[] = [
 	{ value: 'media', label: 'Movie & series artwork' },
-	{ value: 'logo', label: 'Finderella logo' }
+	{ value: 'logo', label: 'Logo' }
 ];
 
 /** Idle time before the screensaver starts, in seconds. */

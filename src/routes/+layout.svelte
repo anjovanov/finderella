@@ -5,6 +5,7 @@
 	import Screensaver from '$lib/components/screensaver.svelte';
 	import { ScreensaverController, setScreensaver } from '$lib/screensaver.svelte';
 	import SiteHeader from '$lib/components/site-header.svelte';
+	import { brandStyleSheet } from '$lib/data/branding';
 
 	let { data, children } = $props();
 
@@ -28,12 +29,20 @@
 	$effect(() => {
 		document.documentElement.classList.toggle('dark', theme === 'dark');
 	});
+
+	// hooks.server.ts inlines the same stylesheet for the first paint; this copy
+	// follows the data, so saving the admin Branding form restyles the app live.
+	const brandCss = $derived(brandStyleSheet(data.branding));
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<!-- The page background of each theme (--background). -->
 	<meta name="theme-color" content={theme === 'dark' ? '#101014' : '#f8fafb'} />
+	{#if brandCss}
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -- built from the preset/font tables only, never admin text -->
+		{@html `<style>${brandCss}</style>`}
+	{/if}
 </svelte:head>
 
 {#if showHeader}

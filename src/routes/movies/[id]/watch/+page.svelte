@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { onDestroy, untrack } from 'svelte';
 	import { mediaHref } from '$lib/data';
 	import WatchPlayer from '$lib/components/media/watch-player.svelte';
@@ -183,9 +184,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Watch {data.movie.title} · Finderella</title>
-</svelte:head>
+<PageTitle title={`Watch ${data.movie.title}`} />
 
 {#if playback}
 	<WatchPlayer

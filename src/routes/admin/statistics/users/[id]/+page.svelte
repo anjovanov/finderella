@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { resolve } from '$app/paths';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
@@ -30,9 +31,7 @@
 	const last = $derived(Math.min(data.recent.total, data.recent.page * data.recent.perPage));
 </script>
 
-<svelte:head>
-	<title>{row.user.name} · Statistics · Finderella</title>
-</svelte:head>
+<PageTitle title={`${row.user.name} · Statistics`} />
 
 <div>
 	<Button href={resolve('/admin/statistics/users')} variant="ghost" size="sm">

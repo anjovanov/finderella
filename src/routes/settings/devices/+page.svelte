@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
@@ -33,9 +34,7 @@
 	const revokeOthers = new DialogForm();
 </script>
 
-<svelte:head>
-	<title>Devices · Settings · Finderella</title>
-</svelte:head>
+<PageTitle title="Devices · Settings" />
 
 {#if form && 'message' in form && form.message}
 	<Alert.Root variant="destructive">

@@ -2,12 +2,13 @@ import { error, redirect, type Handle, type ServerInit } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { isAdmin } from '$lib/auth-roles';
-import { loginRequired } from '$lib/server/site-settings';
+import { getBranding, loginRequired } from '$lib/server/site-settings';
 import { markSeen } from '$lib/server/stats/seen';
 import { markSessionActive } from '$lib/server/account-sessions';
 import { setActiveProfile } from '$lib/server/active-profile';
 import { ensurePrimaryProfile, listProfiles } from '$lib/server/profiles';
 import { pickActiveProfile } from '$lib/data/profiles';
+import { brandStyleSheet } from '$lib/data/branding';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Bridge the WebSocket handlers out of the SvelteKit bundle so the production
@@ -149,11 +150,17 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	// so the first paint is right. transformPageChunk runs after the loads, so
 	// the root layout has set `locals.theme` by then; pages that skip SSR get
 	// the dark default and the layout applies the real theme on the client.
+	// The branding stylesheet goes into `%finderella.brand%` here rather than
+	// only through the root layout, which doesn't render on `ssr = false` pages.
 	const resolveWithTheme: typeof resolve = (event, opts) =>
 		resolve(event, {
 			...opts,
 			transformPageChunk: async ({ html, done }) => {
-				const out = (await opts?.transformPageChunk?.({ html, done })) ?? html;
+				let out = (await opts?.transformPageChunk?.({ html, done })) ?? html;
+				if (out.includes('%finderella.brand%')) {
+					const css = brandStyleSheet(await getBranding());
+					out = out.replace('%finderella.brand%', css ? `<style>${css}</style>` : '');
+				}
 				return out.replace('%finderella.theme%', event.locals.theme === 'light' ? '' : 'dark');
 			}
 		});

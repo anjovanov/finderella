@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { branding } from '$lib/branding';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
@@ -77,7 +78,8 @@
 	<div>
 		<h1 class="text-2xl font-semibold">Settings</h1>
 		<p class="text-sm text-muted-foreground">
-			Your account on this Finderella server, and the settings of the profile you are watching as.
+			Your account on this {branding().appName} server, and the settings of the profile you are watching
+			as.
 		</p>
 	</div>
 

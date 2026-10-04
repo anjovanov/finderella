@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { branding } from '$lib/branding';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -29,8 +30,8 @@
 		<Card.Header>
 			<Card.Title>Registration is closed</Card.Title>
 			<Card.Description>
-				This Finderella server isn't accepting new accounts. Ask an administrator to create one for
-				you.
+				This {branding().appName} server isn't accepting new accounts. Ask an administrator to create
+				one for you.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content>

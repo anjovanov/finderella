@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import Carousel from '$lib/components/media/carousel.svelte';
@@ -18,9 +19,7 @@
 	);
 </script>
 
-<svelte:head>
-	<title>{data.show.title} · Finderella</title>
-</svelte:head>
+<PageTitle title={data.show.title} />
 
 <DetailHero item={data.show} />
 

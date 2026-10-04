@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { enhance } from '$app/forms';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -21,9 +22,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Account · Settings · Finderella</title>
-</svelte:head>
+<PageTitle title="Account · Settings" />
 
 <!-- Account -->
 <Card.Root>

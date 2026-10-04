@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
@@ -125,9 +126,7 @@
 	const provider = (id: string) => providers.find((p) => p.id === id)!;
 </script>
 
-<svelte:head>
-	<title>Subtitles · Admin · Finderella</title>
-</svelte:head>
+<PageTitle title="Subtitles · Admin" />
 
 {#snippet providerHeading(id: string)}
 	{@const p = provider(id)}

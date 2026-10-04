@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import DetailHero from '$lib/components/media/detail-hero.svelte';
 	import MediaRow from '$lib/components/media/media-row.svelte';
@@ -7,9 +8,7 @@
 	let { data } = $props();
 </script>
 
-<svelte:head>
-	<title>{data.movie.title} · Finderella</title>
-</svelte:head>
+<PageTitle title={data.movie.title} />
 
 <DetailHero item={data.movie} resume={data.resume} />
 

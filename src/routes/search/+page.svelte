@@ -1,13 +1,12 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import PosterCard from '$lib/components/media/poster-card.svelte';
 
 	let { data } = $props();
 	const count = $derived(data.items.length);
 </script>
 
-<svelte:head>
-	<title>{data.q ? `“${data.q}” · Search` : 'Search'} · Finderella</title>
-</svelte:head>
+<PageTitle title={data.q ? `“${data.q}” · Search` : 'Search'} />
 
 <div class="flex page-gutter flex-col gap-6 py-8">
 	<div class="flex flex-col gap-1">

@@ -1,12 +1,11 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 </script>
 
-<svelte:head>
-	<title>{page.status} · Finderella</title>
-</svelte:head>
+<PageTitle title={String(page.status)} />
 
 <div class="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
 	<span class="text-6xl font-bold tracking-tight text-primary">{page.status}</span>

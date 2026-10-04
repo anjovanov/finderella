@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { branding } from '$lib/branding';
 	import { fade } from 'svelte/transition';
 	import type { ScreensaverSettings } from '$lib/data/preferences';
 	import { getScreensaver } from '$lib/screensaver.svelte';
@@ -229,19 +230,19 @@
 				{/key}
 			{/if}
 			<span
-				class="absolute right-10 bottom-10 text-sm font-bold tracking-[0.25em] text-primary sm:right-14 sm:bottom-14"
+				class="absolute right-10 bottom-10 font-heading text-sm font-bold tracking-[0.25em] text-primary uppercase sm:right-14 sm:bottom-14"
 			>
-				FINDERELLA
+				{branding().appName}
 			</span>
 		{:else}
 			{#key logoPosition.key}
 				<span
-					class="absolute -translate-x-1/2 -translate-y-1/2 text-3xl font-bold tracking-[0.3em] text-primary sm:text-5xl"
+					class="absolute -translate-x-1/2 -translate-y-1/2 font-heading text-3xl font-bold tracking-[0.3em] whitespace-nowrap text-primary uppercase sm:text-5xl"
 					style:left="{logoPosition.x}%"
 					style:top="{logoPosition.y}%"
 					transition:fade={{ duration: 1200 }}
 				>
-					FINDERELLA
+					{branding().appName}
 				</span>
 			{/key}
 		{/if}

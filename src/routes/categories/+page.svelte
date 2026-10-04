@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import CategoryTile from '$lib/components/media/category-tile.svelte';
 
 	let { data } = $props();
@@ -12,9 +13,7 @@
 	);
 </script>
 
-<svelte:head>
-	<title>Categories · Finderella</title>
-</svelte:head>
+<PageTitle title="Categories" />
 
 <div class="flex page-gutter flex-col gap-10 py-8">
 	<div class="flex flex-col gap-1">

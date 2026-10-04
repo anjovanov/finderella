@@ -12,6 +12,7 @@
 		'/admin/devices': 'Devices & Libraries',
 		'/admin/users': 'Users',
 		'/admin/subtitles': 'Subtitles',
+		'/admin/branding': 'Branding',
 		'/admin/settings': 'Site settings'
 	};
 	// Sections with sub-pages (/admin/statistics/history …) keep their parent's title.

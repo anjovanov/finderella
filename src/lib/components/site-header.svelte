@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { branding } from '$lib/branding';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -115,7 +116,11 @@
 	{/if}
 
 	<div class="flex h-16 page-gutter items-center gap-6">
-		<a href={resolve('/')} class="text-lg font-bold tracking-[0.25em] text-primary">FINDERELLA</a>
+		<a
+			href={resolve('/')}
+			class="max-w-64 truncate font-heading text-lg font-bold tracking-[0.25em] text-primary uppercase"
+			>{branding().appName}</a
+		>
 		<div class="hidden w-full max-w-xs md:block">
 			<SearchBox />
 		</div>
@@ -272,7 +277,9 @@
 			</Sheet.Trigger>
 			<Sheet.Content side="right">
 				<Sheet.Header>
-					<Sheet.Title class="tracking-[0.25em] text-primary">FINDERELLA</Sheet.Title>
+					<Sheet.Title class="tracking-[0.25em] text-primary uppercase"
+						>{branding().appName}</Sheet.Title
+					>
 					<Sheet.Description class="truncate">
 						{#if user}
 							{profile?.name ?? user.name}

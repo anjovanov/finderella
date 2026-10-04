@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import * as Card from '$lib/components/ui/card';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import BucketChart from '$lib/components/stats/bucket-chart.svelte';
@@ -25,9 +26,7 @@
 		}));
 </script>
 
-<svelte:head>
-	<title>Graphs · Finderella</title>
-</svelte:head>
+<PageTitle title="Graphs" />
 
 <div class="flex flex-wrap items-center justify-between gap-3">
 	<ToggleGroup.Root

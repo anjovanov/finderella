@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { resolve } from '$app/paths';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
@@ -17,9 +18,7 @@
 	);
 </script>
 
-<svelte:head>
-	<title>{data.name} · Finderella</title>
-</svelte:head>
+<PageTitle title={data.name} />
 
 {#key `${data.type}/${data.slug}`}
 	<LibraryPage

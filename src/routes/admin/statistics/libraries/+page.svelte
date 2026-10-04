@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Badge } from '$lib/components/ui/badge';
@@ -50,9 +51,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Library statistics · Finderella</title>
-</svelte:head>
+<PageTitle title="Library statistics" />
 
 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
 	<StatTile label="Files" value={totals.files.toLocaleString()} />

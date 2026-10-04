@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
@@ -51,9 +52,7 @@
 	const saved = $derived(!!form && 'saved' in form && !!form.saved);
 </script>
 
-<svelte:head>
-	<title>Subtitles · Settings · Finderella</title>
-</svelte:head>
+<PageTitle title="Subtitles · Settings" />
 
 <Card.Root>
 	<Card.Header>

@@ -2,6 +2,21 @@
 @import 'tw-animate-css';
 @import 'shadcn-svelte/tailwind.css';
 @import '@fontsource-variable/figtree';
+/* Branding fonts ($lib/data/branding FONTS). @font-face is lazy: a browser
+   downloads only the faces the page actually renders with. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/manrope';
+@import '@fontsource-variable/dm-sans';
+@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource-variable/outfit';
+@import '@fontsource-variable/nunito';
+@import '@fontsource-variable/lexend';
+@import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/sora';
+@import '@fontsource-variable/playfair-display';
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/cinzel';
 
 @custom-variant dark (&:is(.dark *));
 @plugin '@tailwindcss/forms';
@@ -44,6 +59,11 @@
 	--sidebar-accent-foreground: oklch(0.2 0.02 230);
 	--sidebar-border: oklch(0.9 0.008 230);
 	--sidebar-ring: oklch(0.55 0.12 215);
+	/* Branding (admin → Branding) overrides these and the primary/ring tokens
+	   with a `<style>` from brandStyleSheet(); headings follow the body font
+	   unless a heading font is picked. */
+	--brand-font-body: 'Figtree Variable', sans-serif;
+	--brand-font-heading: var(--brand-font-body);
 }
 
 .dark {
@@ -72,16 +92,17 @@
 	--chart-5: oklch(0.78 0.14 150);
 	--sidebar: oklch(0.205 0 0);
 	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-primary: oklch(0.488 0.243 264.376);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
+	--sidebar-primary: oklch(0.78 0.12 210);
+	--sidebar-primary-foreground: oklch(0.15 0.03 220);
 	--sidebar-accent: oklch(0.269 0 0);
 	--sidebar-accent-foreground: oklch(0.985 0 0);
 	--sidebar-border: oklch(1 0 0 / 10%);
-	--sidebar-ring: oklch(0.556 0 0);
+	--sidebar-ring: oklch(0.78 0.12 210);
 }
 
 @theme inline {
-	--font-sans: 'Figtree Variable', sans-serif;
+	--font-sans: var(--brand-font-body);
+	--font-heading: var(--brand-font-heading);
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -128,6 +149,14 @@
 	}
 	body {
 		@apply bg-background text-foreground;
+	}
+	/* `.cn-font-heading` is shadcn maia's heading marker (dialog titles). */
+	h1,
+	h2,
+	h3,
+	[data-slot='card-title'],
+	.cn-font-heading {
+		@apply font-heading;
 	}
 	html {
 		/* No rubber-band overscroll: it dragged the sticky navbar down and exposed a blank strip. */

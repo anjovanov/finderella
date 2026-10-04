@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
@@ -80,9 +81,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Users · Finderella</title>
-</svelte:head>
+<PageTitle title="Users" />
 
 <div class="flex flex-wrap items-end justify-between gap-4">
 	<div>

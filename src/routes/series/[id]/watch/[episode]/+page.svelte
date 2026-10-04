@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { onDestroy, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { episodeWatchHref, mediaHref } from '$lib/data';
@@ -218,9 +219,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Watch {data.show.title} {episodeLabel} · Finderella</title>
-</svelte:head>
+<PageTitle title={`Watch ${data.show.title} ${episodeLabel}`} />
 
 {#if playback}
 	<WatchPlayer

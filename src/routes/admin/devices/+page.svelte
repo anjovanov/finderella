@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
@@ -100,9 +101,7 @@
 	const addKindLabel = $derived(kindOptions.find((k) => k.value === addKind)?.label ?? 'Movies');
 </script>
 
-<svelte:head>
-	<title>Devices · Finderella</title>
-</svelte:head>
+<PageTitle title="Devices" />
 
 <div class="flex flex-wrap items-end justify-between gap-4">
 	<div>

@@ -1,5 +1,6 @@
 import { count, eq } from 'drizzle-orm';
 import { isRegistrationOpen } from '$lib/auth-roles';
+import { normalizeBranding, type Branding } from '$lib/data/branding';
 import { db } from '$lib/server/db';
 import { siteSettings, user, type SiteSettingsRow } from '$lib/server/db/schema';
 
@@ -14,6 +15,11 @@ export type SiteSettings = Pick<
 	| 'remuxEnabled'
 	| 'maxSessionsPerAccount'
 	| 'maxProfilesPerAccount'
+	| 'appName'
+	| 'tagline'
+	| 'accent'
+	| 'bodyFont'
+	| 'headingFont'
 	| 'updatedAt'
 >;
 type SiteSettingsPatch = Partial<
@@ -26,6 +32,11 @@ type SiteSettingsPatch = Partial<
 		| 'remuxEnabled'
 		| 'maxSessionsPerAccount'
 		| 'maxProfilesPerAccount'
+		| 'appName'
+		| 'tagline'
+		| 'accent'
+		| 'bodyFont'
+		| 'headingFont'
 	>
 >;
 
@@ -95,6 +106,11 @@ export async function sessionLimit(): Promise<number | null> {
 /** Profiles allowed per account; null = unlimited. */
 export async function profileLimit(): Promise<number | null> {
 	return (await getSiteSettings()).maxProfilesPerAccount;
+}
+
+/** The hub's name, tagline, accent and fonts (every page reads them). */
+export async function getBranding(): Promise<Branding> {
+	return normalizeBranding(await getSiteSettings());
 }
 
 export async function countUsers(): Promise<number> {

@@ -16,7 +16,10 @@ declare global {
 		}
 
 		// interface Error {}
-		// interface PageData {}
+		interface PageData {
+			/** The hub's branding, from the root layout (absent only if that load failed). */
+			branding?: import('$lib/data/branding').Branding;
+		}
 		// interface PageState {}
 		// interface Platform {}
 	}

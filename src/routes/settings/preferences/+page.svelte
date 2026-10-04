@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { branding } from '$lib/branding';
+	import { accentPreset } from '$lib/data/branding';
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { enhance } from '$app/forms';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Moon02Icon, Sun03Icon } from '@hugeicons/core-free-icons';
@@ -24,21 +27,24 @@
 	let kind = $derived(data.preferences.screensaver.kind);
 	let seconds = $derived(String(data.preferences.screensaver.seconds));
 
-	// Literal colors, not tokens: each tile previews its theme whatever the current one is.
-	const themes: { value: Theme; label: string; icon: typeof Moon02Icon; swatch: string[] }[] = [
-		{
-			value: 'dark',
-			label: 'Dark',
-			icon: Moon02Icon,
-			swatch: ['#101014', '#1d2126', '#6ccde0']
-		},
-		{
-			value: 'light',
-			label: 'Light',
-			icon: Sun03Icon,
-			swatch: ['#f8fafb', '#e9eef1', '#1f8aa0']
-		}
-	];
+	// Literal colors, not tokens: each tile previews its theme whatever the current
+	// one is (the accent is the hub's branding preset in that theme).
+	const accent = $derived(accentPreset(branding().accent));
+	const themes: { value: Theme; label: string; icon: typeof Moon02Icon; swatch: string[] }[] =
+		$derived([
+			{
+				value: 'dark',
+				label: 'Dark',
+				icon: Moon02Icon,
+				swatch: ['#101014', '#1d2126', accent.dark.primary]
+			},
+			{
+				value: 'light',
+				label: 'Light',
+				icon: Sun03Icon,
+				swatch: ['#f8fafb', '#e9eef1', accent.light.primary]
+			}
+		]);
 
 	function kindLabel(value: string): string {
 		return SCREENSAVER_KIND_OPTIONS.find((option) => option.value === value)?.label ?? value;
@@ -54,15 +60,13 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Preferences · Settings · Finderella</title>
-</svelte:head>
+<PageTitle title="Preferences · Settings" />
 
 <Card.Root>
 	<Card.Header>
 		<Card.Title>Appearance</Card.Title>
 		<Card.Description>
-			How Finderella looks for this profile, on every device. The player always stays dark.
+			How {branding().appName} looks for this profile, on every device. The player always stays dark.
 		</Card.Description>
 	</Card.Header>
 	<Card.Content>

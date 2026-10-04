@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
@@ -65,9 +66,7 @@
 	const noOrphans = $derived(data.orphans.movies === 0 && data.orphans.series === 0);
 </script>
 
-<svelte:head>
-	<title>Site settings · Finderella</title>
-</svelte:head>
+<PageTitle title="Site settings" />
 
 <div>
 	<h1 class="text-2xl font-semibold">Site settings</h1>

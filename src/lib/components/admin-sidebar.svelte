@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { branding } from '$lib/branding';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
@@ -7,6 +8,7 @@
 		ArrowLeft01Icon,
 		DashboardSquare01Icon,
 		HardDriveIcon,
+		PaintBoardIcon,
 		Settings01Icon,
 		SubtitleIcon,
 		UserGroupIcon
@@ -29,6 +31,7 @@
 		},
 		{ href: resolve('/admin/users'), label: 'Users', icon: UserGroupIcon, exact: false },
 		{ href: resolve('/admin/subtitles'), label: 'Subtitles', icon: SubtitleIcon, exact: false },
+		{ href: resolve('/admin/branding'), label: 'Branding', icon: PaintBoardIcon, exact: false },
 		{ href: resolve('/admin/settings'), label: 'Site settings', icon: Settings01Icon, exact: false }
 	];
 
@@ -43,16 +46,19 @@
 	<Sidebar.Header>
 		<Sidebar.Menu>
 			<Sidebar.MenuItem>
-				<Sidebar.MenuButton size="lg" tooltipContent="Finderella">
+				<Sidebar.MenuButton size="lg" tooltipContent={branding().appName}>
 					{#snippet child({ props })}
 						<a href={resolve('/')} {...props}>
 							<span
 								class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground"
 							>
-								F
+								{branding().appName.charAt(0).toUpperCase()}
 							</span>
-							<span class="flex flex-col leading-tight">
-								<span class="font-bold tracking-[0.25em] text-primary">FINDERELLA</span>
+							<span class="flex min-w-0 flex-col leading-tight">
+								<span
+									class="truncate font-heading font-bold tracking-[0.25em] text-primary uppercase"
+									>{branding().appName}</span
+								>
 								<span class="text-xs text-muted-foreground">Administration</span>
 							</span>
 						</a>
@@ -87,11 +93,11 @@
 	<Sidebar.Footer>
 		<Sidebar.Menu>
 			<Sidebar.MenuItem>
-				<Sidebar.MenuButton tooltipContent="Back to Finderella">
+				<Sidebar.MenuButton tooltipContent={`Back to ${branding().appName}`}>
 					{#snippet child({ props })}
 						<a href={resolve('/')} {...props}>
 							<HugeiconsIcon icon={ArrowLeft01Icon} />
-							<span>Back to Finderella</span>
+							<span>Back to {branding().appName}</span>
 						</a>
 					{/snippet}
 				</Sidebar.MenuButton>

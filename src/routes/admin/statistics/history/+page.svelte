@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import * as Card from '$lib/components/ui/card';
@@ -36,9 +37,7 @@
 	const last = $derived(Math.min(data.history.total, data.history.page * data.history.perPage));
 </script>
 
-<svelte:head>
-	<title>Watch history · Finderella</title>
-</svelte:head>
+<PageTitle title="Watch history" />
 
 <div class="flex flex-wrap items-center gap-3">
 	<Select.Root type="single" value={data.filter.user} onValueChange={(v) => setParam('user', v)}>

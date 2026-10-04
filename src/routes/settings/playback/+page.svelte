@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
@@ -88,9 +89,7 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Playback · Settings · Finderella</title>
-</svelte:head>
+<PageTitle title="Playback · Settings" />
 
 <Card.Root>
 	<Card.Header>

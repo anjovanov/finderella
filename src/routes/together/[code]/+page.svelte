@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { resolve } from '$app/paths';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { UserMultiple02Icon } from '@hugeicons/core-free-icons';
@@ -6,9 +7,7 @@
 	import * as Empty from '$lib/components/ui/empty';
 </script>
 
-<svelte:head>
-	<title>Watch party ended · Finderella</title>
-</svelte:head>
+<PageTitle title="Watch party ended" />
 
 <!-- Only rendered when the party is gone: a live one redirects to its watch page. -->
 <div class="flex min-h-[60vh] page-gutter items-center justify-center">

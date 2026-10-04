@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { onMount } from 'svelte';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Tv01Icon } from '@hugeicons/core-free-icons';
@@ -53,9 +54,7 @@
 	const transcoding = $derived(streams.filter((s) => s.mode === 'hls').length);
 </script>
 
-<svelte:head>
-	<title>Statistics · Finderella</title>
-</svelte:head>
+<PageTitle title="Statistics" />
 
 <section class="flex flex-col gap-4">
 	<div class="flex flex-wrap items-baseline justify-between gap-2">

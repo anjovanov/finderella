@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageTitle from '$lib/components/page-title.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import HeroBanner from '$lib/components/media/hero-banner.svelte';
@@ -7,9 +8,7 @@
 	let { data } = $props();
 </script>
 
-<svelte:head>
-	<title>Home · Finderella</title>
-</svelte:head>
+<PageTitle title="Home" />
 
 {#if data.hero}
 	<HeroBanner item={data.hero} />
