@@ -11,6 +11,10 @@
 - Fix: the settings pages no longer scroll sideways on phones (the section menu's row of pills widened the whole page instead of scrolling on its own).
 - The "By hour of day" charts (here and in Admin → Statistics → Graphs) hide hour labels that would overlap on narrow screens.
 
+**Security fix: admin page data** (no schema change).
+
+- Signed-in non-admins could read the data of most admin pages through their `__data.json` URL, e.g. `/admin/statistics/users/__data.json` (every account's email and viewing totals) and `/admin/devices/__data.json` (pending gateway pairing codes). The browser showed the 403 page, but the data still came along because page loads run next to the admin layout's check. The hook now refuses non-admin data requests under `/admin` too; a non-admin following a link there still sees the app's 403 page.
+
 ## 2026-10-03
 
 **Account limits** (schema: `site_settings.max_sessions_per_account`, `site_settings.max_profiles_per_account`, migration `0026_account_limits`).

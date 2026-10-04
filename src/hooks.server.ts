@@ -130,15 +130,17 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	// Non-admins never reach /admin form actions or API-style requests. Page
-	// requests fall through to src/routes/admin/+layout.server.ts, whose 403
-	// renders the app's own error page (an error thrown here would render
-	// SvelteKit's bare fallback page instead).
+	// Non-admins never reach /admin form actions, API-style requests or
+	// `__data.json`. Page loads run in parallel with the admin layout's, so a
+	// data request would otherwise carry every page load that doesn't await
+	// parent() next to the layout's 403; the client renders a refused data
+	// request as the app's error page. HTML page requests fall through to
+	// src/routes/admin/+layout.server.ts, whose 403 renders the app's own error
+	// page (an error thrown here would render SvelteKit's bare fallback page).
 	if (
 		isAdminArea(event.url.pathname) &&
 		!isAdmin(event.locals.user) &&
-		event.request.method !== 'GET' &&
-		event.request.method !== 'HEAD'
+		(event.isDataRequest || (event.request.method !== 'GET' && event.request.method !== 'HEAD'))
 	) {
 		error(403, 'This area is for administrators only.');
 	}
