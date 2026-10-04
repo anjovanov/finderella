@@ -333,7 +333,7 @@ export async function finalizeScan(
 	invalidateSearchIndex();
 	// New titles get TMDB metadata in the background; single-flight, so a
 	// second scan finishing mid-pass just queues one more pass.
-	if (isTmdbConfigured()) {
+	if (await isTmdbConfigured()) {
 		void enrichPending().catch((err) => log.error({ err }, 'metadata enrichment failed'));
 	} else {
 		// No metadata pass to wait for: search by title right away.

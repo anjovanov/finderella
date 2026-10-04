@@ -2,6 +2,12 @@
 
 ## 2026-10-04
 
+**TMDB key in the admin dashboard** (schema: table `metadata_settings`, migration `0028_metadata_settings`).
+
+- The TMDB API key can now be entered in Admin → Site settings → **Metadata**, like the subtitle provider keys. Either a v3 API key or a v4 API Read Access Token works.
+- A key is checked with TMDB before it's saved, so a typo is reported instead of quietly stopping metadata. Saving a working key fetches metadata for titles that were still waiting.
+- **Test connection** checks the key in use. The card says whether that key was saved here or comes from `TMDB_API_KEY` in `.env`; a saved key wins, and removing it falls back to `.env`. Only the last four characters of a saved key are ever shown.
+
 **Profile statistics** (schema: index `play_history_profile_started_idx`, migration `0027_play_history_profile_idx`).
 
 - New profile settings section **Statistics** (`/settings/statistics`) with a viewer's own watch statistics, a lighter version of Admin → Statistics. Everything is for the profile you're watching as.

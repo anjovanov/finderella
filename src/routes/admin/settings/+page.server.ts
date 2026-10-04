@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { LIMIT_MAX, LIMIT_MIN } from '$lib/data/account-limits';
 import { countOrphans, pruneCatalog } from '$lib/server/catalog/prune';
 import { enrichPending, isTmdbConfigured, metadataStatus } from '$lib/server/metadata';
+import { tmdbCredentials, updateMetadataSettings } from '$lib/server/metadata/settings';
+import { testTmdbKey } from '$lib/server/metadata/tmdb';
 import { queueMarkerAnalysis } from '$lib/server/markers/job';
 import { getSiteSettings, updateSiteSettings } from '$lib/server/site-settings';
 import type { Actions, PageServerLoad } from './$types';
@@ -99,8 +101,40 @@ export const actions: Actions = {
 		return { pruned };
 	},
 
+	// Blank field = keep the saved key (like /admin/subtitles); the checkbox removes it,
+	// falling back to TMDB_API_KEY. A new key is tested before it's stored, so a typo
+	// can't silently stop enrichment.
+	saveTmdb: async (event) => {
+		const formData = await event.request.formData();
+		if (formData.get('clearTmdb')) {
+			await updateMetadataSettings({ tmdbApiKey: null });
+			return { tmdbSaved: 'removed' as const };
+		}
+		const key = formData.get('tmdbApiKey')?.toString().trim() ?? '';
+		if (!key) return fail(400, { tmdbError: 'Enter an API key to save.' });
+		try {
+			await testTmdbKey(key);
+		} catch (err) {
+			return fail(400, { tmdbError: (err as Error).message });
+		}
+		await updateMetadataSettings({ tmdbApiKey: key });
+		// Titles scanned while no (working) key was set get their metadata now.
+		void enrichPending().catch(() => {});
+		return { tmdbSaved: 'saved' as const };
+	},
+
+	testTmdb: async () => {
+		const credentials = await tmdbCredentials();
+		if (!credentials) return fail(400, { tmdbError: 'Add a TMDB API key first.' });
+		try {
+			return { tmdbTest: await testTmdbKey(credentials.key) };
+		} catch (err) {
+			return fail(400, { tmdbError: (err as Error).message });
+		}
+	},
+
 	refreshMetadata: async () => {
-		if (!isTmdbConfigured()) return fail(400, { message: 'TMDB_API_KEY is not set on the hub' });
+		if (!(await isTmdbConfigured())) return fail(400, { message: 'Add a TMDB API key first' });
 		// Runs in the background; the page shows progress via the pending counts.
 		void enrichPending({ force: true });
 		return { refreshing: true };

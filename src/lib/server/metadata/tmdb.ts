@@ -1,14 +1,15 @@
 import { z } from 'zod';
-import { env } from '$env/dynamic/private';
 import { log } from '$lib/server/log';
+import { tmdbCredentials } from './settings';
 
 /**
  * Thin TMDB v3 client. Every response goes through a lenient zod schema
  * (unknown keys stripped, most fields nullish) so an API drift degrades to
  * "no metadata" rather than a crash in the enrichment loop.
  *
- * TMDB_API_KEY accepts either a v4 "API Read Access Token" (a JWT, sent as a
- * bearer) or a classic v3 key (sent as ?api_key=).
+ * The key (saved on /admin/settings, else TMDB_API_KEY — see `tmdbCredentials`)
+ * is either a v4 "API Read Access Token" (a JWT, sent as a bearer) or a
+ * classic v3 key (sent as ?api_key=).
  */
 
 const API_BASE = 'https://api.themoviedb.org/3';
@@ -17,8 +18,16 @@ const REQUEST_TIMEOUT_MS = 10_000;
 
 export type ImageSize = 'w185' | 'w300' | 'w342' | 'w500' | 'w780' | 'w1280' | 'original';
 
-export function isTmdbConfigured(): boolean {
-	return Boolean(env.TMDB_API_KEY?.trim());
+export async function isTmdbConfigured(): Promise<boolean> {
+	return Boolean(await tmdbCredentials());
+}
+
+/** v4 tokens go in the Authorization header, v3 keys in the query string. */
+function authorize(url: URL, key: string): Record<string, string> {
+	const headers: Record<string, string> = { accept: 'application/json' };
+	if (key.startsWith('eyJ')) headers.authorization = `Bearer ${key}`;
+	else url.searchParams.set('api_key', key);
+	return headers;
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -28,16 +37,13 @@ export async function tmdbGet<T>(
 	params: Record<string, string | number | undefined>,
 	schema: z.ZodType<T>
 ): Promise<T | null> {
-	const key = env.TMDB_API_KEY?.trim();
-	if (!key) return null;
-	const bearer = key.startsWith('eyJ');
+	const credentials = await tmdbCredentials();
+	if (!credentials) return null;
 	const url = new URL(API_BASE + path);
 	for (const [name, value] of Object.entries(params)) {
 		if (value !== undefined && value !== '') url.searchParams.set(name, String(value));
 	}
-	if (!bearer) url.searchParams.set('api_key', key);
-	const headers: Record<string, string> = { accept: 'application/json' };
-	if (bearer) headers.authorization = `Bearer ${key}`;
+	const headers = authorize(url, credentials.key);
 
 	for (let attempt = 0; attempt < 2; attempt++) {
 		let res: Response;
@@ -54,7 +60,7 @@ export async function tmdbGet<T>(
 		}
 		if (res.status === 404) return null;
 		if (!res.ok) {
-			log.warn({ status: res.status, path }, 'tmdb request rejected (check TMDB_API_KEY)');
+			log.warn({ status: res.status, path }, 'tmdb request rejected (check the TMDB API key)');
 			return null;
 		}
 		const body: unknown = await res.json().catch(() => null);
@@ -66,6 +72,29 @@ export async function tmdbGet<T>(
 		return parsed.data;
 	}
 	return null;
+}
+
+/**
+ * Checks a key against TMDB's /authentication endpoint (accepts v3 keys and
+ * v4 tokens alike). Resolves with a short status line, throws with a message
+ * fit for the admin page.
+ */
+export async function testTmdbKey(key: string): Promise<string> {
+	const url = new URL(`${API_BASE}/authentication`);
+	const headers = authorize(url, key.trim());
+	let res: Response;
+	try {
+		res = await fetch(url, { headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+	} catch (err) {
+		if (err instanceof Error && err.name === 'TimeoutError') {
+			throw new Error('TMDB did not answer in time', { cause: err });
+		}
+		throw new Error('Could not reach TMDB', { cause: err });
+	}
+	if (res.status === 401) throw new Error('TMDB rejected the key (invalid API key)');
+	if (res.status === 429) throw new Error('TMDB is rate limiting requests, try again shortly');
+	if (!res.ok) throw new Error(`TMDB answered HTTP ${res.status}`);
+	return 'Connected';
 }
 
 export function imageUrl(path: string | null | undefined, size: ImageSize): string | null {

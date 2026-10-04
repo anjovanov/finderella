@@ -5,6 +5,7 @@ import { log } from '$lib/server/log';
 import { queueAutoSubtitleDownload } from '$lib/server/subtitles/bulk';
 import { invalidateSearchIndex } from '$lib/server/search';
 import type { CastMember } from '$lib/data/types';
+import { maskSecret } from '$lib/data/secrets';
 import {
 	collectionSlug,
 	episodeRating,
@@ -31,6 +32,7 @@ import {
 	type TmdbCompany,
 	type TvDetails
 } from './tmdb';
+import { getMetadataSettings, tmdbCredentials, type TmdbKeySource } from './settings';
 
 /**
  * TMDB enrichment. Scans create titles from filenames only; this fills
@@ -453,7 +455,7 @@ async function runPass(force: boolean): Promise<number> {
  * so a scan finishing mid-run isn't missed. Safe to fire-and-forget.
  */
 export async function enrichPending(opts: { force?: boolean } = {}): Promise<void> {
-	if (!isTmdbConfigured()) return;
+	if (!(await isTmdbConfigured())) return;
 	if (running) {
 		queued = { force: Boolean(opts.force || queued?.force) };
 		return;
@@ -481,18 +483,26 @@ export async function enrichPending(opts: { force?: boolean } = {}): Promise<voi
 
 export interface MetadataStatus {
 	configured: boolean;
+	/** Where the key in use comes from; null = no key at all. */
+	source: TmdbKeySource | null;
+	/** The key saved on /admin/settings, masked (`••••1234`); null = none saved. */
+	savedKey: string | null;
 	running: boolean;
 	pending: { movies: number; series: number; episodes: number };
 }
 
 export async function metadataStatus(): Promise<MetadataStatus> {
-	const [[m], [s], [e]] = await Promise.all([
+	const [[m], [s], [e], credentials, settings] = await Promise.all([
 		db.select({ n: count() }).from(movie).where(isNull(movie.metadataUpdatedAt)),
 		db.select({ n: count() }).from(series).where(isNull(series.metadataUpdatedAt)),
-		db.select({ n: count() }).from(episode).where(isNull(episode.metadataUpdatedAt))
+		db.select({ n: count() }).from(episode).where(isNull(episode.metadataUpdatedAt)),
+		tmdbCredentials(),
+		getMetadataSettings()
 	]);
 	return {
-		configured: isTmdbConfigured(),
+		configured: credentials !== null,
+		source: credentials?.source ?? null,
+		savedKey: maskSecret(settings.tmdbApiKey),
 		running,
 		pending: { movies: m.n, series: s.n, episodes: e.n }
 	};

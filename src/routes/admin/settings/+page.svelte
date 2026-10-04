@@ -8,6 +8,7 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
@@ -58,6 +59,7 @@
 	let profilesLimited = $derived(data.settings.maxProfilesPerAccount !== null);
 	let maxProfiles = $derived(data.settings.maxProfilesPerAccount ?? DEFAULT_MAX_PROFILES);
 	let savingLimits = $state(false);
+	let savingTmdb = $state(false);
 
 	const prune = new DialogForm();
 	const noOrphans = $derived(data.orphans.movies === 0 && data.orphans.series === 0);
@@ -411,9 +413,8 @@
 			<Card.Title>Metadata</Card.Title>
 			<Card.Description>
 				{#if !data.metadata.configured}
-					Set <span class="font-mono">TMDB_API_KEY</span> in the hub's
-					<span class="font-mono">.env</span> to fetch posters, synopses, genres, cast and ratings for
-					scanned titles automatically.
+					Add a TMDB API key to fetch posters, synopses, genres, cast and ratings for scanned titles
+					automatically.
 				{:else if data.metadata.running}
 					Fetching metadata from TMDB… ({data.metadata.pending.movies} movies,
 					{data.metadata.pending.series} series, {data.metadata.pending.episodes} episodes pending)
@@ -426,7 +427,78 @@
 				{/if}
 			</Card.Description>
 		</Card.Header>
-		<Card.Content>
+		<Card.Content class="flex flex-col gap-6">
+			<form
+				method="POST"
+				action="?/saveTmdb"
+				use:enhance={() => {
+					savingTmdb = true;
+					return async ({ update }) => {
+						savingTmdb = false;
+						await update();
+					};
+				}}
+			>
+				<Field.Group class="gap-4">
+					<Field.Field>
+						<Field.Label for="tmdb-key">TMDB API key</Field.Label>
+						<Input
+							id="tmdb-key"
+							name="tmdbApiKey"
+							placeholder={data.metadata.savedKey ?? 'API key or API Read Access Token'}
+							autocomplete="off"
+							disabled={savingTmdb}
+						/>
+						<Field.Description>
+							{#if data.metadata.source === 'dashboard'}
+								Using the key saved here. Leave the field blank to keep it.
+							{:else if data.metadata.source === 'env'}
+								Using <span class="font-mono">TMDB_API_KEY</span> from the hub's
+								<span class="font-mono">.env</span>; a key saved here overrides it.
+							{:else}
+								Either key from
+								<a
+									href="https://www.themoviedb.org/settings/api"
+									class="underline"
+									rel="noreferrer"
+									target="_blank">themoviedb.org/settings/api</a
+								> works. It's checked with TMDB before it's saved.
+							{/if}
+						</Field.Description>
+					</Field.Field>
+					{#if data.metadata.savedKey}
+						<Field.Field orientation="horizontal">
+							<Checkbox id="clear-tmdb" name="clearTmdb" value="on" disabled={savingTmdb} />
+							<Field.Label for="clear-tmdb" class="font-normal text-muted-foreground">
+								Remove the saved key
+							</Field.Label>
+						</Field.Field>
+					{/if}
+					<Field.Field orientation="horizontal" class="flex-wrap">
+						<Button type="submit" variant="secondary" size="sm" disabled={savingTmdb}>
+							Save key
+						</Button>
+						<Button
+							type="submit"
+							formaction="?/testTmdb"
+							variant="ghost"
+							size="sm"
+							disabled={savingTmdb || !data.metadata.configured}
+						>
+							Test connection
+						</Button>
+						{#if form && 'tmdbError' in form}
+							<Field.Error>{form.tmdbError}</Field.Error>
+						{:else if form && 'tmdbSaved' in form}
+							<Field.Description>
+								{form.tmdbSaved === 'removed' ? 'Saved key removed.' : 'Key saved.'}
+							</Field.Description>
+						{:else if form && 'tmdbTest' in form}
+							<Field.Description>{form.tmdbTest} to TMDB.</Field.Description>
+						{/if}
+					</Field.Field>
+				</Field.Group>
+			</form>
 			<form
 				method="POST"
 				action="?/refreshMetadata"

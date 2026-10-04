@@ -197,6 +197,13 @@
       "when": 1791118750896,
       "tag": "0027_play_history_profile_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791123452527,
+      "tag": "0028_metadata_settings",
+      "breakpoints": true
     }
   ]
 }

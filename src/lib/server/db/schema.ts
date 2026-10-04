@@ -7,3 +7,4 @@ export * from './watchlist.sql';
 export * from './profiles.sql';
 export * from './subtitles.sql';
 export * from './activity.sql';
+export * from './metadata.sql';

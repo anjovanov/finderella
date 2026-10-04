@@ -23,7 +23,7 @@ export const init: ServerInit = async () => {
 	// Playback-session rows left 'active' by a previous process are dead.
 	const { sessionManager } = await import('$lib/server/streaming/session-manager');
 	await sessionManager.reapOrphans().catch(() => {});
-	// Pick up titles that were scanned before TMDB_API_KEY was configured.
+	// Pick up titles that were scanned before a TMDB key was configured.
 	const { enrichPending } = await import('$lib/server/metadata');
 	void enrichPending().catch(() => {});
 	// Installs that predate roles: make sure someone can reach /admin.

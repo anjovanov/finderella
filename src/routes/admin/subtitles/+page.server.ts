@@ -1,6 +1,7 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { normalizeLanguage } from '@finderella/protocol';
+import { maskSecret } from '$lib/data/secrets';
 import { db } from '$lib/server/db';
 import { episode, mediaFile, movie, series, subtitleDownload } from '$lib/server/db/schema';
 import { bulkStatus, startBulkDownload, stopBulkDownload } from '$lib/server/subtitles/bulk';
@@ -21,12 +22,6 @@ import type { Actions, PageServerLoad } from './$types';
 
 /** Rows per page of the Recent activity table. */
 const ACTIVITY_PAGE_SIZE = 15;
-
-function mask(secret: string | null | undefined): string | null {
-	const value = secret?.trim();
-	if (!value) return null;
-	return value.length <= 4 ? '••••' : `••••${value.slice(-4)}`;
-}
 
 export const load: PageServerLoad = async ({ url }) => {
 	const [settings, [counts]] = await Promise.all([
@@ -71,11 +66,14 @@ export const load: PageServerLoad = async ({ url }) => {
 		providers: {
 			opensubtitles: {
 				configured: !!settings.opensubtitlesApiKey?.trim(),
-				apiKey: mask(settings.opensubtitlesApiKey),
+				apiKey: maskSecret(settings.opensubtitlesApiKey),
 				username: settings.opensubtitlesUsername ?? '',
 				hasPassword: !!settings.opensubtitlesPassword
 			},
-			subdl: { configured: !!settings.subdlApiKey?.trim(), apiKey: mask(settings.subdlApiKey) },
+			subdl: {
+				configured: !!settings.subdlApiKey?.trim(),
+				apiKey: maskSecret(settings.subdlApiKey)
+			},
 			gestdown: { enabled: settings.gestdownEnabled },
 			titlovi: {
 				configured: !!settings.titloviUsername?.trim() && !!settings.titloviPassword,
