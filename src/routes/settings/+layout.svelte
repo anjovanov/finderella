@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
+		ChartHistogramIcon,
 		ComputerIcon,
 		PaintBoardIcon,
 		PlayCircleIcon,
@@ -48,6 +49,12 @@
 			path: '/settings/playback',
 			label: 'Playback',
 			icon: PlayCircleIcon
+		},
+		{
+			href: resolve('/settings/statistics'),
+			path: '/settings/statistics',
+			label: 'Statistics',
+			icon: ChartHistogramIcon
 		}
 	];
 
@@ -74,7 +81,7 @@
 		</p>
 	</div>
 
-	<div class="grid gap-6 md:grid-cols-[12rem_minmax(0,1fr)] md:gap-10">
+	<div class="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[12rem_minmax(0,1fr)] md:gap-10">
 		<!-- A row of pills on small screens, a sticky column beside the content from md up. -->
 		<nav aria-label="Settings" class="md:sticky md:top-24 md:self-start">
 			<div class="scrollbar-none flex gap-1 overflow-x-auto md:flex-col md:gap-5">

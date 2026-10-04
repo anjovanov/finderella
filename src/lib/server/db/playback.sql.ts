@@ -79,6 +79,7 @@ export const playHistory = pgTable(
 	(t) => [
 		index('play_history_started_idx').on(t.startedAt),
 		index('play_history_user_started_idx').on(t.userId, t.startedAt),
+		index('play_history_profile_started_idx').on(t.profileId, t.startedAt),
 		index('play_history_movie_idx').on(t.movieId),
 		index('play_history_series_idx').on(t.seriesId)
 	]

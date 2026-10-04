@@ -23,17 +23,21 @@ import {
 	season,
 	series,
 	user,
-	userActivity
+	userActivity,
+	watchProgress
 } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
 import { isAdmin } from '$lib/auth-roles';
 import { resolutionLabel } from '$lib/playback-quality';
+import { FINISHED_FRACTION } from '$lib/data/progress';
 import {
 	MIN_PLAY_SECONDS,
+	type ActivityGraphs,
 	type Breakdown,
 	type BucketPoint,
 	type DayPoint,
 	type DeviceType,
+	type FinishedCounts,
 	type GraphData,
 	type HistoryEntry,
 	type HistoryPage,
@@ -53,16 +57,23 @@ import {
 import { dayRange, fillDays, hourLabel, todayIn, WEEKDAY_LABELS } from './period';
 
 /**
- * Admin statistics queries over `play_history` (+ the catalog for library
- * stats). Every play query counts only rows with at least MIN_PLAY_SECONDS
- * of playing time — shorter rows are open sessions still warming up.
+ * Statistics queries over `play_history` (+ the catalog for library stats):
+ * the admin dashboard, and the profile-scoped subset behind a viewer's
+ * /settings/statistics. Every play query counts only rows with at least
+ * MIN_PLAY_SECONDS of playing time — shorter rows are open sessions still
+ * warming up.
  */
 
 const counted = gte(playHistory.playedSeconds, MIN_PLAY_SECONDS);
 
-/** Start of the period: midnight `days - 1` days ago on the admin's calendar. */
+/** Start of the period: midnight `days - 1` days ago on the viewer's calendar. */
 function since(days: number, tz: string): SQL {
 	return sql`${playHistory.startedAt} >= ((date_trunc('day', now() at time zone ${tz}) - make_interval(days => ${days - 1})) at time zone ${tz})`;
+}
+
+/** One profile's plays, or everyone's (`and()` drops the undefined). */
+function forProfile(profileId?: string): SQL | undefined {
+	return profileId ? eq(playHistory.profileId, profileId) : undefined;
 }
 
 // ── title / user / platform mapping ─────────────────────────────────────────
@@ -221,7 +232,12 @@ const viewersCol = sql<number>`count(distinct coalesce(${playHistory.userId}, 'g
 	Number
 );
 
-export async function topMovies(days: number, tz: string, limit = 5): Promise<TopTitle[]> {
+export async function topMovies(
+	days: number,
+	tz: string,
+	limit = 5,
+	profileId?: string
+): Promise<TopTitle[]> {
 	const rows = await db
 		.select({
 			title: playHistory.title,
@@ -234,14 +250,19 @@ export async function topMovies(days: number, tz: string, limit = 5): Promise<To
 		})
 		.from(playHistory)
 		.leftJoin(movie, eq(movie.id, playHistory.movieId))
-		.where(and(counted, since(days, tz), eq(playHistory.kind, 'movie')))
+		.where(and(counted, since(days, tz), eq(playHistory.kind, 'movie'), forProfile(profileId)))
 		.groupBy(playHistory.movieId, playHistory.title, playHistory.year, movie.slug, movie.posterUrl)
 		.orderBy(desc(playsCol), desc(secondsCol))
 		.limit(limit);
 	return rows.map((r) => ({ kind: 'movie', ...r }));
 }
 
-export async function topSeries(days: number, tz: string, limit = 5): Promise<TopTitle[]> {
+export async function topSeries(
+	days: number,
+	tz: string,
+	limit = 5,
+	profileId?: string
+): Promise<TopTitle[]> {
 	const rows = await db
 		.select({
 			title: playHistory.seriesTitle,
@@ -254,7 +275,7 @@ export async function topSeries(days: number, tz: string, limit = 5): Promise<To
 		})
 		.from(playHistory)
 		.leftJoin(series, eq(series.id, playHistory.seriesId))
-		.where(and(counted, since(days, tz), eq(playHistory.kind, 'episode')))
+		.where(and(counted, since(days, tz), eq(playHistory.kind, 'episode'), forProfile(profileId)))
 		.groupBy(
 			playHistory.seriesId,
 			playHistory.seriesTitle,
@@ -372,9 +393,23 @@ function splitBuckets<K extends string>(rows: (BucketRow & Record<K, string | nu
 }
 
 export async function graphData(days: number, tz: string): Promise<GraphData> {
+	const [activity, platforms, users] = await Promise.all([
+		activityGraphs(days, tz),
+		topPlatforms(days, tz, 8),
+		topUsers(days, tz, 8)
+	]);
+	return { ...activity, platforms, users };
+}
+
+/** Plays and watch time per day / weekday / hour, for everyone or one profile. */
+export async function activityGraphs(
+	days: number,
+	tz: string,
+	profileId?: string
+): Promise<ActivityGraphs> {
 	const local = sql`(${playHistory.startedAt} at time zone ${tz})`;
-	const where = and(counted, since(days, tz));
-	const [byDayRows, byWeekdayRows, byHourRows, platforms, users] = await Promise.all([
+	const where = and(counted, since(days, tz), forProfile(profileId));
+	const [byDayRows, byWeekdayRows, byHourRows] = await Promise.all([
 		db
 			.select({ day: sql<string>`to_char(${local}, 'YYYY-MM-DD')`, ...bucketColumns() })
 			.from(playHistory)
@@ -395,9 +430,7 @@ export async function graphData(days: number, tz: string): Promise<GraphData> {
 			})
 			.from(playHistory)
 			.where(where)
-			.groupBy(sql`1`),
-		topPlatforms(days, tz, 8),
-		topUsers(days, tz, 8)
+			.groupBy(sql`1`)
 	]);
 
 	const range = dayRange(todayIn(tz), days);
@@ -443,9 +476,7 @@ export async function graphData(days: number, tz: string): Promise<GraphData> {
 			byDay: toDays(byDay.duration),
 			byWeekday: toBuckets(byWeekday.duration, weekdays, weekdayLabel),
 			byHour: toBuckets(byHour.duration, hours, hourLabel)
-		},
-		platforms,
-		users
+		}
 	};
 }
 
@@ -666,6 +697,35 @@ export async function userDetail(userId: string): Promise<UserDetail | null> {
 		users: [row]
 	} = await userStats({ userId });
 	if (!row) return null;
+	const mine = eq(playHistory.userId, userId);
+	const [windows, platforms] = await Promise.all([
+		watchTimeWindows(mine),
+		db
+			.select({
+				browser: playHistory.browser,
+				os: playHistory.os,
+				plays: playsCol,
+				playedSeconds: secondsCol
+			})
+			.from(playHistory)
+			.where(and(counted, mine))
+			.groupBy(playHistory.browser, playHistory.os)
+			.orderBy(desc(playsCol))
+	]);
+	return {
+		row,
+		windows,
+		platforms: platforms.map((p) => ({
+			key: `${p.browser ?? ''}|${p.os ?? ''}`,
+			label: [p.browser, p.os].filter(Boolean).join(' · ') || 'Unknown',
+			plays: p.plays,
+			playedSeconds: p.playedSeconds
+		}))
+	};
+}
+
+/** Plays and watch time over the last 24 hours / 7 days / 30 days / all time. */
+async function watchTimeWindows(filter: SQL): Promise<WatchTimeWindow[]> {
 	const within = (hours: number | null) =>
 		hours === null
 			? sql`true`
@@ -682,47 +742,51 @@ export async function userDetail(userId: string): Promise<UserDetail | null> {
 		{ label: 'Last 30 days', hours: 24 * 30 },
 		{ label: 'All time', hours: null }
 	];
-	const [[agg], platforms] = await Promise.all([
-		db
-			.select({
-				p0: playsWithin(windows[0].hours),
-				s0: secondsWithin(windows[0].hours),
-				p1: playsWithin(windows[1].hours),
-				s1: secondsWithin(windows[1].hours),
-				p2: playsWithin(windows[2].hours),
-				s2: secondsWithin(windows[2].hours),
-				p3: playsWithin(windows[3].hours),
-				s3: secondsWithin(windows[3].hours)
-			})
-			.from(playHistory)
-			.where(and(counted, eq(playHistory.userId, userId))),
-		db
-			.select({
-				browser: playHistory.browser,
-				os: playHistory.os,
-				plays: playsCol,
-				playedSeconds: secondsCol
-			})
-			.from(playHistory)
-			.where(and(counted, eq(playHistory.userId, userId)))
-			.groupBy(playHistory.browser, playHistory.os)
-			.orderBy(desc(playsCol))
-	]);
+	const [agg] = await db
+		.select({
+			p0: playsWithin(windows[0].hours),
+			s0: secondsWithin(windows[0].hours),
+			p1: playsWithin(windows[1].hours),
+			s1: secondsWithin(windows[1].hours),
+			p2: playsWithin(windows[2].hours),
+			s2: secondsWithin(windows[2].hours),
+			p3: playsWithin(windows[3].hours),
+			s3: secondsWithin(windows[3].hours)
+		})
+		.from(playHistory)
+		.where(and(counted, filter));
 	const values: Record<string, number> = agg;
-	return {
-		row,
-		windows: windows.map((w, i) => ({
-			label: w.label,
-			plays: values[`p${i}`] ?? 0,
-			playedSeconds: values[`s${i}`] ?? 0
-		})),
-		platforms: platforms.map((p) => ({
-			key: `${p.browser ?? ''}|${p.os ?? ''}`,
-			label: [p.browser, p.os].filter(Boolean).join(' · ') || 'Unknown',
-			plays: p.plays,
-			playedSeconds: p.playedSeconds
-		}))
-	};
+	return windows.map((w, i) => ({
+		label: w.label,
+		plays: values[`p${i}`] ?? 0,
+		playedSeconds: values[`s${i}`] ?? 0
+	}));
+}
+
+// ── one profile (/settings/statistics) ──────────────────────────────────────
+
+export function profileWatchTimes(profileId: string): Promise<WatchTimeWindow[]> {
+	return watchTimeWindows(eq(playHistory.profileId, profileId));
+}
+
+/**
+ * Movies and episodes the profile has finished (or marked watched): progress
+ * rows past FINISHED_FRACTION, the same threshold as the progress bars.
+ */
+export async function profileFinished(profileId: string): Promise<FinishedCounts> {
+	const finished = sql`${watchProgress.durationSeconds} > 0 and ${watchProgress.positionSeconds} >= ${watchProgress.durationSeconds} * ${FINISHED_FRACTION}`;
+	const [row] = await db
+		.select({
+			movies: sql<number>`count(*) filter (where ${watchProgress.movieId} is not null)`.mapWith(
+				Number
+			),
+			episodes: sql<number>`count(*) filter (where ${watchProgress.episodeId} is not null)`.mapWith(
+				Number
+			)
+		})
+		.from(watchProgress)
+		.where(and(eq(watchProgress.profileId, profileId), finished));
+	return { movies: row?.movies ?? 0, episodes: row?.episodes ?? 0 };
 }
 
 // ── libraries ───────────────────────────────────────────────────────────────

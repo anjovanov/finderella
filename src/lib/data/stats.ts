@@ -197,10 +197,14 @@ export interface BucketPoint {
 	episodes: number;
 }
 
-/** Both metrics for every chart; the Plays / Watch time toggle is client-side. */
-export interface GraphData {
+/** Plays and watch time per day / weekday / hour; the metric toggle is client-side. */
+export interface ActivityGraphs {
 	plays: { byDay: DayPoint[]; byWeekday: BucketPoint[]; byHour: BucketPoint[] };
 	duration: { byDay: DayPoint[]; byWeekday: BucketPoint[]; byHour: BucketPoint[] };
+}
+
+/** The admin Graphs page: the activity charts plus the rankings. */
+export interface GraphData extends ActivityGraphs {
 	platforms: TopEntry[];
 	users: TopEntry[];
 }
@@ -222,6 +226,12 @@ export interface WatchTimeWindow {
 	label: string;
 	plays: number;
 	playedSeconds: number;
+}
+
+/** Titles a profile finished or marked watched (`/settings/statistics`). */
+export interface FinishedCounts {
+	movies: number;
+	episodes: number;
 }
 
 export interface LibraryStatsRow {

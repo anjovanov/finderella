@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { invalidateAll } from '$app/navigation';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		Activity01Icon,
@@ -12,6 +11,7 @@
 		UserGroupIcon
 	} from '@hugeicons/core-free-icons';
 	import { cn } from '$lib/utils.js';
+	import { syncTimeZoneCookie } from '$lib/time-zone';
 
 	let { data, children } = $props();
 
@@ -60,14 +60,8 @@
 			: path === section.path || path.startsWith(`${section.path}/`);
 	}
 
-	// Days and hours are bucketed on the admin's calendar: hand the server this
-	// browser's zone and reload once when it differs from what it used.
-	onMount(() => {
-		const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-		if (!zone || zone === data.tz) return;
-		document.cookie = `finderella_tz=${encodeURIComponent(zone)}; path=/admin; max-age=31536000; samesite=lax`;
-		void invalidateAll();
-	});
+	// Days and hours are bucketed on the admin's calendar.
+	onMount(() => syncTimeZoneCookie(data.tz, '/admin'));
 </script>
 
 <div class="flex flex-col gap-6">

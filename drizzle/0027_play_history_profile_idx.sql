@@ -1,0 +1,1 @@
+CREATE INDEX "play_history_profile_started_idx" ON "play_history" USING btree ("profile_id","started_at");

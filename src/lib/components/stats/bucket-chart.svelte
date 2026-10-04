@@ -23,7 +23,11 @@
 		seriesLayout="stack"
 		bandPadding={0.25}
 		legend
-		props={{ yAxis: { format: (v: number) => (unit ? `${v}${unit}` : String(v)) } }}
+		props={{
+			// 24 hour labels collide on narrow cards: hide the ones that would overlap.
+			xAxis: { tickOcclusion: { padding: 6 } },
+			yAxis: { format: (v: number) => (unit ? `${v}${unit}` : String(v)) }
+		}}
 	>
 		{#snippet tooltip()}
 			<Chart.Tooltip indicator="dot" />

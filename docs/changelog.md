@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-04
+
+**Profile statistics** (schema: index `play_history_profile_started_idx`, migration `0027_play_history_profile_idx`).
+
+- New profile settings section **Statistics** (`/settings/statistics`) with a viewer's own watch statistics, a lighter version of Admin → Statistics. Everything is for the profile you're watching as.
+  - **Watch time** for the last 24 hours, 7 days, 30 days and all time, each with its number of plays, and how many movies and episodes the profile has finished (titles marked as watched count).
+  - **Activity** for the last 7 / 30 / 90 days or year: most watched movies and shows, and plays or watch time per day, by day of week and by hour of day.
+  - Days and hours follow your browser's time zone. A profile that hasn't watched anything sees a short empty state instead.
+- Fix: the settings pages no longer scroll sideways on phones (the section menu's row of pills widened the whole page instead of scrolling on its own).
+- The "By hour of day" charts (here and in Admin → Statistics → Graphs) hide hour labels that would overlap on narrow screens.
+
 ## 2026-10-03
 
 **Account limits** (schema: `site_settings.max_sessions_per_account`, `site_settings.max_profiles_per_account`, migration `0026_account_limits`).

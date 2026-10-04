@@ -35,9 +35,9 @@ MCP servers (configured in the git-ignored `.mcp.json`) and project skills (`.cl
 - **Profiles** — per-account cap = admin setting (default 5, `profileLimit()`), Netflix-style picker/manager at `/profiles`; active profile = Better Auth session field `activeProfileId`. All viewer data hangs off `profile_id` (see Conventions).
 - **Auth / roles / admin** — Better Auth `admin()` plugin (`src/lib/auth-roles.ts`); first account = admin; admin dashboard `/admin/*` (Overview, Devices + activity log, Users, Subtitles, Statistics, Site settings).
 - **Signed-in devices** — `/settings/devices`: the account's sessions (browser/OS via `parseUserAgent`, "last used" = session field `lastActiveAt`), sign out one or all others (`src/lib/server/account-sessions.ts`, pure `src/lib/data/account-sessions.ts`). Admin **Account limits** (Site settings): max signed-in devices (LRU sign-out, `src/lib/server/session-limit.ts`) and max profiles, pure `src/lib/data/account-limits.ts`.
-- **Settings** — `/settings/account`, `/settings/devices` (account-level) and per-profile `/settings/{preferences,subtitles,playback}`; a new section = sibling route + an entry in the layout's `sections` list.
+- **Settings** — `/settings/account`, `/settings/devices` (account-level) and per-profile `/settings/{preferences,subtitles,playback,statistics}`; a new section = sibling route + an entry in the layout's `sections` list.
 - **Themes & screensaver** — per profile; theme class written by `hooks.server.ts` `transformPageChunk`; `ScreensaverController` (`src/lib/screensaver.svelte.ts`) via context.
-- **Statistics** — `/admin/statistics` (Tautulli-style); `play_history` = one row per viewing, fed by player heartbeats (`src/lib/server/stats/`).
+- **Statistics** — `/admin/statistics` (Tautulli-style); `play_history` = one row per viewing, fed by player heartbeats (`src/lib/server/stats/`). Per-profile `/settings/statistics` reuses the same queries with an optional `profileId` (`profileWatchTimes`, `profileFinished`, `activityGraphs`).
 - **Watch together** — in-memory rooms (`src/lib/server/together/`, `/ws/together`), client `src/lib/together/`, shared timeline but a playback session per viewer.
 
 ## Conventions
