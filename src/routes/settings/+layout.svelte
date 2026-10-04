@@ -74,7 +74,7 @@
 	}
 </script>
 
-<div class="mx-auto flex w-full max-w-5xl page-gutter flex-col gap-8 py-10">
+<div class="mx-auto flex w-full max-w-6xl page-gutter flex-col gap-8 py-10">
 	<div>
 		<h1 class="text-2xl font-semibold">Settings</h1>
 		<p class="text-sm text-muted-foreground">
