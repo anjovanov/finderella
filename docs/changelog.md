@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-05
+
+**Account settings: one Save** (no schema change).
+
+- Settings → Account is one card with the display name, email address and password. The fields are read-only until you press **Edit**; **Cancel** throws the edits away.
+- A single **Save** applies everything that changed (only those fields are sent) and confirms what was updated.
+- Changing the email address now also needs your current password, like changing the password. The password is checked before anything is saved, so a wrong one changes nothing.
+
 ## 2026-10-04
 
 **Settings save as you change them** (no schema change).

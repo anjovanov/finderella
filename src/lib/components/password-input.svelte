@@ -8,6 +8,7 @@
 	// A password field with a show/hide toggle. Accepts every prop Input does.
 	let {
 		class: className,
+		value = $bindable(),
 		...restProps
 	}: Omit<ComponentProps<typeof Input>, 'type' | 'files'> = $props();
 
@@ -15,7 +16,12 @@
 </script>
 
 <div class="relative">
-	<Input type={visible ? 'text' : 'password'} class={cn('pr-10', className)} {...restProps} />
+	<Input
+		type={visible ? 'text' : 'password'}
+		class={cn('pr-10', className)}
+		bind:value
+		{...restProps}
+	/>
 	<button
 		type="button"
 		class="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-4xl text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:text-foreground"

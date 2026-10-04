@@ -1,6 +1,9 @@
 <script lang="ts">
 	import PageTitle from '$lib/components/page-title.svelte';
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { CheckmarkCircle02Icon, PencilEdit02Icon } from '@hugeicons/core-free-icons';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
@@ -11,20 +14,50 @@
 	let { data, form } = $props();
 
 	const joined = $derived(new Date(data.account.createdAt).toLocaleDateString());
+	const editing = $derived(data.editing);
 
-	function message(section: string): string | null {
-		return form && form.section === section && 'message' in form && form.message
-			? form.message
-			: null;
+	// Seeded from the account; Edit, Cancel and a save each re-run the load
+	// (the mode is in the URL), which puts them back on the saved values.
+	let name = $derived(data.account.name);
+	let email = $derived(data.account.email);
+	let newPassword = $state('');
+	let currentPassword = $state('');
+	let saving = $state(false);
+
+	const nameChanged = $derived(name.trim() !== data.account.name);
+	const emailChanged = $derived(email.trim().toLowerCase() !== data.account.email.toLowerCase());
+	const passwordChanged = $derived(newPassword !== '');
+	const needsCurrentPassword = $derived(emailChanged || passwordChanged);
+	const dirty = $derived(nameChanged || emailChanged || passwordChanged);
+
+	function clearPasswords() {
+		newPassword = '';
+		currentPassword = '';
 	}
-	function saved(section: string): boolean {
-		return !!form && form.section === section && 'saved' in form && !!form.saved;
+
+	function errorFor(field: string): string | null {
+		return form && 'field' in form && form.field === field ? form.message : null;
 	}
+	const formError = $derived(form && 'field' in form && form.field === null ? form.message : null);
+
+	const SAVED_LABELS: Record<string, string> = {
+		name: 'name',
+		email: 'email address',
+		password: 'password'
+	};
+	const savedMessage = $derived.by(() => {
+		const labels = data.saved.flatMap((key) => SAVED_LABELS[key] ?? []);
+		if (labels.length === 0) return null;
+		const list =
+			labels.length === 1
+				? labels[0]
+				: `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+		return `Your ${list} ${labels.length === 1 ? 'was' : 'were'} updated.`;
+	});
 </script>
 
 <PageTitle title="Account · Settings" />
 
-<!-- Account -->
 <Card.Root>
 	<Card.Header>
 		<Card.Title>Account</Card.Title>
@@ -36,107 +69,138 @@
 				<span>Member since {joined}</span>
 			</span>
 		</Card.Description>
+		{#if !editing}
+			<Card.Action>
+				<Button
+					href="{resolve('/settings/account')}?edit"
+					variant="secondary"
+					size="sm"
+					data-sveltekit-replacestate
+					data-sveltekit-noscroll
+					onclick={clearPasswords}
+				>
+					<HugeiconsIcon icon={PencilEdit02Icon} data-icon="inline-start" />
+					Edit
+				</Button>
+			</Card.Action>
+		{/if}
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/updateName" use:enhance>
-			<Field.Group>
-				<Field.Field data-invalid={message('name') ? true : undefined}>
+		<!-- autocomplete="off": no restoring stale values on reload (see CLAUDE.md);
+		     the password fields keep their own hints for password managers. -->
+		<form
+			method="POST"
+			action="?/save"
+			autocomplete="off"
+			use:enhance={({ formData }) => {
+				// Post only what changed (the action re-checks anyway).
+				if (!nameChanged) formData.delete('name');
+				if (!emailChanged) formData.delete('email');
+				if (!passwordChanged) formData.delete('newPassword');
+				if (!needsCurrentPassword) formData.delete('currentPassword');
+				saving = true;
+				return async ({ result, update }) => {
+					saving = false;
+					if (result.type === 'redirect') clearPasswords();
+					await update({ reset: false });
+				};
+			}}
+		>
+			<!-- Tighter than the Field defaults (gap-7 between fields, gap-2 inside). -->
+			<Field.Group class="gap-4">
+				<Field.Field class="gap-1.5" data-invalid={errorFor('name') ? true : undefined}>
 					<Field.Label for="name">Display name</Field.Label>
 					<Input
 						id="name"
 						name="name"
-						value={data.account.name}
-						autocomplete="name"
-						aria-invalid={message('name') ? true : undefined}
+						bind:value={name}
+						disabled={!editing}
+						aria-invalid={errorFor('name') ? true : undefined}
 						required
 					/>
-					{#if message('name')}
-						<Field.Error>{message('name')}</Field.Error>
-					{:else if saved('name')}
-						<Field.Description>Name updated.</Field.Description>
-					{/if}
+					{#if errorFor('name')}<Field.Error>{errorFor('name')}</Field.Error>{/if}
 				</Field.Field>
-				<Field.Field>
-					<Button type="submit" variant="secondary" class="w-fit">Save name</Button>
-				</Field.Field>
-			</Field.Group>
-		</form>
-	</Card.Content>
-</Card.Root>
 
-<!-- Email -->
-<Card.Root>
-	<Card.Header>
-		<Card.Title>Email address</Card.Title>
-		<Card.Description>You sign in with this address.</Card.Description>
-	</Card.Header>
-	<Card.Content>
-		<form method="POST" action="?/updateEmail" use:enhance>
-			<Field.Group>
-				<Field.Field data-invalid={message('email') ? true : undefined}>
-					<Field.Label for="email">Email</Field.Label>
+				<Field.Field class="gap-1.5" data-invalid={errorFor('email') ? true : undefined}>
+					<Field.Label for="email">Email address</Field.Label>
 					<Input
 						id="email"
 						name="email"
 						type="email"
-						value={data.account.email}
-						autocomplete="email"
-						aria-invalid={message('email') ? true : undefined}
+						bind:value={email}
+						disabled={!editing}
+						aria-invalid={errorFor('email') ? true : undefined}
 						required
 					/>
-					{#if message('email')}
-						<Field.Error>{message('email')}</Field.Error>
-					{:else if saved('email')}
-						<Field.Description>Email updated.</Field.Description>
-					{/if}
+					{#if errorFor('email')}<Field.Error>{errorFor('email')}</Field.Error>{/if}
 				</Field.Field>
-				<Field.Field>
-					<Button type="submit" variant="secondary" class="w-fit">Save email</Button>
-				</Field.Field>
-			</Field.Group>
-		</form>
-	</Card.Content>
-</Card.Root>
 
-<!-- Password -->
-<Card.Root>
-	<Card.Header>
-		<Card.Title>Password</Card.Title>
-		<Card.Description>Changing it signs you out everywhere else.</Card.Description>
-	</Card.Header>
-	<Card.Content>
-		<form method="POST" action="?/changePassword" use:enhance>
-			<Field.Group>
-				<Field.Field>
-					<Field.Label for="current-password">Current password</Field.Label>
-					<PasswordInput
-						id="current-password"
-						name="currentPassword"
-						autocomplete="current-password"
-						required
-					/>
-				</Field.Field>
-				<Field.Field data-invalid={message('password') ? true : undefined}>
-					<Field.Label for="new-password">New password</Field.Label>
-					<PasswordInput
-						id="new-password"
-						name="newPassword"
-						autocomplete="new-password"
-						minlength={8}
-						aria-invalid={message('password') ? true : undefined}
-						required
-					/>
-					{#if message('password')}
-						<Field.Error>{message('password')}</Field.Error>
-					{:else if saved('password')}
-						<Field.Description>Password changed.</Field.Description>
+				<Field.Field class="gap-1.5" data-invalid={errorFor('newPassword') ? true : undefined}>
+					{#if editing}
+						<Field.Label for="new-password">New password</Field.Label>
+						<PasswordInput
+							id="new-password"
+							name="newPassword"
+							autocomplete="new-password"
+							minlength={8}
+							placeholder="Leave blank to keep your password"
+							bind:value={newPassword}
+							aria-invalid={errorFor('newPassword') ? true : undefined}
+						/>
+						{#if errorFor('newPassword')}
+							<Field.Error>{errorFor('newPassword')}</Field.Error>
+						{:else}
+							<Field.Description>
+								At least 8 characters. Changing it signs you out everywhere else.
+							</Field.Description>
+						{/if}
 					{:else}
-						<Field.Description>At least 8 characters.</Field.Description>
+						<Field.Label for="password-locked">Password</Field.Label>
+						<Input id="password-locked" type="password" value="••••••••" disabled />
 					{/if}
 				</Field.Field>
-				<Field.Field>
-					<Button type="submit" variant="secondary" class="w-fit">Change password</Button>
-				</Field.Field>
+
+				{#if editing}
+					<Field.Field
+						class="gap-1.5"
+						data-invalid={errorFor('currentPassword') ? true : undefined}
+					>
+						<Field.Label for="current-password">Current password</Field.Label>
+						<PasswordInput
+							id="current-password"
+							name="currentPassword"
+							autocomplete="current-password"
+							bind:value={currentPassword}
+							required={needsCurrentPassword}
+							aria-invalid={errorFor('currentPassword') ? true : undefined}
+						/>
+						{#if errorFor('currentPassword')}
+							<Field.Error>{errorFor('currentPassword')}</Field.Error>
+						{:else}
+							<Field.Description>Needed to change your email address or password.</Field.Description
+							>
+						{/if}
+					</Field.Field>
+
+					<Field.Field orientation="horizontal" class="justify-end">
+						{#if formError}<Field.Error class="mr-auto">{formError}</Field.Error>{/if}
+						<Button
+							href={resolve('/settings/account')}
+							variant="ghost"
+							data-sveltekit-replacestate
+							data-sveltekit-noscroll
+							onclick={clearPasswords}
+						>
+							Cancel
+						</Button>
+						<Button type="submit" disabled={saving || !dirty}>Save</Button>
+					</Field.Field>
+				{:else if savedMessage}
+					<p class="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+						<HugeiconsIcon icon={CheckmarkCircle02Icon} class="size-4 text-primary" />
+						{savedMessage}
+					</p>
+				{/if}
 			</Field.Group>
 		</form>
 	</Card.Content>
