@@ -11,8 +11,11 @@ export type SiteSettings = Pick<
 	| 'allowRegistration'
 	| 'requireLogin'
 	| 'trickplayEnabled'
+	| 'trickplayAuto'
 	| 'markersEnabled'
 	| 'remuxEnabled'
+	| 'watchLibraries'
+	| 'scanIntervalHours'
 	| 'maxSessionsPerAccount'
 	| 'maxProfilesPerAccount'
 	| 'appName'
@@ -28,8 +31,11 @@ type SiteSettingsPatch = Partial<
 		| 'allowRegistration'
 		| 'requireLogin'
 		| 'trickplayEnabled'
+		| 'trickplayAuto'
 		| 'markersEnabled'
 		| 'remuxEnabled'
+		| 'watchLibraries'
+		| 'scanIntervalHours'
 		| 'maxSessionsPerAccount'
 		| 'maxProfilesPerAccount'
 		| 'appName'
@@ -86,6 +92,12 @@ export async function loginRequired(): Promise<boolean> {
 /** Admin switch for seek-bar thumbnails (devices can also opt out with FINDERELLA_TRICKPLAY=0). */
 export async function trickplayEnabled(): Promise<boolean> {
 	return (await getSiteSettings()).trickplayEnabled;
+}
+
+/** Background thumbnail generation after scans (only while trickplay itself is on). */
+export async function trickplayAutoEnabled(): Promise<boolean> {
+	const settings = await getSiteSettings();
+	return settings.trickplayEnabled && settings.trickplayAuto;
 }
 
 /** Admin switch for Skip intro / Skip credits (devices can opt out of analysis with FINDERELLA_MARKERS=0). */

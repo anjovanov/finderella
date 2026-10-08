@@ -6,6 +6,11 @@ import { enrichPending, isTmdbConfigured, metadataStatus } from '$lib/server/met
 import { tmdbCredentials, updateMetadataSettings } from '$lib/server/metadata/settings';
 import { testTmdbKey } from '$lib/server/metadata/tmdb';
 import { queueMarkerAnalysis } from '$lib/server/markers/job';
+import { runScheduledScans } from '$lib/server/gateways/scan-schedule';
+import { syncAllWatchedLibraries } from '$lib/server/gateways/watch';
+import { queueTrickplayGeneration } from '$lib/server/trickplay/bulk';
+import { SCAN_INTERVAL_HOURS } from '$lib/data/library-scanning';
+import { log } from '$lib/server/log';
 import { getSiteSettings, updateSiteSettings } from '$lib/server/site-settings';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -20,6 +25,9 @@ export const load: PageServerLoad = async () => {
 			allowRegistration: settings.allowRegistration,
 			requireLogin: settings.requireLogin,
 			trickplayEnabled: settings.trickplayEnabled,
+			trickplayAuto: settings.trickplayAuto,
+			watchLibraries: settings.watchLibraries,
+			scanIntervalHours: settings.scanIntervalHours,
 			markersEnabled: settings.markersEnabled,
 			remuxEnabled: settings.remuxEnabled,
 			maxSessionsPerAccount: settings.maxSessionsPerAccount,
@@ -29,6 +37,15 @@ export const load: PageServerLoad = async () => {
 		metadata
 	};
 };
+
+/** '' / 'off' = no periodic rescans. */
+const ScanInterval = z.union([
+	z.enum(['', 'off']).transform(() => null),
+	z.coerce
+		.number()
+		.int()
+		.refine((h) => (SCAN_INTERVAL_HOURS as readonly number[]).includes(h))
+]);
 
 const Limit = z.coerce.number().int().min(LIMIT_MIN).max(LIMIT_MAX);
 
@@ -73,8 +90,25 @@ export const actions: Actions = {
 	// and would blank them if this switch posted there without those fields.
 	updateTrickplay: async (event) => {
 		const formData = await event.request.formData();
+		// Both trickplay switches live in this form.
 		const trickplayEnabled = formData.get('trickplayEnabled')?.toString() === 'true';
-		await updateSiteSettings({ trickplayEnabled });
+		const trickplayAuto = formData.get('trickplayAuto')?.toString() === 'true';
+		await updateSiteSettings({ trickplayEnabled, trickplayAuto });
+		// Catch up on whatever was scanned while it was off (no-op unless both are on).
+		queueTrickplayGeneration();
+		return { saved: true };
+	},
+
+	// Its own action too: the watch switch and the rescan interval, posted together.
+	updateScanning: async (event) => {
+		const formData = await event.request.formData();
+		const watchLibraries = formData.get('watchLibraries')?.toString() === 'true';
+		const interval = ScanInterval.safeParse(formData.get('scanIntervalHours')?.toString() ?? '');
+		if (!interval.success) return fail(400, { message: 'Pick one of the offered intervals' });
+		await updateSiteSettings({ watchLibraries, scanIntervalHours: interval.data });
+		// Devices start or stop watching now; a shorter interval may make libraries due now.
+		await syncAllWatchedLibraries();
+		void runScheduledScans().catch((err) => log.error({ err }, 'scheduled scans failed'));
 		return { saved: true };
 	},
 

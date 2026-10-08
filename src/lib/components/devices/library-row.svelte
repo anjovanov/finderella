@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		AudioWave01Icon,
 		Delete02Icon,
+		FileSearchIcon,
 		Film01Icon,
 		Image01Icon,
 		MoreVerticalIcon,
@@ -33,9 +33,27 @@
 		onRemove: () => void;
 	} = $props();
 
-	let scanning = $state(false);
+	/** The rescan request is in flight (the load then reports `scanState`). */
+	let submitting = $state(false);
 	let thumbnailForm = $state<HTMLFormElement>();
 	let markersForm = $state<HTMLFormElement>();
+	let fullRescanForm = $state<HTMLFormElement>();
+
+	const busy = $derived(submitting || library.scanState !== null);
+	const rescanLabel = $derived(
+		library.scanState === 'queued'
+			? 'Queued'
+			: submitting || library.scanState === 'scanning'
+				? 'Scanning…'
+				: 'Rescan'
+	);
+	const rescanTitle = $derived(
+		!online
+			? 'Device is offline'
+			: library.scanState === 'queued'
+				? 'Waits for another scan on this device to finish'
+				: 'Look for new, changed and removed files'
+	);
 
 	const kindLabel = $derived(library.kind === 'series' ? 'Series' : 'Movies');
 	const filesLabel = $derived(
@@ -84,14 +102,10 @@
 		method="POST"
 		action="?/rescan"
 		use:enhance={() => {
-			scanning = true;
+			submitting = true;
 			return async ({ update }) => {
 				await update();
-				// The scan runs on the device; give the first batches a moment before refreshing.
-				setTimeout(async () => {
-					await invalidateAll();
-					scanning = false;
-				}, 2000);
+				submitting = false;
 			};
 		}}
 	>
@@ -100,12 +114,20 @@
 			type="submit"
 			variant="outline"
 			size="sm"
-			disabled={!online || scanning}
-			title={online ? 'Look for new, changed and removed files' : 'Device is offline'}
+			disabled={!online || busy}
+			title={rescanTitle}
 		>
-			<HugeiconsIcon icon={RefreshIcon} class={scanning ? 'motion-safe:animate-spin' : ''} />
-			<span class="hidden sm:inline">{scanning ? 'Scanning…' : 'Rescan'}</span>
+			<HugeiconsIcon
+				icon={RefreshIcon}
+				class={busy && library.scanState !== 'queued' ? 'motion-safe:animate-spin' : ''}
+			/>
+			<span class="hidden sm:inline">{rescanLabel}</span>
 		</Button>
+	</form>
+
+	<form bind:this={fullRescanForm} method="POST" action="?/rescan" class="hidden" use:enhance>
+		<input type="hidden" name="libraryId" value={library.id} />
+		<input type="hidden" name="force" value="true" />
 	</form>
 
 	<form
@@ -132,14 +154,26 @@
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content align="end" class="min-w-72">
 			<DropdownMenu.Item
+				disabled={!online || busy}
+				onSelect={() => fullRescanForm?.requestSubmit()}
+			>
+				<HugeiconsIcon icon={FileSearchIcon} />
+				<div class="flex flex-col">
+					<span>Full rescan</span>
+					<span class="text-xs text-muted-foreground">
+						{online ? 'Re-read every file’s tracks and chapters' : 'Device is offline'}
+					</span>
+				</div>
+			</DropdownMenu.Item>
+			<DropdownMenu.Item
 				disabled={thumbnailBlocker !== null}
 				onSelect={() => thumbnailForm?.requestSubmit()}
 			>
 				<HugeiconsIcon icon={Image01Icon} />
 				<div class="flex flex-col">
-					<span>Generate trickplay thumbnails</span>
+					<span>Regenerate trickplay thumbnails</span>
 					<span class="text-xs text-muted-foreground">
-						{thumbnailBlocker ?? 'Seek-bar previews for every file'}
+						{thumbnailBlocker ?? 'Normally automatic. Re-checks every file in this library.'}
 					</span>
 				</div>
 			</DropdownMenu.Item>
@@ -149,9 +183,9 @@
 			>
 				<HugeiconsIcon icon={AudioWave01Icon} />
 				<div class="flex flex-col">
-					<span>Detect intros & credits</span>
+					<span>Re-detect intros & credits</span>
 					<span class="text-xs text-muted-foreground">
-						{markersBlocker ?? 'Re-analyse every file for Skip intro / Skip credits'}
+						{markersBlocker ?? 'Normally automatic. Re-checks every file in this library.'}
 					</span>
 				</div>
 			</DropdownMenu.Item>

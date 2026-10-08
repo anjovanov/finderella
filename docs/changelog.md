@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-08
+
+**Automatic library scanning** (schema: `media_file.scan_hash`, `media_file.trickplay_at`, `site_settings.watch_libraries`, `scan_interval_hours`, `trickplay_auto`, migration `0030_library_scanning`; gateway protocol additions, no version bump).
+
+- **New files show up by themselves.** Devices watch their library folders and rescan about 30 seconds after files stop changing. Libraries are also rescanned when their device reconnects and on a schedule (Admin → Site settings → **Library scanning**: Off / every hour / 6 h / 12 h / day, default daily), which covers network shares that don't report changes.
+- **Rescans are much faster.** The device remembers each file's ffprobe results and only re-reads files whose size or modification time changed; the hub skips files whose report didn't change, and skips the follow-up work (metadata, prune, background jobs) when a scan found nothing new. Devices → ⋮ **Full rescan** re-reads every file.
+- **Trickplay thumbnails are generated in the background** after scans: new files first, then a gradual backfill of files that don't have them yet, one file at a time per device. Switch: Admin → Site settings → Trickplay → **Generate in the background** (on by default). The Devices page's per-library actions are now **Regenerate trickplay thumbnails** and **Re-detect intros & credits** (normally automatic; they re-check every file of the library, e.g. after a device lost its cache or for wrong markers). Regenerating queues behind a running job instead of refusing.
+- Intro & credits detection already ran after every scan; it now also runs after automatic scans.
+- Safer scans: a disconnect mid-scan no longer marks unsent files as missing (the device abandons the scan), an unreadable folder no longer marks its files missing or aborts the whole walk, and scans of one device run one at a time. The library row shows **Scanning…** / **Queued**.
+- The activity log only lists automatic scans that found something, and says what triggered them.
+- Gateway: needs Node 20+; `FINDERELLA_WATCH=0` turns folder watching off on a device.
+
 ## 2026-10-05
 
 **Account settings: one Save** (no schema change).

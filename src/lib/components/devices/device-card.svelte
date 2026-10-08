@@ -17,7 +17,6 @@
 	let {
 		device,
 		trickplayEnabled,
-		jobRunning,
 		markersEnabled,
 		markersJobRunning,
 		onRename,
@@ -27,7 +26,6 @@
 	}: {
 		device: Device;
 		trickplayEnabled: boolean;
-		jobRunning: boolean;
 		markersEnabled: boolean;
 		markersJobRunning: boolean;
 		onRename: () => void;
@@ -36,7 +34,7 @@
 		onRemoveLibrary: (library: DeviceLibrary) => void;
 	} = $props();
 
-	const blocker = $derived(thumbnailBlocker(device, { enabled: trickplayEnabled, jobRunning }));
+	const blocker = $derived(thumbnailBlocker(device, { enabled: trickplayEnabled }));
 	const markersBlock = $derived(
 		markersBlocker(device, { enabled: markersEnabled, jobRunning: markersJobRunning })
 	);

@@ -211,6 +211,13 @@
       "when": 1791138882597,
       "tag": "0029_branding",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791441192187,
+      "tag": "0030_library_scanning",
+      "breakpoints": true
     }
   ]
 }

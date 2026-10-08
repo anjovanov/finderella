@@ -1,4 +1,4 @@
-import { and, eq, isNull, lt, ne, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import type { AudioSource, ProbedChapter, ProbedFile, SubtitleSource } from '@finderella/protocol';
 import { db } from '$lib/server/db';
 import {
@@ -14,6 +14,7 @@ import {
 } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import { recordDeviceEvent } from '$lib/server/gateways/events';
+import { hasActiveScans, type ScanReason } from '$lib/server/gateways/scan';
 import { isSampleFile, parseEpisodePath, parseMoviePath, slugify, themeFromSlug } from './parse';
 import { pruneCatalog } from './prune';
 import { enrichPending, isTmdbConfigured } from '$lib/server/metadata';
@@ -21,6 +22,8 @@ import { queueAutoSubtitleDownload } from '$lib/server/subtitles/bulk';
 import { invalidateSearchIndex } from '$lib/server/search';
 import { chapterMarkers } from '$lib/server/markers/chapters';
 import { queueMarkerAnalysis } from '$lib/server/markers/job';
+import { queueTrickplayGeneration } from '$lib/server/trickplay/bulk';
+import { scanHash } from './scan-hash';
 
 /**
  * Turns gateway scan reports into catalog rows. Metadata is filename-derived
@@ -28,9 +31,6 @@ import { queueMarkerAnalysis } from '$lib/server/markers/job';
  * afterwards. Existing catalog entries are never overwritten by rescans; files
  * just link to them. Titles left without any file are pruned after a scan.
  */
-
-/** In-memory scan bookkeeping: libraryId → scan start time. Single-process hub. */
-const activeScans = new Map<string, Date>();
 
 /**
  * Per-library work chain so scan batches and the final prune run in the order
@@ -48,16 +48,6 @@ export function enqueueScanWork(libraryId: string, work: () => Promise<void>): P
 		if (scanQueues.get(libraryId) === tail) scanQueues.delete(libraryId);
 	});
 	return next;
-}
-
-export function hasActiveScans(): boolean {
-	return activeScans.size > 0;
-}
-
-export function markScanStarted(libraryId: string): Date {
-	const startedAt = new Date();
-	activeScans.set(libraryId, startedAt);
-	return startedAt;
 }
 
 async function resolveMovieId(file: ProbedFile): Promise<string> {
@@ -137,13 +127,46 @@ async function resolveEpisodeId(file: ProbedFile): Promise<string | null> {
 	return raced?.id ?? null;
 }
 
-export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): Promise<void> {
+/**
+ * Ingest one `scan.file` batch. Returns how many files were (re-)ingested:
+ * a file whose report hashes like the last scan's only gets `scan_seen_at`.
+ */
+export async function ingestScanBatch(
+	libraryId: string,
+	gatewayId: string,
+	files: ProbedFile[]
+): Promise<number> {
 	const lib = await db.query.library.findFirst({ where: eq(library.id, libraryId) });
-	if (!lib) {
-		log.warn({ libraryId }, 'scan batch for unknown library; ignoring');
-		return;
+	if (!lib || lib.gatewayId !== gatewayId) {
+		log.warn({ libraryId, gatewayId }, 'scan batch for unknown library; ignoring');
+		return 0;
 	}
 	const now = new Date();
+	const known = new Map(
+		(
+			await db
+				.select({
+					id: mediaFile.id,
+					relPath: mediaFile.relPath,
+					scanHash: mediaFile.scanHash,
+					status: mediaFile.status,
+					movieId: mediaFile.movieId,
+					episodeId: mediaFile.episodeId
+				})
+				.from(mediaFile)
+				.where(
+					and(
+						eq(mediaFile.libraryId, libraryId),
+						inArray(
+							mediaFile.relPath,
+							files.map((f) => f.relPath)
+						)
+					)
+				)
+		).map((row) => [row.relPath, row])
+	);
+	const unchanged: string[] = [];
+	let changed = 0;
 	for (const rawFile of files) {
 		// Belt-and-braces: bigint columns reject fractional values.
 		const file = { ...rawFile, mtimeMs: Math.round(rawFile.mtimeMs) };
@@ -153,6 +176,14 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 			log.debug({ relPath: file.relPath, libraryId }, 'skipping sample clip');
 			continue;
 		}
+		const hash = scanHash(file);
+		const row = known.get(file.relPath);
+		// Same report as last time, still active and linked to its title: nothing to redo.
+		if (row?.scanHash === hash && row.status === 'active' && (row.movieId || row.episodeId)) {
+			unchanged.push(row.id);
+			continue;
+		}
+		changed++;
 		try {
 			let movieId: string | null = null;
 			let episodeId: string | null = null;
@@ -202,6 +233,10 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 						// …and its intro/credits analysis.
 						markersVersion: sql`case when ${mediaFile.size} = excluded.size and ${mediaFile.mtimeMs} = excluded.mtime_ms then ${mediaFile.markersVersion} else null end`,
 						markersAnalyzedAt: sql`case when ${mediaFile.size} = excluded.size and ${mediaFile.mtimeMs} = excluded.mtime_ms then ${mediaFile.markersAnalyzedAt} else null end`,
+						// …and whether the device has its trickplay sheets.
+						trickplayAt: sql`case when ${mediaFile.size} = excluded.size and ${mediaFile.mtimeMs} = excluded.mtime_ms then ${mediaFile.trickplayAt} else null end`,
+						// Written last (below), so a failed ingest retries next scan.
+						scanHash: null,
 						...(file.chapters ? { chapters: file.chapters } : {}),
 						updatedAt: now
 					}
@@ -219,10 +254,15 @@ export async function ingestScanBatch(libraryId: string, files: ProbedFile[]): P
 			if (file.subtitles) await replaceSubtitles(row.id, file.subtitles);
 			// Same for audio-track discovery.
 			if (file.audioTracks) await replaceAudioTracks(row.id, file.audioTracks);
+			await db.update(mediaFile).set({ scanHash: hash }).where(eq(mediaFile.id, row.id));
 		} catch (err) {
 			log.error({ err, relPath: file.relPath, libraryId }, 'failed to ingest scanned file');
 		}
 	}
+	if (unchanged.length > 0) {
+		await db.update(mediaFile).set({ scanSeenAt: now }).where(inArray(mediaFile.id, unchanged));
+	}
+	return changed;
 }
 
 /** The scan is the source of truth for a file's tracks: swap the whole set. */
@@ -296,35 +336,65 @@ async function replaceAudioTracks(mediaFileId: string, tracks: AudioSource[]): P
 	});
 }
 
+export interface FinishedScan {
+	startedAt: Date;
+	/** Files re-ingested by this scan's batches. */
+	changed: number;
+	reason: ScanReason;
+	actorUserId: string | null;
+}
+
+/**
+ * `scan.done`: mark what the scan didn't see as missing, then (only when
+ * something changed) prune, refresh search and start the background jobs.
+ * `scan` is undefined for a scan this process didn't start (hub restarted
+ * mid-scan): nothing is marked missing and the follow-up work always runs.
+ */
 export async function finalizeScan(
 	libraryId: string,
-	stats: { files: number; errors: number }
+	stats: { files: number; errors: number },
+	scan: FinishedScan | undefined,
+	incomplete: boolean
 ): Promise<void> {
-	const startedAt = activeScans.get(libraryId);
-	activeScans.delete(libraryId);
 	const now = new Date();
-	if (startedAt) {
-		await db
+	let missing = 0;
+	// An unreadable folder (unmounted disk, permissions) hides files that still exist.
+	if (scan && !incomplete) {
+		const rows = await db
 			.update(mediaFile)
 			.set({ status: 'missing', updatedAt: now })
 			.where(
 				and(
 					eq(mediaFile.libraryId, libraryId),
-					or(isNull(mediaFile.scanSeenAt), lt(mediaFile.scanSeenAt, startedAt))
+					eq(mediaFile.status, 'active'),
+					or(isNull(mediaFile.scanSeenAt), lt(mediaFile.scanSeenAt, scan.startedAt))
 				)
-			);
+			)
+			.returning({ id: mediaFile.id });
+		missing = rows.length;
 	}
 	await db.update(library).set({ lastScanAt: now }).where(eq(library.id, libraryId));
-	log.info({ libraryId, ...stats }, 'library scan finished');
-	await recordDeviceEvent({
-		type: 'scan.finished',
-		libraryId,
-		detail: {
-			files: stats.files,
-			errors: stats.errors,
-			...(startedAt ? { durationMs: now.getTime() - startedAt.getTime() } : {})
-		}
-	});
+	const changed = scan ? scan.changed : null;
+	log.info({ libraryId, ...stats, changed, missing, incomplete }, 'library scan finished');
+	const quiet = changed === 0 && missing === 0;
+	// Automatic scans that found nothing new stay out of the activity log.
+	if (!quiet || scan?.actorUserId || scan?.reason === 'library-added') {
+		await recordDeviceEvent({
+			type: 'scan.finished',
+			libraryId,
+			detail: {
+				files: stats.files,
+				errors: stats.errors,
+				...(changed !== null ? { changed } : {}),
+				missing,
+				...(incomplete ? { incomplete } : {}),
+				...(scan
+					? { reason: scan.reason, durationMs: now.getTime() - scan.startedAt.getTime() }
+					: {})
+			}
+		});
+	}
+	if (quiet) return;
 	// Another library's scan may still be inserting titles; it prunes at its own end.
 	if (!hasActiveScans()) {
 		await pruneCatalog().catch((err) => log.error({ err }, 'catalog prune failed'));
@@ -341,6 +411,7 @@ export async function finalizeScan(
 			log.error({ err }, 'auto subtitle download failed')
 		);
 	}
-	// New episodes/movies get intro/credits detection (background, single-flight).
+	// New episodes/movies get intro/credits detection and trickplay sheets (background, single-flight).
 	queueMarkerAnalysis();
+	queueTrickplayGeneration();
 }

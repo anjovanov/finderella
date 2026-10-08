@@ -5,7 +5,8 @@ import { db } from '$lib/server/db';
 import { gateway, gatewayPairingCode, library, mediaFile } from '$lib/server/db/schema';
 import { registry } from '$lib/server/gateways/registry';
 import { listDeviceEvents, recordDeviceEvent } from '$lib/server/gateways/events';
-import { triggerScan } from '$lib/server/gateways/scan';
+import { forgetLibraryScans, requestScan, scanState } from '$lib/server/gateways/scan';
+import { syncWatchedLibraries } from '$lib/server/gateways/watch';
 import { getSiteSettings } from '$lib/server/site-settings';
 import { markersJobStatus, startMarkersForLibrary, stopMarkersJob } from '$lib/server/markers/job';
 import {
@@ -67,7 +68,8 @@ export const load: PageServerLoad = async ({ url }) => {
 				kind: lib.kind,
 				lastScanAt: lib.lastScanAt?.toISOString() ?? null,
 				files: counts.get(lib.id)?.files ?? 0,
-				bytes: counts.get(lib.id)?.bytes ?? 0
+				bytes: counts.get(lib.id)?.bytes ?? 0,
+				scanState: scanState(lib.id)
 			}))
 		})),
 		pendingCodes: pendingCodes.map((c) => ({
@@ -121,36 +123,24 @@ export const actions: Actions = {
 			libraryId: lib.id,
 			detail: { rootPath: lib.rootPath, kind: lib.kind }
 		});
-		try {
-			triggerScan(lib);
-			await recordDeviceEvent({
-				type: 'scan.started',
-				actorUserId,
-				libraryId: lib.id,
-				detail: { reason: 'library-added' }
-			});
-		} catch {
-			// Offline: the library is saved; scan can be triggered when it connects.
-		}
+		// Offline: the library is saved; it's scanned when the device reconnects.
+		requestScan(lib, 'library-added', { actorUserId });
+		await syncWatchedLibraries(lib.gatewayId);
 		return { added: lib.id };
 	},
 
 	rescan: async (event) => {
 		const formData = await event.request.formData();
 		const libraryId = formData.get('libraryId')?.toString() ?? '';
+		// Full rescan: re-probe every file instead of trusting the device's probe cache.
+		const force = formData.get('force')?.toString() === 'true';
 		const lib = await db.query.library.findFirst({ where: eq(library.id, libraryId) });
 		if (!lib) return fail(404, { message: 'Library not found' });
-		try {
-			triggerScan(lib);
-		} catch {
-			return fail(409, { message: 'Device is offline' });
-		}
-		await recordDeviceEvent({
-			type: 'scan.started',
-			actorUserId: event.locals.user!.id,
-			libraryId: lib.id,
-			detail: { reason: 'rescan' }
+		const outcome = requestScan(lib, force ? 'full-rescan' : 'rescan', {
+			force,
+			actorUserId: event.locals.user!.id
 		});
+		if (outcome === 'offline') return fail(409, { message: 'Device is offline' });
 		return { rescanned: lib.id };
 	},
 
@@ -158,17 +148,11 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const libraryId = formData.get('libraryId')?.toString() ?? '';
 		if (!libraryId) return fail(400, { message: 'Missing library' });
-		const outcome = await startTrickplayBulk(libraryId);
+		const outcome = await startTrickplayBulk(libraryId, event.locals.user!.id);
 		switch (outcome) {
 			case 'started':
-				await recordDeviceEvent({
-					type: 'thumbnails.started',
-					actorUserId: event.locals.user!.id,
-					libraryId
-				});
-				return { trickplayStarted: libraryId };
-			case 'busy':
-				return fail(409, { message: 'A thumbnail job is already running' });
+			case 'queued':
+				return { trickplayStarted: libraryId, trickplayQueued: outcome === 'queued' };
 			case 'disabled':
 				return fail(409, { message: 'Thumbnails are turned off in Site settings' });
 			case 'offline':
@@ -279,6 +263,8 @@ export const actions: Actions = {
 			.from(mediaFile)
 			.where(and(eq(mediaFile.libraryId, libraryId), eq(mediaFile.status, 'active')));
 		await db.delete(library).where(eq(library.id, libraryId));
+		forgetLibraryScans(libraryId);
+		await syncWatchedLibraries(lib.gatewayId);
 		await recordDeviceEvent({
 			type: 'library.removed',
 			actorUserId: event.locals.user!.id,

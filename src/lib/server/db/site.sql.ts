@@ -8,10 +8,16 @@ export const siteSettings = pgTable('site_settings', {
 	requireLogin: boolean('require_login').notNull().default(true),
 	/** Seek-bar thumbnails (trickplay): rendered on devices at first play / via the bulk job. */
 	trickplayEnabled: boolean('trickplay_enabled').notNull().default(true),
+	/** Render thumbnails in the background after scans (new files first, then a backfill). */
+	trickplayAuto: boolean('trickplay_auto').notNull().default(true),
 	/** Skip intro / Skip credits: markers served to the player and the background analysis job. */
 	markersEnabled: boolean('markers_enabled').notNull().default(true),
 	/** Play MKVs & co. by remuxing them in the browser (Media Source Extensions) instead of transcoding. */
 	remuxEnabled: boolean('remux_enabled').notNull().default(true),
+	/** Devices watch library folders and ask for a rescan when files change. */
+	watchLibraries: boolean('watch_libraries').notNull().default(true),
+	/** Rescan every library this often (SCAN_INTERVAL_HOURS in $lib/data/library-scanning). null = never. */
+	scanIntervalHours: integer('scan_interval_hours').default(24),
 	/** Signed-in devices per account; a sign-in beyond it signs out the least recently used. null = unlimited. */
 	maxSessionsPerAccount: integer('max_sessions_per_account'),
 	/** Profiles per account (DEFAULT_MAX_PROFILES in $lib/data/account-limits). null = unlimited. */

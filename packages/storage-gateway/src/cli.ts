@@ -13,6 +13,7 @@ import { runScan } from './scanner.js';
 import { StreamTransfer } from './stream-transfer.js';
 import { ensureSubtitleVtt, tailSubtitle } from './subtitles/extract.js';
 import { TrickplayQueue } from './trickplay/queue.js';
+import { LibraryWatcher } from './watch.js';
 
 const SUBTITLE_EXTENSION_SET = new Set<string>(SUBTITLE_EXTENSIONS);
 /** How long a `trickplay.get` waits for the sheet ffmpeg is writing next. */
@@ -133,6 +134,12 @@ program
 		const sessions = new Map<string, TranscodeSession>();
 		const trickplay = new TrickplayQueue({ ffmpegBin: ffmpegPath, log });
 		const markers = new MarkersQueue({ ffmpegBin: ffmpegPath, log });
+		/** Running scans by library id: the hub may ask again before one finishes. */
+		const scans = new Map<string, AbortController>();
+		const watcher = new LibraryWatcher({
+			log,
+			onChange: (libraryId) => connection.send({ type: 'library.changed', libraryId })
+		});
 		// Only file/HLS transfers count against maxConcurrentTransfers: a subtitle
 		// stream can idle for minutes and must never make segment fetches "busy".
 		let fileTransfers = 0;
@@ -165,8 +172,26 @@ program
 			log,
 			onMessage: (message, conn) => {
 				switch (message.type) {
-					case 'scan.start':
-						void runScan(conn, message, { ffprobe: tools.ffprobe, log });
+					case 'scan.start': {
+						if (scans.has(message.libraryId)) {
+							log(`scan of ${message.rootPath} already running; ignoring the new request`);
+							break;
+						}
+						const controller = new AbortController();
+						scans.set(message.libraryId, controller);
+						void runScan(conn, message, {
+							ffprobe: tools.ffprobe,
+							log,
+							signal: controller.signal
+						})
+							.catch((err: Error) => log(`scan of ${message.rootPath} failed: ${err.message}`))
+							.finally(() => {
+								if (scans.get(message.libraryId) === controller) scans.delete(message.libraryId);
+							});
+						break;
+					}
+					case 'libraries.watch':
+						watcher.setLibraries(message.libraries);
 						break;
 					case 'file.read': {
 						// Never read outside the library root, whatever the hub asks for.
@@ -406,6 +431,11 @@ program
 				}
 			},
 			onDisconnect: () => {
+				// Batches sent while offline are lost: the hub rescans after the next hello.
+				for (const controller of scans.values()) controller.abort();
+				scans.clear();
+				// The hub re-sends the list after every hello.
+				watcher.closeAll();
 				for (const transfer of transfers.values()) transfer.abort();
 				transfers.clear();
 				for (const session of sessions.values()) void session.stop();

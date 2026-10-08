@@ -9,6 +9,8 @@ export interface DeviceLibrary {
 	files: number;
 	/** Total size of the library's active files. */
 	bytes: number;
+	/** The device is scanning it, or it waits for the device's current scan. */
+	scanState: 'scanning' | 'queued' | null;
 }
 
 export interface Device {
@@ -24,19 +26,21 @@ export interface Device {
 	libraries: DeviceLibrary[];
 }
 
-/** Why "Generate trickplay thumbnails" can't run for a library right now, or null when it can. */
+/**
+ * Why "Regenerate trickplay thumbnails" can't run for a library right now, or
+ * null when it can (while another run is active it queues behind it).
+ */
 export function thumbnailBlocker(
 	device: Pick<Device, 'online' | 'trickplay'>,
-	opts: { enabled: boolean; jobRunning: boolean }
+	opts: { enabled: boolean }
 ): string | null {
 	if (!opts.enabled) return 'Turned off in Site settings';
 	if (!device.trickplay) return 'Update the gateway on this device first';
 	if (!device.online) return 'Device is offline';
-	if (opts.jobRunning) return 'Another thumbnail job is running';
 	return null;
 }
 
-/** Why "Detect intros & credits" can't run for a library right now, or null when it can. */
+/** Why "Re-detect intros & credits" can't run for a library right now, or null when it can. */
 export function markersBlocker(
 	device: Pick<Device, 'online' | 'markers'>,
 	opts: { enabled: boolean; jobRunning: boolean }

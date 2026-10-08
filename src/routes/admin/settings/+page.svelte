@@ -12,8 +12,10 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
+	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
 	import { DEFAULT_MAX_PROFILES, LIMIT_MAX, LIMIT_MIN } from '$lib/data/account-limits';
+	import { SCAN_INTERVAL_HOURS, scanIntervalLabel } from '$lib/data/library-scanning';
 	import { DialogForm } from '$lib/dialog-form.svelte';
 
 	let { data, form } = $props();
@@ -22,6 +24,7 @@
 	let allowRegistration = $derived(data.settings.allowRegistration);
 	let requireLogin = $derived(data.settings.requireLogin);
 	let trickplayEnabled = $derived(data.settings.trickplayEnabled);
+	let trickplayAuto = $derived(data.settings.trickplayAuto);
 	let trickplayForm = $state<HTMLFormElement | null>(null);
 	let markersEnabled = $derived(data.settings.markersEnabled);
 	let markersForm = $state<HTMLFormElement | null>(null);
@@ -46,6 +49,17 @@
 		markersForm?.requestSubmit();
 	}
 	let savingRemux = $state(false);
+
+	let watchLibraries = $derived(data.settings.watchLibraries);
+	/** Select values are strings; 'off' = no periodic rescans. */
+	let scanInterval = $derived(String(data.settings.scanIntervalHours ?? 'off'));
+	let scanningForm = $state<HTMLFormElement | null>(null);
+	let savingScanning = $state(false);
+
+	async function submitScanning() {
+		await tick();
+		scanningForm?.requestSubmit();
+	}
 
 	async function submitRemux() {
 		await tick();
@@ -243,6 +257,75 @@
 	</Card.Content>
 </Card.Root>
 
+<!-- Library scanning -->
+<Card.Root>
+	<Card.Header>
+		<Card.Title>Library scanning</Card.Title>
+		<Card.Description>How new, changed and removed files reach the catalog.</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form
+			bind:this={scanningForm}
+			method="POST"
+			action="?/updateScanning"
+			autocomplete="off"
+			use:enhance={() => {
+				savingScanning = true;
+				return async ({ update }) => {
+					savingScanning = false;
+					await update();
+				};
+			}}
+		>
+			<input type="hidden" name="watchLibraries" value={watchLibraries ? 'true' : 'false'} />
+			<input type="hidden" name="scanIntervalHours" value={scanInterval} />
+			<Field.Group>
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label for="watch-libraries">Watch library folders</Field.Label>
+						<Field.Description>
+							Devices notice files being added, moved or deleted and rescan the library about 30
+							seconds after the last change. Folders on network shares (SMB, NFS) usually don't
+							report changes made from other computers; the periodic rescan covers them. Libraries
+							are also rescanned whenever their device reconnects.
+						</Field.Description>
+					</Field.Content>
+					<Switch
+						id="watch-libraries"
+						bind:checked={watchLibraries}
+						disabled={savingScanning}
+						onCheckedChange={submitScanning}
+					/>
+				</Field.Field>
+				<Field.Field orientation="horizontal">
+					<Field.Content>
+						<Field.Label for="scan-interval">Rescan every library</Field.Label>
+						<Field.Description>
+							Rescans only re-read files that changed, so they're cheap even for large libraries.
+						</Field.Description>
+					</Field.Content>
+					<Select.Root
+						type="single"
+						bind:value={scanInterval}
+						onValueChange={submitScanning}
+						disabled={savingScanning}
+					>
+						<Select.Trigger id="scan-interval" class="w-36">
+							{scanIntervalLabel(scanInterval === 'off' ? null : Number(scanInterval))}
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="off" label={scanIntervalLabel(null)} />
+							{#each SCAN_INTERVAL_HOURS as hours (hours)}
+								<Select.Item value={String(hours)} label={scanIntervalLabel(hours)} />
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</Field.Field>
+			</Field.Group>
+		</form>
+	</Card.Content>
+</Card.Root>
+
 <div class="grid gap-8 lg:grid-cols-2">
 	<!-- Seek-bar thumbnails -->
 	<Card.Root>
@@ -256,6 +339,7 @@
 				bind:this={trickplayForm}
 				method="POST"
 				action="?/updateTrickplay"
+				autocomplete="off"
 				use:enhance={() => {
 					savingTrickplay = true;
 					return async ({ update }) => {
@@ -265,23 +349,42 @@
 				}}
 			>
 				<input type="hidden" name="trickplayEnabled" value={trickplayEnabled ? 'true' : 'false'} />
+				<input type="hidden" name="trickplayAuto" value={trickplayAuto ? 'true' : 'false'} />
 				<Field.Group>
 					<Field.Field orientation="horizontal">
 						<Field.Content>
 							<Field.Label for="trickplay-enabled">Seek-bar thumbnails</Field.Label>
 							<Field.Description>
-								The device holding a file renders its thumbnails the first time the title is played
-								(and for whole libraries via <span class="font-bold"
-									>Generate trickplay thumbnails</span
+								The device holding a file renders its thumbnails (in the background, or the first
+								time the title is played) and keeps them cached; <span class="font-bold"
+									>Regenerate trickplay thumbnails</span
 								>
-								on the Devices page), then keeps them cached. Turn this off to spare weak devices; a single
-								device can also opt out with <span class="font-mono">FINDERELLA_TRICKPLAY=0</span>.
+								on the Devices page re-checks a whole library. Turn this off to spare weak devices; a
+								single device can also opt out with
+								<span class="font-mono">FINDERELLA_TRICKPLAY=0</span>.
 							</Field.Description>
 						</Field.Content>
 						<Switch
 							id="trickplay-enabled"
 							bind:checked={trickplayEnabled}
 							disabled={savingTrickplay}
+							onCheckedChange={submitTrickplay}
+						/>
+					</Field.Field>
+					<Field.Field orientation="horizontal" data-disabled={trickplayEnabled ? undefined : true}>
+						<Field.Content>
+							<Field.Label for="trickplay-auto">Generate in the background</Field.Label>
+							<Field.Description>
+								Render thumbnails for newly scanned files right away, then work through older files
+								that don't have them yet — one file at a time per device, at low priority. While
+								Trickplay is on but this option is off, a video without thumbnails gets them on
+								demand the first time someone plays it.
+							</Field.Description>
+						</Field.Content>
+						<Switch
+							id="trickplay-auto"
+							bind:checked={trickplayAuto}
+							disabled={savingTrickplay || !trickplayEnabled}
 							onCheckedChange={submitTrickplay}
 						/>
 					</Field.Field>

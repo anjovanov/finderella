@@ -61,11 +61,20 @@
 			() => markersJob,
 			(next) => (markersJob = next)
 		);
+		// Scans run on the devices: refresh while one is running or queued.
+		const scanTimer = setInterval(() => {
+			if (scanning) void invalidateAll();
+		}, 3000);
 		return () => {
 			stopThumbnails();
 			stopMarkers();
+			clearInterval(scanTimer);
 		};
 	});
+
+	const scanning = $derived(
+		data.gateways.some((device) => device.libraries.some((lib) => lib.scanState !== null))
+	);
 
 	const summary = $derived.by(() => {
 		const devices = data.gateways.length;
@@ -153,7 +162,6 @@
 		<DeviceCard
 			{device}
 			trickplayEnabled={data.trickplayEnabled}
-			jobRunning={job.running}
 			markersEnabled={data.markersEnabled}
 			markersJobRunning={markersJob.running}
 			onRename={() => rename.show(device)}

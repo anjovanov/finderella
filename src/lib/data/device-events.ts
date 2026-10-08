@@ -29,6 +29,13 @@ export interface DeviceEventEntry {
 	detail: Record<string, unknown>;
 }
 
+/** Why an automatic scan ran (`scan.finished` detail.reason). */
+const SCAN_TRIGGERS: Record<string, string> = {
+	watch: 'Files changed on the device',
+	scheduled: 'Scheduled rescan',
+	reconnect: 'Device reconnected'
+};
+
 export const DEVICE_EVENT_LABELS: Record<DeviceEventType, string> = {
 	'device.paired': 'Device paired',
 	'device.renamed': 'Device renamed',
@@ -94,13 +101,24 @@ export function describeDeviceEvent(
 			return files === null ? null : `${plural(files, 'file')} left the catalog`;
 		}
 		case 'scan.started':
-			return d.reason === 'library-added' ? 'First scan of a new library' : null;
+			return d.reason === 'library-added'
+				? 'First scan of a new library'
+				: d.reason === 'full-rescan'
+					? 'Full rescan: every file re-read'
+					: null;
 		case 'scan.finished': {
 			const parts: string[] = [];
+			const trigger = SCAN_TRIGGERS[str(d.reason) ?? ''];
 			const files = num(d.files);
+			const changed = num(d.changed);
+			const missing = num(d.missing);
 			const errors = num(d.errors);
 			const ms = num(d.durationMs);
+			if (trigger) parts.push(trigger);
+			if (changed) parts.push(`${changed.toLocaleString()} new or changed`);
+			if (missing) parts.push(`${missing.toLocaleString()} missing`);
 			if (files !== null) parts.push(`${plural(files, 'file')} found`);
+			if (d.incomplete === true) parts.push('some folders couldn’t be read');
 			if (errors) parts.push(plural(errors, 'error'));
 			if (ms !== null) parts.push(`took ${formatElapsed(ms)}`);
 			return parts.join(' · ') || null;

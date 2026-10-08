@@ -35,6 +35,8 @@ export interface GatewayCapabilitiesJson {
 	audioSelect?: boolean;
 	/** Answers `markers.analyze` (intro/credits detection features). */
 	markers?: boolean;
+	/** Honours `libraries.watch` (reports `library.changed`). */
+	watch?: boolean;
 }
 
 /** A container chapter as stored on `media_file.chapters` (mirrors the protocol's ProbedChapter). */
@@ -125,6 +127,10 @@ export const mediaFile = pgTable(
 		markersAnalyzedAt: timestamp('markers_analyzed_at', { withTimezone: true }),
 		/** Why the device couldn't analyse the file (the job doesn't retry it until the version changes). */
 		markersError: text('markers_error'),
+		/** When the device last reported this encode's trickplay sheets ready (null = pending). Cleared when size/mtime change. */
+		trickplayAt: timestamp('trickplay_at', { withTimezone: true }),
+		/** scanHash() of the last scan's report; an identical report skips re-ingesting the file. */
+		scanHash: text('scan_hash'),
 		status: mediaFileStatus('status').notNull().default('active'),
 		// Set on every upsert during a scan; files not seen by a finished scan
 		// are marked missing.

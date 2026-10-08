@@ -25,6 +25,7 @@ import {
 } from '$lib/server/trickplay/ensure';
 import { loginRequired, remuxEnabled, trickplayEnabled } from '$lib/server/site-settings';
 import { pickEpisodeSource, pickMovieSource } from '$lib/server/streaming/source-picker';
+import { markTrickplayReady } from '$lib/server/trickplay/bulk';
 import { QUALITY_IDS, QUALITY_LADDER, transcodePlan } from '$lib/playback-quality';
 import { requireProfile } from '$lib/server/profiles';
 import {
@@ -52,9 +53,12 @@ async function attachTrickplay(
 ): Promise<{ vttSrc: string } | null> {
 	if (!(await trickplayEnabled())) return null;
 	if (!canTrickplay(registry.get(source.gatewayId), source.file)) return null;
-	const geometry = usableGeometry(
-		await ensureTrickplay(source, 'high', TRICKPLAY_ENSURE_TIMEOUT_MS)
-	);
+	const result = await ensureTrickplay(source, 'high', TRICKPLAY_ENSURE_TIMEOUT_MS);
+	// Spares the background job a round-trip for this file.
+	if (result?.status === 'ready' && !source.file.trickplayAt) {
+		void markTrickplayReady(source.file).catch(() => {});
+	}
+	const geometry = usableGeometry(result);
 	if (!geometry) return null;
 	sessionManager.setTrickplay(session.id, geometry);
 	return { vttSrc: trickplayVttSrc(session.id) };

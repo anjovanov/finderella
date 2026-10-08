@@ -73,6 +73,24 @@ describe('describeDeviceEvent', () => {
 		expect(describeDeviceEvent({ type: 'device.paired', detail: {} })).toBe(null);
 	});
 
+	it('says why an automatic scan ran and what it found', () => {
+		expect(describeDeviceEvent({ type: 'scan.started', detail: { reason: 'full-rescan' } })).toBe(
+			'Full rescan: every file re-read'
+		);
+		expect(
+			describeDeviceEvent({
+				type: 'scan.finished',
+				detail: { reason: 'watch', files: 120, changed: 2, missing: 1, errors: 0 }
+			})
+		).toBe('Files changed on the device · 2 new or changed · 1 missing · 120 files found');
+		expect(
+			describeDeviceEvent({
+				type: 'scan.finished',
+				detail: { reason: 'scheduled', files: 0, changed: 0, missing: 0, incomplete: true }
+			})
+		).toBe('Scheduled rescan · 0 files found · some folders couldn’t be read');
+	});
+
 	it('ignores malformed detail values', () => {
 		expect(
 			describeDeviceEvent({ type: 'scan.finished', detail: { files: 'many', durationMs: null } })

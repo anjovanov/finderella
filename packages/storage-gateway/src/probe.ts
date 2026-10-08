@@ -106,7 +106,9 @@ export async function detectTools(): Promise<ToolAvailability> {
 			// Picking the audio stream only matters for HLS transcodes.
 			audioSelect: resolvedFfmpeg !== null,
 			// Intro/credits analysis only decodes with ffmpeg; FINDERELLA_MARKERS=0 opts a weak device out.
-			markers: resolvedFfmpeg !== null && process.env.FINDERELLA_MARKERS !== '0'
+			markers: resolvedFfmpeg !== null && process.env.FINDERELLA_MARKERS !== '0',
+			// Recursive fs.watch on the library roots; FINDERELLA_WATCH=0 opts out.
+			watch: process.env.FINDERELLA_WATCH !== '0'
 		},
 		ffprobe: resolvedFfprobe !== null
 	};

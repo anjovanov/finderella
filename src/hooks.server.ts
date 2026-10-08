@@ -33,6 +33,9 @@ export const init: ServerInit = async () => {
 	// Build the catalog search index now so the first navbar search is instant.
 	const { warmSearchIndex } = await import('$lib/server/search');
 	warmSearchIndex();
+	// Periodic library rescans (admin → Site settings → Library scanning).
+	const { startScanScheduler } = await import('$lib/server/gateways/scan-schedule');
+	startScanScheduler();
 };
 
 // Paths reachable without a session. /api/auth/* is Better Auth's own surface;

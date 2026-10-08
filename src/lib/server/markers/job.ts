@@ -122,7 +122,7 @@ export function scheduleMarkerAnalysis(delayMs: number): void {
 export type StartOutcome =
 	'started' | 'busy' | 'disabled' | 'offline' | 'unsupported' | 'not-found';
 
-/** Admin "Detect intros & credits" for one library: re-analyses every file in it. */
+/** Admin "Re-detect intros & credits" for one library: re-analyses every file in it. */
 export async function startMarkersForLibrary(
 	libraryId: string,
 	actorUserId: string | null

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
-import { asc, eq, like } from 'drizzle-orm';
+import { and, asc, eq, like } from 'drizzle-orm';
 import { WebSocketServer, type WebSocket } from 'ws';
 import {
 	DEFAULT_LIMITS,
@@ -12,16 +12,20 @@ import {
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
-import { gateway, user } from '$lib/server/db/schema';
+import { gateway, library, user } from '$lib/server/db/schema';
 import { ADMIN_ROLE } from '$lib/auth-roles';
 import { enqueueScanWork, finalizeScan, ingestScanBatch } from '$lib/server/catalog/ingest';
 import { log } from '$lib/server/log';
 import { scheduleMarkerAnalysis } from '$lib/server/markers/job';
+import { scheduleTrickplayGeneration } from '$lib/server/trickplay/bulk';
 import { registry, type ConnectedGateway } from './registry';
+import { abandonGatewayScans, finishScan, noteScanChanges, requestScan } from './scan';
+import { scheduleReconnectScans } from './scan-schedule';
+import { syncWatchedLibraries } from './watch';
 
 const wss = new WebSocketServer({ noServer: true });
-/** Let a (re)connecting device settle before the intro/credits job queues work on it. */
-const MARKERS_AFTER_HELLO_MS = 30_000;
+/** Let a (re)connecting device settle before the intro/credits and trickplay jobs queue work on it. */
+const JOBS_AFTER_HELLO_MS = 30_000;
 
 type GatewayRow = typeof gateway.$inferSelect;
 
@@ -119,7 +123,12 @@ function onConnection(ws: WebSocket, row: GatewayRow): void {
 	});
 
 	ws.on('close', () => {
-		if (registered) registry.unregister(gatewayId, ws);
+		if (!registered) return;
+		// A newer socket for this device already took over (see registry.register).
+		if (registry.get(gatewayId) !== registered) return;
+		registry.unregister(gatewayId, ws);
+		// The device aborts its scans on disconnect: no scan.done will come.
+		abandonGatewayScans(gatewayId);
 	});
 
 	ws.on('error', (err) => {
@@ -143,6 +152,9 @@ function handleMessage(
 				ws.close(4001, 'protocol version mismatch');
 				return registered;
 			}
+			// A new connection: the device aborted whatever it was scanning on the old one
+			// (whose close may not have arrived yet).
+			abandonGatewayScans(row.id);
 			const connected = registry.register({
 				gatewayId: row.id,
 				socket: ws,
@@ -158,8 +170,12 @@ function handleMessage(
 				})
 				.where(eq(gateway.id, row.id))
 				.catch((err) => log.error({ err }, 'failed to persist gateway hello'));
-			// Files that were waiting for this device get their intro/credits analysis.
-			if (message.capabilities.markers) scheduleMarkerAnalysis(MARKERS_AFTER_HELLO_MS);
+			// Files that were waiting for this device get their intro/credits analysis
+			// and trickplay sheets.
+			if (message.capabilities.markers) scheduleMarkerAnalysis(JOBS_AFTER_HELLO_MS);
+			if (message.capabilities.trickplay) scheduleTrickplayGeneration(JOBS_AFTER_HELLO_MS);
+			// Whatever changed while it was offline.
+			scheduleReconnectScans(row.id);
 			ws.send(
 				JSON.stringify({
 					id: connected.nextId(),
@@ -168,6 +184,9 @@ function handleMessage(
 					gatewayId: row.id,
 					limits: DEFAULT_LIMITS
 				})
+			);
+			void syncWatchedLibraries(row.id).catch((err) =>
+				log.error({ err, gatewayId: row.id }, 'failed to send watched libraries')
 			);
 			return connected;
 		}
@@ -183,17 +202,42 @@ function handleMessage(
 		case 'resp':
 			if (registered) registry.handleResp(registered, message);
 			return registered;
-		case 'scan.file':
-			void enqueueScanWork(message.libraryId, () =>
-				ingestScanBatch(message.libraryId, message.files)
-			).catch((err) =>
-				log.error({ err, libraryId: message.libraryId }, 'scan batch ingest failed')
-			);
+		case 'scan.file': {
+			const { libraryId, files } = message;
+			void enqueueScanWork(libraryId, async () => {
+				noteScanChanges(libraryId, await ingestScanBatch(libraryId, row.id, files));
+			}).catch((err) => log.error({ err, libraryId }, 'scan batch ingest failed'));
 			return registered;
-		case 'scan.done':
-			void enqueueScanWork(message.libraryId, () =>
-				finalizeScan(message.libraryId, message.stats)
-			).catch((err) => log.error({ err, libraryId: message.libraryId }, 'scan finalize failed'));
+		}
+		case 'scan.done': {
+			const { libraryId, stats } = message;
+			void enqueueScanWork(libraryId, async () => {
+				const scan = finishScan(libraryId);
+				if (scan && scan.request.target.gatewayId !== row.id) return;
+				await finalizeScan(
+					libraryId,
+					stats,
+					scan && {
+						startedAt: scan.startedAt,
+						changed: scan.changed,
+						reason: scan.request.reason,
+						actorUserId: scan.request.actorUserId
+					},
+					message.incomplete ?? false
+				);
+			}).catch((err) => log.error({ err, libraryId }, 'scan finalize failed'));
 			return registered;
+		}
+		case 'library.changed': {
+			const { libraryId } = message;
+			void (async () => {
+				// Only this device's own libraries.
+				const lib = await db.query.library.findFirst({
+					where: and(eq(library.id, libraryId), eq(library.gatewayId, row.id))
+				});
+				if (lib) requestScan(lib, 'watch');
+			})().catch((err) => log.error({ err, libraryId }, 'library.changed failed'));
+			return registered;
+		}
 	}
 }

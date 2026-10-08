@@ -33,7 +33,9 @@ export const GatewayCapabilities = z.object({
 	/** Honours `session.start.audioStreamIndex` (older gateways always transcode the first audio stream). */
 	audioSelect: z.boolean().default(false),
 	/** Answers `markers.analyze` (audio fingerprints + dark-frame series for intro/credits detection). */
-	markers: z.boolean().default(false)
+	markers: z.boolean().default(false),
+	/** Honours `libraries.watch` (reports `library.changed` when files appear, move or vanish). */
+	watch: z.boolean().default(false)
 });
 export type GatewayCapabilities = z.infer<typeof GatewayCapabilities>;
 
@@ -76,16 +78,32 @@ export const ScanDoneMessage = base.extend({
 	stats: z.object({
 		files: z.number().int().nonnegative(),
 		errors: z.number().int().nonnegative()
-	})
+	}),
+	/**
+	 * Some folder couldn't be read (unmounted disk, permissions): files that
+	 * weren't reported may still exist, so the hub must not mark them missing.
+	 */
+	incomplete: z.boolean().optional()
 });
 export type ScanDoneMessage = z.infer<typeof ScanDoneMessage>;
+
+/**
+ * Something changed under a watched library root (debounced on the gateway).
+ * The hub decides whether and when to rescan.
+ */
+export const LibraryChangedMessage = base.extend({
+	type: z.literal('library.changed'),
+	libraryId: z.string()
+});
+export type LibraryChangedMessage = z.infer<typeof LibraryChangedMessage>;
 
 export const GatewayMessage = z.discriminatedUnion('type', [
 	HelloMessage,
 	PingMessage,
 	RespMessage,
 	ScanFileMessage,
-	ScanDoneMessage
+	ScanDoneMessage,
+	LibraryChangedMessage
 ]);
 export type GatewayMessage = z.infer<typeof GatewayMessage>;
 
@@ -117,9 +135,27 @@ export const ScanStartMessage = base.extend({
 	type: z.literal('scan.start'),
 	libraryId: z.string(),
 	rootPath: z.string().min(1),
-	kind: LibraryKind
+	kind: LibraryKind,
+	/** Re-probe every file instead of reusing the gateway's probe cache. */
+	force: z.boolean().optional()
 });
 export type ScanStartMessage = z.infer<typeof ScanStartMessage>;
+
+/**
+ * The libraries this gateway should watch for changes (replaces the previous
+ * list; empty = stop watching). Sent after `welcome` and whenever the list or
+ * the hub's watch setting changes. Only sent to gateways with `watch`.
+ */
+export const LibrariesWatchMessage = base.extend({
+	type: z.literal('libraries.watch'),
+	libraries: z.array(
+		z.object({
+			libraryId: z.string(),
+			rootPath: z.string().min(1)
+		})
+	)
+});
+export type LibrariesWatchMessage = z.infer<typeof LibrariesWatchMessage>;
 
 /**
  * Read a byte range of a file. The gateway answers with binary frames tagged
@@ -363,6 +399,7 @@ export const HubMessage = z.discriminatedUnion('type', [
 	WelcomeMessage,
 	PongMessage,
 	ScanStartMessage,
+	LibrariesWatchMessage,
 	FileReadMessage,
 	CreditMessage,
 	CancelMessage,
