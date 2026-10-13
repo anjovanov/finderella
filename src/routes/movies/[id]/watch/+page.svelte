@@ -1,7 +1,7 @@
 <script lang="ts">
 	import PageTitle from '$lib/components/page-title.svelte';
 	import { onDestroy, untrack } from 'svelte';
-	import { mediaHref } from '$lib/data';
+	import { mediaHref, watchHref } from '$lib/data';
 	import WatchPlayer from '$lib/components/media/watch-player.svelte';
 	import { exitFullscreen } from '$lib/fullscreen';
 	import { lockPageScroll } from '$lib/scroll-lock';
@@ -43,7 +43,8 @@
 	// Guests get the defaults (their autoplay switch is kept per browser).
 	const playbackSettings = $derived(data.playbackSettings ?? DEFAULT_PLAYBACK_SETTINGS);
 
-	// Watch together: `?party=<code>` joins that party (a movie party never changes title).
+	// Watch together: `?party=<code>` joins that party. A movie party never changes
+	// title (the room rejects another slug), so "More like this" is hidden in one.
 	const party = new WatchParty(() => {});
 
 	$effect(() => {
@@ -88,7 +89,8 @@
 	}
 
 	// Audio works the same way: a pick restarts the session with that stream.
-	let audioTrackId: string | null = $state(null);
+	// Keyed by movie: "More like this" moves to another title on this same page.
+	let audioPick: { slug: string; trackId: string } | null = $state(null);
 	// This page's latest pick wins over the loader's copy (saved in the background).
 	let pickedLanguage: string | null = null;
 
@@ -101,7 +103,7 @@
 			if (data.audioLanguage !== null) void saveAudioLanguage(language);
 		}
 		restartAt = lastPosition;
-		audioTrackId = track.id;
+		audioPick = { slug: data.movie.id, trackId: track.id };
 	}
 
 	// A remux this browser turned out unable to play: the title restarts as a
@@ -120,7 +122,7 @@
 		const slug = data.movie.id;
 		const allowRemux = remuxBlockedFor !== slug;
 		const chosenQuality = quality;
-		const chosenAudio = audioTrackId;
+		const chosenAudio = audioPick?.slug === slug ? audioPick.trackId : null;
 		const audioLanguage =
 			pickedLanguage ?? data.audioLanguage ?? loadAudioPreference() ?? DEFAULT_AUDIO_LANGUAGE;
 		const audioChannels = playbackSettings.audioChannels;
@@ -231,6 +233,8 @@
 		onInvite={() => (party.inviteOpen = true)}
 		onLeaveParty={() => party.leave()}
 		onWatchTogether={data.canWatchTogether ? watchTogether : undefined}
+		similar={party.code ? undefined : data.similar}
+		similarHref={watchHref}
 		onSubtitlesChanged={(tracks) => {
 			// In place: replacing the object would re-source the player's video.
 			if (playback) playback.subtitles = tracks;

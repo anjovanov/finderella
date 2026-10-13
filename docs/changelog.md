@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-13
+
+**More Like This in the movie player** (no schema change).
+
+- Movies now have a **More Like This** button in the player's control bar, where series show **More Episodes**. It opens a row of similar movies from the library. Picking one starts it right away, in the same player and still in fullscreen, from where you left off.
+- Similar movies are ranked by:
+  - shared genres
+  - being in the same collection (sequels first)
+  - the same director
+  - shared cast
+  - shared studios
+
+  Higher-rated titles win ties.
+
+- The movie page's **More like this** row uses the same ranking. It now lists movies only, best matches first, instead of every title from the first genre.
+- The button is hidden during a watch party, because a movie party stays on its title.
+
 ## 2026-10-08
 
 **Automatic library scanning** (schema: `media_file.scan_hash`, `media_file.trickplay_at`, `site_settings.watch_libraries`, `scan_interval_hours`, `trickplay_auto`, migration `0030_library_scanning`; gateway protocol additions, no version bump).

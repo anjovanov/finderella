@@ -20,7 +20,10 @@
 		class: className,
 		showKind = false,
 		continueWatching = false,
-		menu
+		menu,
+		href: hrefOverride,
+		onNavigate,
+		showMenu = true
 	}: {
 		item: MediaItem;
 		variant?: 'poster' | 'backdrop';
@@ -31,12 +34,20 @@
 		continueWatching?: boolean;
 		/** Extra entries for the ⋮ menu (signed-in viewers only). */
 		menu?: { continueWatching?: boolean };
+		/** Link target instead of the detail page (the player's "More like this" starts the movie). */
+		href?: string;
+		/** Runs when the link is followed (e.g. to close the sheet holding the card). */
+		onNavigate?: () => void;
+		/** The ⋮ menu; off inside the player, where its portalled dropdown doesn't belong. */
+		showMenu?: boolean;
 	} = $props();
 
 	const target = $derived(
 		continueWatching && item.kind === 'series' ? continueTarget(item) : undefined
 	);
-	const href = $derived(target ? episodeWatchHref(item.id, target.episode.id) : mediaHref(item));
+	const href = $derived(
+		hrefOverride ?? (target ? episodeWatchHref(item.id, target.episode.id) : mediaHref(item))
+	);
 	// An episode tile rates the episode; an unrated episode shows no badge rather
 	// than the series rating next to its "S2E4" label.
 	const rating = $derived(target ? target.episode.rating : item.rating);
@@ -51,9 +62,9 @@
 		className
 	)}
 >
-	<!-- mediaHref()/episodeWatchHref() return resolve()d paths -->
+	<!-- mediaHref()/episodeWatchHref() (and callers' hrefs) return resolve()d paths -->
 	<!-- eslint-disable svelte/no-navigation-without-resolve -->
-	<a {href} class="flex flex-col gap-2 outline-none">
+	<a {href} class="flex flex-col gap-2 outline-none" onclick={onNavigate}>
 		<div
 			class="relative overflow-hidden rounded-xl ring-1 ring-border transition-all duration-200 group-focus-within:ring-2 group-focus-within:ring-primary group-hover:scale-[1.015] group-hover:ring-2 group-hover:ring-primary"
 		>
@@ -89,5 +100,7 @@
 		</div>
 	</a>
 	<!-- eslint-enable svelte/no-navigation-without-resolve -->
-	<CardMenu {item} continueWatching={menu?.continueWatching} />
+	{#if showMenu}
+		<CardMenu {item} continueWatching={menu?.continueWatching} />
+	{/if}
 </div>

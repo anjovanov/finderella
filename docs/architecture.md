@@ -12,7 +12,7 @@ Instant, typo-tolerant search over movies + series. **MiniSearch** index in proc
 
 ## Data layer
 
-Pages read the catalog from Postgres via server loads calling `src/lib/server/catalog.ts` (async queries returning the exact `src/lib/data/types.ts` shapes; public IDs are slugs). `src/lib/data/` keeps: `types.ts` (the frontend contract), `hrefs.ts` (client-safe `mediaHref`/`watchHref`/`episodeWatchHref` via `resolve()`; `watchHref` sends a series to its next-in-line episode), `episodes.ts` (pure `flattenEpisodes`/`playTarget`/`episodeLabel` — `playTarget` reads `Series.lastWatchedEpisodeId` + episode `progress`, stamped by `applyProgress`, to pick resume-latest-else-next; heroes label it `Resume S2E4`), and pure helpers (`topRated`/`byGenre`/`allGenres` — items passed in). There is no mock/seed corpus: titles only come from gateway scans, and `catalog/prune.ts` removes titles left without any `media_file` (after each scan, and via "Remove titles without files" in settings). Artwork (`PosterArt`) is a flat `bg-muted` box with the title + year centered until the `posterUrl`/`backdropUrl`/still is **fully** loaded, then the image fades in over 100 ms (`LoadedImage`: `opacity-0` until `load`/`complete`, `decoding="async"`; a failed load keeps the placeholder). Titles without artwork keep the gray box permanently. `hue`/`hue2` are still stored and typed (`theme`) but no longer rendered.
+Pages read the catalog from Postgres via server loads calling `src/lib/server/catalog.ts` (async queries returning the exact `src/lib/data/types.ts` shapes; public IDs are slugs). `src/lib/data/` keeps: `types.ts` (the frontend contract), `hrefs.ts` (client-safe `mediaHref`/`watchHref`/`episodeWatchHref` via `resolve()`; `watchHref` sends a series to its next-in-line episode), `episodes.ts` (pure `flattenEpisodes`/`playTarget`/`episodeLabel` — `playTarget` reads `Series.lastWatchedEpisodeId` + episode `progress`, stamped by `applyProgress`, to pick resume-latest-else-next; heroes label it `Resume S2E4`), and pure helpers (`topRated`/`byGenre`/`allGenres` — items passed in; `similar.ts` `rankSimilar` for "More like this"). There is no mock/seed corpus: titles only come from gateway scans, and `catalog/prune.ts` removes titles left without any `media_file` (after each scan, and via "Remove titles without files" in settings). Artwork (`PosterArt`) is a flat `bg-muted` box with the title + year centered until the `posterUrl`/`backdropUrl`/still is **fully** loaded, then the image fades in over 100 ms (`LoadedImage`: `opacity-0` until `load`/`complete`, `decoding="async"`; a failed load keeps the placeholder). Titles without artwork keep the gray box permanently. `hue`/`hue2` are still stored and typed (`theme`) but no longer rendered.
 
 ## Backend
 
@@ -100,6 +100,25 @@ Every audio stream is discovered at scan time (`packages/storage-gateway/src/aud
 ## Video player
 
 (`WatchPlayer`): Video.js v10 beta custom elements (`@videojs/html`, exact-pinned) with a fully custom Netflix-style control bar (seek slider w/ hover time, centered play ±10s, volume flyout, captions menu, cast, fullscreen), auto-hide controls + top bar + cursor, keyboard shortcuts (space/arrows). Watch pages are `ssr = false`. Series-only extras (via optional `show`/`currentEpisodeId` props, passed only by the series watch page): "More Episodes" button (left cluster) opening `EpisodesPanel` — a bottom-sheet with season pills + episode carousel; a "Quality" menu (gear icon, right cluster; Original/2160p/1080p/720p/480p/360p filtered by the source width via `availableQualities`, the Original row shows the resolved resolution + direct/transcoded; persisted in localStorage `finderella:quality`; picking a rung makes the watch page restart the session at the current position via `onQualityChange`), an "Autoplay" switch (right cluster) that autoplays the next episode on `ended` with a "Next episode starting in…" countdown pill over the last 10s — the value is the page's (`autoplayNext` prop + `onAutoplayChange`): `profile_settings.autoplay_next` for profiles (on by default, also on `/settings/playback`, saved through `POST /api/settings/playback`), localStorage `finderella:autoplay-next` for guests (`src/lib/playback-preference.ts`). **"Still watching?"** (`profile_settings.still_watching_*`, off by default; presets + pure `stillWatchingDueForEpisode`/`stillWatchingMovieSeconds` in client-safe `src/lib/data/playback-settings.ts`): series — the series watch page (reused across episodes) counts episodes that autoplayed in a row (`onAutoAdvance` → `++`, `onInteraction` → 0) and passes `stillWatchingDue`, which the player reads **once at mount** and which gates its auto-`play()` through `untrack` (it must never become a source dependency); movies — the player sums playing time from `timeupdate` deltas (0–2 s; seeks don't count) and pauses at `stillWatchingAfterSeconds`. Input = `pointerdown`/`keydown` on the window (capture). The prompt is a dialog inside `<media-container>` (fullscreen-safe) with a focused **Continue watching** (the only way to resume — the player's shortcuts return early while it's open) and **Back to browse**. Playback auto-starts whenever the player mounts or is re-sourced (blocked by browser policy on cold loads — caught, stays paused).
+
+### More like this
+
+Movies only. `similarMovies(slug, limit = 20)` (`src/lib/server/catalog.ts`) loads every movie row once and ranks it with the pure `rankSimilar` (`src/lib/data/similar.ts`). The score is:
+
+- shared genres ×3
+- same TMDB collection +6
+- same director +3
+- shared cast +1 each, capped at 3
+- shared studio brands +1 each, capped at 2
+
+Titles that share nothing are left out. Ties go to the higher rating, then the closer year.
+
+- **Movie detail page:** the "More like this" row uses this ranking. The series detail page keeps its first-genre `byGenre` row.
+- **Movie watch page:** the load passes the list through `withProgress` as `similar`, and the page hands it to `WatchPlayer` (`similar` + `similarHref = watchHref`).
+- **The button:** a "More Like This" button sits in the left cluster, where series show "More Episodes". It opens `SimilarPanel`, a carousel of backdrop `PosterCard`s (`showMenu={false}`, `onNavigate` closes the sheet).
+- **Clicking a card starts that movie.** The watch page component is reused and the session restarts. The audio pick is keyed by slug, so it doesn't carry into the next title.
+- **Watch parties:** the button is hidden during a party. A movie party can't change title, because the room rejects another slug.
+- **Shared sheet:** both sheets render through `PlayerSheet` (`player-sheet.svelte`: surface, title row and ✕), with the panel class (`.episodes-panel` / `.similar-panel`) that the player's click-outside handler matches.
 
 ## Profiles
 

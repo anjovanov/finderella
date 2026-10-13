@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { getMovieBySlug } from '$lib/server/catalog';
-import { movieResumePosition } from '$lib/server/progress';
+import { getMovieBySlug, similarMovies } from '$lib/server/catalog';
+import { movieResumePosition, withProgress } from '$lib/server/progress';
 import { getPlaybackSettings, getSubtitleSettings } from '$lib/server/profile-settings';
 import { subtitleProvidersConfigured } from '$lib/server/subtitles/settings';
 import type { PageServerLoad } from './$types';
@@ -10,12 +10,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const movie = await getMovieBySlug(params.id);
 	if (!movie) error(404, 'Movie not found');
 	const profileId = viewerProfileId(locals);
-	const [resumeFrom, subtitleSettings, playbackSettings, providersConfigured] = await Promise.all([
-		movieResumePosition(profileId, params.id).then((position) => position ?? 0),
-		getSubtitleSettings(profileId),
-		getPlaybackSettings(profileId),
-		subtitleProvidersConfigured()
-	]);
+	const [resumeFrom, subtitleSettings, playbackSettings, providersConfigured, similar] =
+		await Promise.all([
+			movieResumePosition(profileId, params.id).then((position) => position ?? 0),
+			getSubtitleSettings(profileId),
+			getPlaybackSettings(profileId),
+			subtitleProvidersConfigured(),
+			// The player's "More like this" sheet (cards show the viewer's progress).
+			similarMovies(params.id).then((movies) => withProgress(profileId, movies))
+		]);
 	// Playback source comes from POST /api/playback/start (client-side).
 	return {
 		movie,
@@ -27,6 +30,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		playbackSettings: profileId ? playbackSettings : null,
 		canFindSubtitles: profileId !== null && providersConfigured,
 		// Watch parties are for accounts with a profile.
-		canWatchTogether: profileId !== null
+		canWatchTogether: profileId !== null,
+		similar
 	};
 };

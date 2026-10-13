@@ -8,6 +8,7 @@
 		ArrowRight01Icon,
 		BubbleChatIcon,
 		CastIcon,
+		Film02Icon,
 		GoBackward10SecIcon,
 		GoForward10SecIcon,
 		Loading03Icon,
@@ -30,7 +31,7 @@
 	import { page } from '$app/state';
 	import { getScreensaver } from '$lib/screensaver.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import type { AudioTrack, Series, SubtitleTrack } from '$lib/data';
+	import type { AudioTrack, Movie, Series, SubtitleTrack } from '$lib/data';
 	import {
 		cueLine,
 		cueStyle,
@@ -66,6 +67,7 @@
 		type SkipMode
 	} from '$lib/data/markers';
 	import EpisodesPanel from './episodes-panel.svelte';
+	import SimilarPanel from './similar-panel.svelte';
 	import FindSubtitlesPanel from './find-subtitles-panel.svelte';
 	import SkipButton from './skip-button.svelte';
 	import type { TogetherSession } from '$lib/together/session.svelte';
@@ -114,6 +116,8 @@
 		skipIntro = 'show',
 		skipCredits = 'show',
 		episodeHref,
+		similar,
+		similarHref,
 		party = null,
 		onInvite,
 		onLeaveParty,
@@ -206,6 +210,10 @@
 		skipCredits?: SkipMode;
 		/** Episodes-panel links (a watch party keeps its `?party=` on them). */
 		episodeHref?: (episodeId: string) => string;
+		/** When non-empty (with `similarHref`), shows the "More like this" control — movies only. */
+		similar?: Movie[];
+		/** "More like this" card links (the movie's watch page: a click starts it). */
+		similarHref?: (movie: Movie) => string;
 		/**
 		 * A watch party this player belongs to: it drives play/pause/seek on the
 		 * <video> (the player stops auto-starting) and adds the party chrome.
@@ -490,9 +498,10 @@
 		if (autoplayNext) advanceToNext(true);
 	}
 
-	// Episodes panel (series only). While open, player chrome is pinned visible
-	// even when the library marks the controls idle.
+	// Episodes panel (series) / "More like this" (movies). While open, player
+	// chrome is pinned visible even when the library marks the controls idle.
 	let episodesOpen = $state(false);
+	let similarOpen = $state(false);
 	let qualityOpen = $state(false);
 	let subtitlesOpen = $state(false);
 	let findSubtitlesOpen = $state(false);
@@ -502,6 +511,7 @@
 	const chatOpen = $derived(party?.chatOpen ?? false);
 	const menuOpen = $derived(
 		episodesOpen ||
+			similarOpen ||
 			qualityOpen ||
 			subtitlesOpen ||
 			findSubtitlesOpen ||
@@ -675,6 +685,7 @@
 		const onPointerDown = (event: PointerEvent) => {
 			const target = event.target as Element | null;
 			if (!target?.closest('.episodes-panel, .episodes-trigger')) episodesOpen = false;
+			if (!target?.closest('.similar-panel, .similar-trigger')) similarOpen = false;
 			if (!target?.closest('.quality-menu, .quality-trigger')) qualityOpen = false;
 			if (!target?.closest('.subtitles-menu, .subtitles-trigger')) subtitlesOpen = false;
 			if (!target?.closest('.find-subtitles-panel, .subtitles-trigger')) findSubtitlesOpen = false;
@@ -701,10 +712,11 @@
 	function onkeydown(event: KeyboardEvent) {
 		// The prompt's own buttons take the keys; nothing may resume behind it.
 		if (stillWatchingOpen) return;
-		// Escape closes the episodes panel even while one of its controls has focus.
+		// Escape closes the open sheet/menu even while one of its controls has focus.
 		// (In fullscreen the browser may consume Escape to exit fullscreen first.)
 		if (event.key === 'Escape' && menuOpen) {
 			episodesOpen = false;
+			similarOpen = false;
 			qualityOpen = false;
 			subtitlesOpen = false;
 			findSubtitlesOpen = false;
@@ -1077,6 +1089,18 @@
 									<span class="text-sm font-medium">More Episodes</span>
 								</button>
 							{/if}
+							{#if similar?.length && similarHref}
+								<button
+									type="button"
+									class="ctrl-button similar-trigger"
+									aria-label="More like this"
+									aria-expanded={similarOpen}
+									onclick={() => (similarOpen = !similarOpen)}
+								>
+									<HugeiconsIcon icon={Film02Icon} class="size-6" />
+									<span class="text-sm font-medium">More Like This</span>
+								</button>
+							{/if}
 						</div>
 
 						<div class="center-cluster">
@@ -1268,6 +1292,14 @@
 						{currentEpisodeId}
 						{episodeHref}
 						onclose={() => (episodesOpen = false)}
+					/>
+				{/if}
+
+				{#if similarOpen && similar?.length && similarHref}
+					<SimilarPanel
+						items={similar}
+						itemHref={similarHref}
+						onclose={() => (similarOpen = false)}
 					/>
 				{/if}
 
@@ -1537,7 +1569,7 @@
 		pointer-events: none;
 	}
 
-	/* While the episodes panel is open, pin the control bar visible — the library
+	/* While a sheet or menu is open, pin the control bar visible — the library
 	   keeps toggling `data-visible` on idle and exposes no pin API. */
 	.player-root.menu-open :global(.controls:not([data-visible])) {
 		opacity: 1;
@@ -1588,7 +1620,7 @@
 	}
 
 	/* Labeled variant of .ctrl-button (icon + text). */
-	.player-root :global(.episodes-trigger) {
+	.player-root :global(:is(.episodes-trigger, .similar-trigger)) {
 		width: auto;
 		gap: 0.5rem;
 		padding-inline: 0.75rem 1rem;
