@@ -8,6 +8,7 @@ import {
 	normalizeTitle,
 	pickBestMatch,
 	pickTrailer,
+	recommendationSignals,
 	scanTitleFromSlug,
 	studioBrand,
 	studioBrands,
@@ -227,5 +228,47 @@ describe('episodeRating', () => {
 		expect(episodeRating(0, 12)).toBeNull();
 		expect(episodeRating(undefined, undefined)).toBeNull();
 		expect(episodeRating(null, null)).toBeNull();
+	});
+});
+
+describe('recommendationSignals', () => {
+	it('reads movie-shaped keywords and de-duplicates ids', () => {
+		expect(
+			recommendationSignals({
+				genres: [{ id: 28 }, { id: 12 }, { id: 28 }],
+				keywords: { keywords: [{ id: 1 }, { id: 2 }, { id: 1 }] },
+				recommendations: { results: [{ id: 10 }, { id: 11 }] },
+				popularity: 12.5,
+				vote_count: 3400,
+				original_language: 'EN'
+			})
+		).toEqual({
+			keywords: [1, 2],
+			tmdbGenreIds: [28, 12],
+			tmdbRecommendations: [10, 11],
+			popularity: 12.5,
+			voteCount: 3400,
+			originalLanguage: 'en'
+		});
+	});
+
+	it('reads TV-shaped keywords (`results`)', () => {
+		expect(recommendationSignals({ keywords: { results: [{ id: 7 }] } }).keywords).toEqual([7]);
+	});
+
+	it('defaults missing fields, drops the title itself and caps recommendations', () => {
+		const signals = recommendationSignals(
+			{ recommendations: { results: Array.from({ length: 30 }, (_, i) => ({ id: i })) } },
+			3
+		);
+		expect(signals.tmdbRecommendations).toHaveLength(20);
+		expect(signals.tmdbRecommendations).not.toContain(3);
+		expect(signals).toMatchObject({
+			keywords: [],
+			tmdbGenreIds: [],
+			popularity: null,
+			voteCount: null,
+			originalLanguage: null
+		});
 	});
 });

@@ -218,6 +218,13 @@
       "when": 1791441192187,
       "tag": "0030_library_scanning",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791930116839,
+      "tag": "0031_recommendation_signals",
+      "breakpoints": true
     }
   ]
 }

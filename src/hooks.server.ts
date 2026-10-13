@@ -33,6 +33,8 @@ export const init: ServerInit = async () => {
 	// Build the catalog search index now so the first navbar search is instant.
 	const { warmSearchIndex } = await import('$lib/server/search');
 	warmSearchIndex();
+	const { warmRecommendations } = await import('$lib/server/recommendations');
+	warmRecommendations();
 	// Periodic library rescans (admin → Site settings → Library scanning).
 	const { startScanScheduler } = await import('$lib/server/gateways/scan-schedule');
 	startScanScheduler();

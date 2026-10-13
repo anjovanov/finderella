@@ -8,11 +8,87 @@ Home (hero banner + landscape carousels), `/movies` & `/series` libraries (portr
 
 ## Search
 
-Instant, typo-tolerant search over movies + series. **MiniSearch** index in process memory (`src/lib/server/search/`: `engine.ts` is the pure, tested ranker — fields `title`×8, `yearText`×3, `people` (director/creator + cast)×3, `tagline`×1.5, `synopsis`×1; prefix on every term, fuzzy 0.2 (max 2 edits) only on non-numeric terms longer than 3 chars, exact-title bonus, AND first then OR fallback, `normalizeTerm` strips diacritics on index **and** query; `index.ts` is the singleton — `searchCatalog`, `invalidateSearchIndex` (mark stale → rebuilt on the next query, single-flight; called from `finalizeScan`, `pruneCatalog` and the end of `enrichPending`) and `warmSearchIndex` (boot `init` hook)). `GET /api/search?q=&limit=` (`src/routes/api/search`, ≤50) returns `SearchResult[]` (`src/lib/data/search.ts`: kind/slug/title/year/posterUrl/genres/score; auth is the hook's — 401 when login is required, open in guest mode). Navbar `SearchBox` (`src/lib/components/search-box.svelte`, desktop `dropdown` + mobile-sheet `inline` layouts): 150 ms debounce, `AbortController` + sequence guard against out-of-order responses, hand-rolled `role=combobox`/`listbox` with ↑/↓/Enter/Esc, poster thumb + Movie/Series `Badge` per row, "See all results" footer; Enter with no row highlighted → **`/search?q=`** (`searchHref`), whose loader hydrates the ranked slugs via `getMoviesBySlugs`/`getSeriesBySlugs`, re-applies the hit order and renders `PosterCard showKind` in a grid. Library pages no longer read `?q=` (genre/sort filters only).
+Instant, typo-tolerant search over movies + series. **MiniSearch** index in process memory (`src/lib/server/search/`: `engine.ts` is the pure, tested ranker — fields `title`×8, `yearText`×3, `people` (director/creator + cast)×3, `tagline`×1.5, `synopsis`×1; prefix on every term, fuzzy 0.2 (max 2 edits) only on non-numeric terms longer than 3 chars, exact-title bonus, AND first then OR fallback, `normalizeTerm` strips diacritics on index **and** query; `index.ts` is the singleton — `searchCatalog`, `invalidateSearchIndex` (mark stale → rebuilt on the next query, single-flight, a failed rebuild stays stale; called through `invalidateCatalogCaches()` in `catalog/caches.ts` from `finalizeScan`, `pruneCatalog` and the end of `enrichPending`, including a run that threw) and `warmSearchIndex` (boot `init` hook)). `GET /api/search?q=&limit=` (`src/routes/api/search`, ≤50) returns `SearchResult[]` (`src/lib/data/search.ts`: kind/slug/title/year/posterUrl/genres/score; auth is the hook's — 401 when login is required, open in guest mode). Navbar `SearchBox` (`src/lib/components/search-box.svelte`, desktop `dropdown` + mobile-sheet `inline` layouts): 150 ms debounce, `AbortController` + sequence guard against out-of-order responses, hand-rolled `role=combobox`/`listbox` with ↑/↓/Enter/Esc, poster thumb + Movie/Series `Badge` per row, "See all results" footer; Enter with no row highlighted → **`/search?q=`** (`searchHref`), whose loader hydrates the ranked slugs via `getMoviesBySlugs`/`getSeriesBySlugs`, re-applies the hit order and renders `PosterCard showKind` in a grid. Library pages no longer read `?q=` (genre/sort filters only).
+
+## Recommendations
+
+Netflix-style rows scaled down to one household (`src/lib/server/recommendations/`: `engine.ts` pure + tested, `index.ts` the singleton). A home server has too few viewers to learn collaborative filtering, so it is **borrowed from TMDB**: `/recommendations` (built from TMDB users' behaviour) supplies "people who liked X liked Y". Content similarity and each profile's watch history do the rest.
+
+**TMDB signals** (`METADATA_VERSION` 4; `append_to_response=…,keywords,recommendations`, mapped by pure `recommendationSignals` in `metadata/map.ts`). These columns are on `movie` and `series`:
+
+| Column                                          | Holds                                                                                           |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `keywords`                                      | TMDB keyword ids                                                                                |
+| `tmdb_genre_ids`                                | Raw TMDB genres. The mapped `genres` collapse 19 into 10, losing Animation, Family, Crime, War… |
+| `tmdb_recommendations`                          | TMDB ids from page 1 of `/recommendations`, best first, same kind only                          |
+| `popularity`, `vote_count`, `original_language` |                                                                                                 |
+
+Array columns use a runtime `$default` (migration `0031` backfills with a temporary DDL default).
+
+**Item ↔ item similarity** (`similarity`, `SIMILARITY_WEIGHTS`):
+
+| Signal                                            | Points                    |
+| ------------------------------------------------- | ------------------------- |
+| TMDB recommendation link, either direction        | 4, scaled 1 → 0.5 by rank |
+| Same collection                                   | 4                         |
+| Keywords (IDF-weighted overlap)                   | up to 4                   |
+| Genres (Jaccard over mapped names + raw TMDB ids) | up to 2.5                 |
+| Any shared director/creator                       | 2                         |
+| Cast (IDF-weighted, top 6 billed)                 | up to 1.5                 |
+| Studios (IDF-weighted)                            | up to 1                   |
+| Same non-English original language                | 0.75                      |
+
+A movie↔series pair keeps ×0.8 (`CROSS_KIND_FACTOR`). IDF means a rare shared keyword, actor or studio counts more than a common one. Ties go to quality, then the closer year.
+
+**Quality** (`quality`) is a Bayesian rating (200 prior votes at the library mean, so 3 votes of 9.5 don't beat 20k of 9) blended 70/30 with log TMDB popularity.
+
+**Viewer signals** (`interactionWeight`; implicit only, no ratings UI) come from `watch_progress` and `watchlist`:
+
+| Watch state                 | Weight                                                  |
+| --------------------------- | ------------------------------------------------------- |
+| Finished, or marked watched | 1                                                       |
+| In progress                 | 0.3 + 0.5 × fraction                                    |
+| Series                      | 0.4 + 0.25 × log2(1 + finished episodes), capped at 1.2 |
+| Watchlisted and not started | 0.4                                                     |
+| Abandoned                   | −0.4                                                    |
+
+- **Abandoned** means untouched for 14 days and under 25% of a movie, or only one episode of a series started and under 50% of it.
+- Weights decay with a 120-day half-life, but a finished title never drops below 0.25.
+- Positions under the resume threshold (`progressFraction` undefined) don't count.
+- Dismissing a title from Continue watching is **not** read as a dislike.
+
+**Rows** (`homeRecommendations`; home page order: Continue watching, Top picks, Trending, Because #1, New releases, Because #2, …):
+
+- **Top picks for you** (`recommendFor`) scores every unseen title as:
+  - 0.55 × the item-based score (Σ seed weight × similarity over the top 30 seeds; abandoned seeds subtract at half strength)
+  - 0.25 × the taste-vector cosine (genres, keywords, makers, cast, studios, language)
+  - 0.15 × quality
+  - 0.05 × freshness (added within the last 30 days)
+  - up to 0.04 jitter, an FNV hash of profile + UTC day + title, so the row rotates daily but is stable across reloads
+
+  The scores are then re-ranked with **MMR** (λ 0.75 over the top 60) and at most 2 titles per collection. With no positive signal (a guest or a new profile) it falls back to `popularPicks` (quality + popularity, same MMR) and the row is titled **Popular picks**.
+
+- **Because you watched X** (`becauseYouWatched`) uses up to 2 seeds: the most recent titles with weight ≥ 0.6, one per collection. Each row lists that seed's unseen neighbours. It avoids the first 6 Top picks and earlier rows, but falls back to repeating them when fewer than 4 would be left (small libraries), and drops the row below 4. Two seeds with the same title get the year added, because rows are keyed by title.
+- **Trending now** (`trending`) is **TMDB popularity first** (log-normalized, weight 1), nudged by local plays:
+  - Plays come from `play_history` in the last 14 days, with `played_seconds >= MIN_PLAY_SECONDS`, cached for 5 min.
+  - Each viewer × title × UTC day counts once, decayed with a 4-day half-life.
+  - The local boost is `0.3 × (1 − 0.5^(viewer-days / 3))`, so one fresh play adds about 0.06 and only several viewers over several days approach the 0.3 cap.
+  - **Privacy:** a household has a handful of viewers. If local plays dominated, one person's play would top everyone's row and reveal what they watched. Don't raise `TRENDING_LOCAL_WEIGHT` or normalize the local plays against the busiest title (the first version did, and a single play beat everything). Titles without TMDB popularity (no key, unmatched) get **no** local boost: nothing would outweigh it there, so they're ordered by quality only.
+  - Watched titles are not excluded.
+- **More like this** (`moreLikeThis(kind, slug, { limit, kinds })`) appears on both detail pages (movies and series mixed, the same kind ranks higher through the cross-kind factor) and in the player sheet (movies only). `resolveRecommended(keys)` is `itemsForKeys` from `watchlist.ts`, shared with `listWatchlist`: it hydrates the keys in order. The home page maps keys onto the items it already loaded.
+
+**Cache.** Keys are `watchlistKey`s (`m:slug` / `s:slug`). The model (narrow catalog columns → `RecItem`s, IDF tables, resolved TMDB links, memoized top-60 neighbour lists and taste vectors) is a lazy, coalesced singleton like the search index:
+
+- `invalidateRecommendations()` runs with `invalidateSearchIndex()` through `invalidateCatalogCaches()` (`catalog/caches.ts`: `finalizeScan`, `pruneCatalog`, the end of `enrichPending` even when a pass threw). A failed rebuild re-marks the model stale, so the next request retries.
+- Neighbour lists are memoized per kind filter, and the filter applies **before** the top-60 cut, so the movies-only player sheet isn't starved by series. Quality and feature-vector norms are computed once per model.
+- `warmRecommendations()` runs in the boot `init`.
+- A failed rebuild keeps serving the previous model.
+- Per-profile rankings are computed per request.
+- The public functions never throw: a failure logs and the rows go missing.
 
 ## Data layer
 
-Pages read the catalog from Postgres via server loads calling `src/lib/server/catalog.ts` (async queries returning the exact `src/lib/data/types.ts` shapes; public IDs are slugs). `src/lib/data/` keeps: `types.ts` (the frontend contract), `hrefs.ts` (client-safe `mediaHref`/`watchHref`/`episodeWatchHref` via `resolve()`; `watchHref` sends a series to its next-in-line episode), `episodes.ts` (pure `flattenEpisodes`/`playTarget`/`episodeLabel` — `playTarget` reads `Series.lastWatchedEpisodeId` + episode `progress`, stamped by `applyProgress`, to pick resume-latest-else-next; heroes label it `Resume S2E4`), and pure helpers (`topRated`/`byGenre`/`allGenres` — items passed in; `similar.ts` `rankSimilar` for "More like this"). There is no mock/seed corpus: titles only come from gateway scans, and `catalog/prune.ts` removes titles left without any `media_file` (after each scan, and via "Remove titles without files" in settings). Artwork (`PosterArt`) is a flat `bg-muted` box with the title + year centered until the `posterUrl`/`backdropUrl`/still is **fully** loaded, then the image fades in over 100 ms (`LoadedImage`: `opacity-0` until `load`/`complete`, `decoding="async"`; a failed load keeps the placeholder). Titles without artwork keep the gray box permanently. `hue`/`hue2` are still stored and typed (`theme`) but no longer rendered.
+Pages read the catalog from Postgres via server loads calling `src/lib/server/catalog.ts` (async queries returning the exact `src/lib/data/types.ts` shapes; public IDs are slugs). `src/lib/data/` keeps: `types.ts` (the frontend contract), `hrefs.ts` (client-safe `mediaHref`/`watchHref`/`episodeWatchHref` via `resolve()`; `watchHref` sends a series to its next-in-line episode), `episodes.ts` (pure `flattenEpisodes`/`playTarget`/`episodeLabel` — `playTarget` reads `Series.lastWatchedEpisodeId` + episode `progress`, stamped by `applyProgress`, to pick resume-latest-else-next; heroes label it `Resume S2E4`), and pure helpers (`byGenre`/`allGenres` — items passed in; ranking lives in the server's recommendations engine, see **Recommendations**). There is no mock/seed corpus: titles only come from gateway scans, and `catalog/prune.ts` removes titles left without any `media_file` (after each scan, and via "Remove titles without files" in settings). Artwork (`PosterArt`) is a flat `bg-muted` box with the title + year centered until the `posterUrl`/`backdropUrl`/still is **fully** loaded, then the image fades in over 100 ms (`LoadedImage`: `opacity-0` until `load`/`complete`, `decoding="async"`; a failed load keeps the placeholder). Titles without artwork keep the gray box permanently. `hue`/`hue2` are still stored and typed (`theme`) but no longer rendered.
 
 ## Backend
 
@@ -103,17 +179,8 @@ Every audio stream is discovered at scan time (`packages/storage-gateway/src/aud
 
 ### More like this
 
-Movies only. `similarMovies(slug, limit = 20)` (`src/lib/server/catalog.ts`) loads every movie row once and ranks it with the pure `rankSimilar` (`src/lib/data/similar.ts`). The score is:
+The player's sheet lists **movies only** (its cards open the watch page): `moreLikeThis('movie', slug, { kinds: ['movie'] })` from the recommendations engine (see **Recommendations**), resolved with `resolveRecommended`.
 
-- shared genres ×3
-- same TMDB collection +6
-- same director +3
-- shared cast +1 each, capped at 3
-- shared studio brands +1 each, capped at 2
-
-Titles that share nothing are left out. Ties go to the higher rating, then the closer year.
-
-- **Movie detail page:** the "More like this" row uses this ranking. The series detail page keeps its first-genre `byGenre` row.
 - **Movie watch page:** the load passes the list through `withProgress` as `similar`, and the page hands it to `WatchPlayer` (`similar` + `similarHref = watchHref`).
 - **The button:** a "More Like This" button sits in the left cluster, where series show "More Episodes". It opens `SimilarPanel`, a carousel of backdrop `PosterCard`s (`showMenu={false}`, `onNavigate` closes the sheet). The sheet also opens by itself on the video's `ended` event (`onVideoEnded`).
 - **Clicking a card starts that movie.** The watch page component is reused and the session restarts. The audio pick is keyed by slug, so it doesn't carry into the next title.
@@ -191,6 +258,7 @@ Theme tokens (oklch; `:root` = light, `.dark` = dark; the `<html>` class comes f
 - `trickplay/` — seek-bar thumbnails: `ensure.ts` (gateway `trickplay.ensure` request), `vtt.ts` (synthesized thumbnail track), `bulk.ts` (admin per-library job).
 - `streaming/` — `compat.ts` (direct-play matrix), `source-picker.ts` (best online file), `session-manager.ts` (hot sessions, idle reaper, orphan cleanup at boot), `hls-playlist.ts` (synthesized VOD playlists), `subtitles.ts` (per-session `SubtitleTrack` list + labels).
 - `metadata/` — TMDB enrichment (`tmdb.ts` client, `map.ts` mapping, `index.ts` runner + `metadataStatus`, `settings.ts` key storage + `tmdbCredentials`).
+- `recommendations/` — Top picks / Because you watched / Trending / More like this (`engine.ts` pure ranker, `index.ts` model singleton behind `invalidateRecommendations` + signal loading).
 - `search/` — MiniSearch catalog index (`engine.ts` pure ranker, `index.ts` process-wide singleton with lazy, coalesced rebuilds behind `invalidateSearchIndex`).
 - `profiles.ts` — account profiles: CRUD, `ensurePrimaryProfile`, `viewerProfileId`/`requireProfile`; `active-profile.ts` — `setActiveProfile`.
 - `together/` — watch parties: `room.ts` (pure room state machine), `rooms.ts` (in-memory manager + reaper), `ws.ts` (`/ws/together` upgrade), `tickets.ts`, `messages.ts` (zod), `identity.ts`.

@@ -19,7 +19,7 @@ import { isSampleFile, parseEpisodePath, parseMoviePath, slugify, themeFromSlug 
 import { pruneCatalog } from './prune';
 import { enrichPending, isTmdbConfigured } from '$lib/server/metadata';
 import { queueAutoSubtitleDownload } from '$lib/server/subtitles/bulk';
-import { invalidateSearchIndex } from '$lib/server/search';
+import { invalidateCatalogCaches } from './caches';
 import { chapterMarkers } from '$lib/server/markers/chapters';
 import { queueMarkerAnalysis } from '$lib/server/markers/job';
 import { queueTrickplayGeneration } from '$lib/server/trickplay/bulk';
@@ -400,7 +400,7 @@ export async function finalizeScan(
 		await pruneCatalog().catch((err) => log.error({ err }, 'catalog prune failed'));
 	}
 	// New or renamed titles: the search index rebuilds on the next query.
-	invalidateSearchIndex();
+	invalidateCatalogCaches();
 	// New titles get TMDB metadata in the background; single-flight, so a
 	// second scan finishing mid-pass just queues one more pass.
 	if (await isTmdbConfigured()) {

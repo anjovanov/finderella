@@ -12,7 +12,6 @@ import {
 	type Season,
 	type Series
 } from '$lib/data/types';
-import { rankSimilar, type SimilarityProfile } from '$lib/data/similar';
 
 /**
  * Catalog reads. Every function returns the exact shapes in
@@ -115,33 +114,6 @@ export async function listAllItems(): Promise<MediaItem[]> {
 	// Interleave by recency is lost after mapping; refetch order cheaply by
 	// merging on the original per-list order (both are addedAt desc already).
 	return [...m, ...s];
-}
-
-function similarityProfile(row: MovieRow): SimilarityProfile {
-	return {
-		id: row.slug,
-		genres: row.genres,
-		director: row.director,
-		cast: (row.castPeople ?? []).map((c) => c.name),
-		studios: row.studios,
-		collectionId: row.collectionId,
-		rating: row.rating,
-		year: row.year
-	};
-}
-
-/** "More like this": the library movies most like `slug`, best first (see `rankSimilar`). */
-export async function similarMovies(slug: string, limit = 20): Promise<Movie[]> {
-	const rows = await db.query.movie.findMany();
-	const target = rows.find((r) => r.slug === slug);
-	if (!target) return [];
-	const bySlug = new Map(rows.map((r) => [r.slug, r]));
-	return rankSimilar(similarityProfile(target), rows.map(similarityProfile), limit).flatMap(
-		(id) => {
-			const row = bySlug.get(id);
-			return row ? [rowToMovie(row)] : [];
-		}
-	);
 }
 
 export async function getMovieBySlug(slug: string): Promise<Movie | undefined> {

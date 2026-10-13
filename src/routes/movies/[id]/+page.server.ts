@@ -1,15 +1,16 @@
 import { error } from '@sveltejs/kit';
-import { getMovieDetail, similarMovies } from '$lib/server/catalog';
+import { getMovieDetail } from '$lib/server/catalog';
 import { applyProgress, loadProgress, movieWatchState } from '$lib/server/progress';
 import type { PageServerLoad } from './$types';
 import { viewerProfileId } from '$lib/server/profiles';
+import { moreLikeThis, resolveRecommended } from '$lib/server/recommendations';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const movie = await getMovieDetail(params.id);
 	if (!movie) error(404, 'Movie not found');
 	const profileId = viewerProfileId(locals);
 	const [related, progress, resume] = await Promise.all([
-		similarMovies(movie.id),
+		moreLikeThis('movie', movie.id).then(resolveRecommended),
 		loadProgress(profileId),
 		// Exact position for "Resume at 15m 25s" + the progress line under the poster.
 		movieWatchState(profileId, params.id)

@@ -324,3 +324,36 @@ export function studioBrands(names: Iterable<string>): StudioBrand[] {
 export function collectionSlug(name: string): string {
 	return slugify(name);
 }
+
+/** The details fields `recommendationSignals` reads (movie and TV share them). */
+export interface RecommendationSource {
+	genres?: { id: number }[] | null;
+	popularity?: number | null;
+	vote_count?: number | null;
+	original_language?: string | null;
+	/** Movies nest keywords as `keywords`, TV as `results`. */
+	keywords?: { keywords?: { id: number }[] | null; results?: { id: number }[] | null } | null;
+	recommendations?: { results?: { id: number }[] | null } | null;
+}
+
+/** TMDB recommendations kept per title (page 1 holds 20). */
+export const MAX_TMDB_RECOMMENDATIONS = 20;
+
+function uniqueIds(list: { id: number }[] | null | undefined, max = Infinity): number[] {
+	return [...new Set((list ?? []).map((x) => x.id))].slice(0, max);
+}
+
+/** The recommendations engine's inputs from a TMDB movie/TV details response. */
+export function recommendationSignals(details: RecommendationSource, ownId?: number) {
+	const keywords = details.keywords?.keywords ?? details.keywords?.results;
+	return {
+		keywords: uniqueIds(keywords),
+		tmdbGenreIds: uniqueIds(details.genres),
+		tmdbRecommendations: uniqueIds(details.recommendations?.results)
+			.filter((id) => id !== ownId)
+			.slice(0, MAX_TMDB_RECOMMENDATIONS),
+		popularity: typeof details.popularity === 'number' ? details.popularity : null,
+		voteCount: typeof details.vote_count === 'number' ? Math.round(details.vote_count) : null,
+		originalLanguage: details.original_language?.trim().toLowerCase() || null
+	};
+}

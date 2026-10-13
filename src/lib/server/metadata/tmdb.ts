@@ -168,6 +168,15 @@ export const Video = z.object({
 });
 export const Videos = z.object({ results: z.array(Video).nullish() }).nullish();
 
+const TmdbKeyword = z.object({ id: z.number(), name: z.string().nullish() });
+/** `/movie/{id}/keywords` nests the list as `keywords`, `/tv/{id}/keywords` as `results`. */
+const MovieKeywords = z.object({ keywords: z.array(TmdbKeyword).nullish() }).nullish();
+const TvKeywords = z.object({ results: z.array(TmdbKeyword).nullish() }).nullish();
+/** Page 1 of `/recommendations` (same kind as the title), best first. */
+const Recommendations = z
+	.object({ results: z.array(z.object({ id: z.number() })).nullish() })
+	.nullish();
+
 export const MovieDetails = z.object({
 	id: z.number(),
 	title: z.string().nullish(),
@@ -184,7 +193,12 @@ export const MovieDetails = z.object({
 	production_companies: z.array(TmdbCompany).nullish(),
 	credits: Credits,
 	release_dates: ReleaseDates.nullish(),
-	videos: Videos
+	videos: Videos,
+	popularity: z.number().nullish(),
+	vote_count: z.number().nullish(),
+	original_language: z.string().nullish(),
+	keywords: MovieKeywords,
+	recommendations: Recommendations
 });
 
 export const TvDetails = z.object({
@@ -206,7 +220,12 @@ export const TvDetails = z.object({
 		.nullish(),
 	credits: Credits,
 	content_ratings: ContentRatings.nullish(),
-	videos: Videos
+	videos: Videos,
+	popularity: z.number().nullish(),
+	vote_count: z.number().nullish(),
+	original_language: z.string().nullish(),
+	keywords: TvKeywords,
+	recommendations: Recommendations
 });
 
 export const TvSeason = z.object({
@@ -258,13 +277,17 @@ export async function searchTv(query: string, year?: number): Promise<SearchTvRe
 export function getMovie(id: number): Promise<MovieDetails | null> {
 	return tmdbGet(
 		`/movie/${id}`,
-		{ append_to_response: 'credits,release_dates,videos' },
+		{ append_to_response: 'credits,release_dates,videos,keywords,recommendations' },
 		MovieDetails
 	);
 }
 
 export function getTv(id: number): Promise<TvDetails | null> {
-	return tmdbGet(`/tv/${id}`, { append_to_response: 'credits,content_ratings,videos' }, TvDetails);
+	return tmdbGet(
+		`/tv/${id}`,
+		{ append_to_response: 'credits,content_ratings,videos,keywords,recommendations' },
+		TvDetails
+	);
 }
 
 export function getTvSeason(id: number, seasonNumber: number): Promise<TvSeason | null> {

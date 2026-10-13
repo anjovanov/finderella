@@ -9,7 +9,7 @@
 		itemHref,
 		onclose
 	}: {
-		/** Ranked by `similarMovies`, best first. */
+		/** Ranked by the recommendations engine (`moreLikeThis`), best first. */
 		items: Movie[];
 		/** Card link (the movie's watch page: a click starts it in this player). */
 		itemHref: (movie: Movie) => string;

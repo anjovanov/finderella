@@ -64,23 +64,30 @@ export async function listWatchlist(profileId: string): Promise<MediaItem[]> {
 		.leftJoin(series, eq(watchlist.seriesId, series.id))
 		.where(eq(watchlist.profileId, profileId))
 		.orderBy(desc(watchlist.createdAt));
+	// Rows whose title was pruned (left join → null slugs) are skipped.
+	return itemsForKeys(
+		rows.flatMap((r) =>
+			r.movieSlug
+				? [watchlistKey('movie', r.movieSlug)]
+				: r.seriesSlug
+					? [watchlistKey('series', r.seriesSlug)]
+					: []
+		)
+	);
+}
+
+/** Catalog items for `watchlistKey`s, in the given order; unknown keys are dropped. */
+export async function itemsForKeys(keys: string[]): Promise<MediaItem[]> {
+	const slugs = (kind: WatchlistKind) => {
+		const prefix = watchlistKey(kind, '');
+		return keys.filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length));
+	};
 	const [movies, shows] = await Promise.all([
-		getMoviesBySlugs(rows.flatMap((r) => (r.movieSlug ? [r.movieSlug] : []))),
-		getSeriesBySlugs(rows.flatMap((r) => (r.seriesSlug ? [r.seriesSlug] : [])))
+		getMoviesBySlugs(slugs('movie')),
+		getSeriesBySlugs(slugs('series'))
 	]);
-	const bySlug = new Map<string, MediaItem>();
-	for (const item of movies) bySlug.set(watchlistKey('movie', item.id), item);
-	for (const item of shows) bySlug.set(watchlistKey('series', item.id), item);
-	const items: MediaItem[] = [];
-	for (const row of rows) {
-		const key = row.movieSlug
-			? watchlistKey('movie', row.movieSlug)
-			: row.seriesSlug
-				? watchlistKey('series', row.seriesSlug)
-				: null;
-		const item = key ? bySlug.get(key) : undefined;
-		// Rows whose title was pruned (left join → null slugs) are skipped.
-		if (item) items.push(item);
-	}
-	return items;
+	const byKey = new Map<string, MediaItem>();
+	for (const item of movies) byKey.set(watchlistKey('movie', item.id), item);
+	for (const item of shows) byKey.set(watchlistKey('series', item.id), item);
+	return keys.flatMap((key) => byKey.get(key) ?? []);
 }

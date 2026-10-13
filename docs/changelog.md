@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-14
+
+**Recommendations** (schema: `keywords`, `tmdb_genre_ids`, `tmdb_recommendations`, `popularity`, `vote_count`, `original_language` on `movie` and `series`, migration `0031_recommendation_signals`; `METADATA_VERSION` 4 re-fetches every matched title once).
+
+- **Top picks for you**: a personal home row for each profile, learned from what it finished, is watching, saved to its list or gave up on. Recent viewing counts more. The row mixes movies and series, never shows one franchise more than twice, and rotates a little each day. Guests and new profiles see **Popular picks** instead, ranked by rating and popularity.
+- **Because you watched ‹title›**: up to two home rows built from titles similar to something the profile recently finished or got into.
+- **Trending now** follows TMDB popularity, nudged by what people on this server watched in the last two weeks. Before, it was the highest-rated titles. Local plays get a small, gradually growing boost, so one person's viewing can't push a title to the top and reveal it to everyone else. Titles without TMDB data get no boost at all.
+- **Better "More like this"**:
+  - It uses TMDB's own recommendations, keywords, genres, people, studios and language.
+  - Series get a real ranking instead of every title from their first genre.
+  - Both detail pages mix movies and series, with the same kind preferred.
+  - The player's sheet stays movies-only.
+- New TMDB data is fetched automatically: keywords, TMDB recommendations, popularity, vote counts and original language.
+
 ## 2026-10-13
 
 **More Like This in the movie player** (no schema change).

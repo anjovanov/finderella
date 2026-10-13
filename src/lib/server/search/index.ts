@@ -52,8 +52,15 @@ async function ensureIndex(): Promise<SearchIndex> {
 			// re-marks the (about to be outdated) index stale.
 			stale = false;
 			const started = performance.now();
-			const docs = await loadSearchDocs();
-			index = createSearchIndex(docs);
+			let docs: SearchDoc[];
+			try {
+				docs = await loadSearchDocs();
+				index = createSearchIndex(docs);
+			} catch (err) {
+				// Failed: stay stale so the next query retries instead of serving the old index forever.
+				stale = true;
+				throw err;
+			}
 			log.info(
 				{
 					movies: docs.filter((d) => d.kind === 'movie').length,

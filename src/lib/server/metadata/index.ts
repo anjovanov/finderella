@@ -3,7 +3,7 @@ import { db } from '$lib/server/db';
 import { collection, episode, movie, season, series, studio } from '$lib/server/db/schema';
 import { log } from '$lib/server/log';
 import { queueAutoSubtitleDownload } from '$lib/server/subtitles/bulk';
-import { invalidateSearchIndex } from '$lib/server/search';
+import { invalidateCatalogCaches } from '$lib/server/catalog/caches';
 import type { CastMember } from '$lib/data/types';
 import { maskSecret } from '$lib/data/secrets';
 import {
@@ -14,6 +14,7 @@ import {
 	movieMaturity,
 	pickBestMatch,
 	pickTrailer,
+	recommendationSignals,
 	scanTitleFromSlug,
 	studioBrand,
 	tvMaturity,
@@ -48,9 +49,10 @@ export { isTmdbConfigured };
 /**
  * Bump when enrichment starts storing a new TMDB field. Matched titles below
  * it are re-fetched by their stored tmdb_id on the next (non-forced) pass —
- * no re-search. 2 = networks / studios + collections, 3 = episode ratings.
+ * no re-search. 2 = networks / studios + collections, 3 = episode ratings,
+ * 4 = recommendation signals (keywords, TMDB recommendations, popularity…).
  */
-export const METADATA_VERSION = 3;
+export const METADATA_VERSION = 4;
 
 /**
  * The last METADATA_VERSION that added a season/episode field: series enriched
@@ -199,7 +201,8 @@ function movieUpdate(
 		backdropUrl: imageUrl(details.backdrop_path, BACKDROP_SIZE),
 		trailerKey: pickTrailer(details.videos?.results)?.key ?? null,
 		// TMDB reports 0 for "unknown".
-		budget: details.budget && details.budget > 0 ? details.budget : null
+		budget: details.budget && details.budget > 0 ? details.budget : null,
+		...recommendationSignals(details, details.id)
 	};
 	if (details.title?.trim()) values.title = details.title.trim();
 	const year = yearOf(details.release_date);
@@ -267,7 +270,8 @@ function seriesUpdate(details: TvDetails, current: typeof series.$inferSelect, s
 		posterUrl: imageUrl(details.poster_path, POSTER_SIZE),
 		backdropUrl: imageUrl(details.backdrop_path, BACKDROP_SIZE),
 		trailerKey: pickTrailer(details.videos?.results)?.key ?? null,
-		creator: (details.created_by ?? []).map((c) => c.name).join(', ') || current.creator
+		creator: (details.created_by ?? []).map((c) => c.name).join(', ') || current.creator,
+		...recommendationSignals(details, details.id)
 	};
 	if (details.name?.trim()) values.title = details.name.trim();
 	const year = yearOf(details.first_air_date);
@@ -463,18 +467,21 @@ export async function enrichPending(opts: { force?: boolean } = {}): Promise<voi
 	running = true;
 	let next: { force: boolean } | null = { force: Boolean(opts.force) };
 	let enriched = 0;
+	let completed = false;
 	try {
 		while (next) {
 			queued = null;
 			enriched += await runPass(next.force);
 			next = queued;
 		}
+		completed = true;
 	} finally {
 		running = false;
 		queued = null;
+		// Titles, cast and synopses changed: one catalog-cache rebuild per run. A pass
+		// that threw may have enriched titles before failing, so rebuild then too.
+		if (enriched > 0 || !completed) invalidateCatalogCaches();
 	}
-	// Titles, cast and synopses changed: one search-index rebuild per run.
-	if (enriched > 0) invalidateSearchIndex();
 	// Titles now carry tmdb ids — the best moment to fetch subtitles for new files.
 	void queueAutoSubtitleDownload().catch((err) =>
 		log.error({ err }, 'auto subtitle download failed')

@@ -45,6 +45,35 @@ export const studio = pgTable('studio', {
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+/**
+ * TMDB signals for the recommendations engine (src/lib/server/recommendations):
+ * a function so each table gets its own column builders. Arrays use a runtime
+ * `$default`, not a DB default (drizzle-kit would re-propose the ALTERs forever).
+ */
+function recommendationSignals() {
+	return {
+		/** TMDB keyword ids. */
+		keywords: integer('keywords')
+			.array()
+			.notNull()
+			.$default(() => []),
+		/** Raw TMDB genre ids (finer than the mapped `genres`: Animation, Family, Crime…). */
+		tmdbGenreIds: integer('tmdb_genre_ids')
+			.array()
+			.notNull()
+			.$default(() => []),
+		/** TMDB ids of TMDB's own recommendations (same kind), best first. */
+		tmdbRecommendations: integer('tmdb_recommendations')
+			.array()
+			.notNull()
+			.$default(() => []),
+		popularity: real('popularity'),
+		voteCount: integer('vote_count'),
+		/** ISO 639-1 code of the original language. */
+		originalLanguage: text('original_language')
+	};
+}
+
 export const movie = pgTable('movie', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	slug: text('slug').notNull().unique(),
@@ -84,6 +113,7 @@ export const movie = pgTable('movie', {
 		onDelete: 'set null'
 	}),
 	tmdbId: integer('tmdb_id'),
+	...recommendationSignals(),
 	metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true }),
 	metadataVersion: smallint('metadata_version').notNull().default(0),
 	addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow()
@@ -121,6 +151,7 @@ export const series = pgTable('series', {
 		.notNull()
 		.$default(() => []),
 	tmdbId: integer('tmdb_id'),
+	...recommendationSignals(),
 	metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true }),
 	metadataVersion: smallint('metadata_version').notNull().default(0),
 	addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow()

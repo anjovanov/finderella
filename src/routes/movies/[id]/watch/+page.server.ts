@@ -1,10 +1,12 @@
 import { error } from '@sveltejs/kit';
-import { getMovieBySlug, similarMovies } from '$lib/server/catalog';
+import { getMovieBySlug } from '$lib/server/catalog';
 import { movieResumePosition, withProgress } from '$lib/server/progress';
 import { getPlaybackSettings, getSubtitleSettings } from '$lib/server/profile-settings';
 import { subtitleProvidersConfigured } from '$lib/server/subtitles/settings';
 import type { PageServerLoad } from './$types';
 import { viewerProfileId } from '$lib/server/profiles';
+import { moreLikeThis, resolveRecommended } from '$lib/server/recommendations';
+import type { Movie } from '$lib/data/types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const movie = await getMovieBySlug(params.id);
@@ -16,8 +18,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			getSubtitleSettings(profileId),
 			getPlaybackSettings(profileId),
 			subtitleProvidersConfigured(),
-			// The player's "More like this" sheet (cards show the viewer's progress).
-			similarMovies(params.id).then((movies) => withProgress(profileId, movies))
+			// The player's "More like this" sheet: movies only (its cards open the watch page).
+			moreLikeThis('movie', params.id, { kinds: ['movie'] })
+				.then(resolveRecommended)
+				.then((items) =>
+					withProgress(
+						profileId,
+						items.filter((i): i is Movie => i.kind === 'movie')
+					)
+				)
 		]);
 	// Playback source comes from POST /api/playback/start (client-side).
 	return {
