@@ -115,7 +115,7 @@ Titles that share nothing are left out. Ties go to the higher rating, then the c
 
 - **Movie detail page:** the "More like this" row uses this ranking. The series detail page keeps its first-genre `byGenre` row.
 - **Movie watch page:** the load passes the list through `withProgress` as `similar`, and the page hands it to `WatchPlayer` (`similar` + `similarHref = watchHref`).
-- **The button:** a "More Like This" button sits in the left cluster, where series show "More Episodes". It opens `SimilarPanel`, a carousel of backdrop `PosterCard`s (`showMenu={false}`, `onNavigate` closes the sheet).
+- **The button:** a "More Like This" button sits in the left cluster, where series show "More Episodes". It opens `SimilarPanel`, a carousel of backdrop `PosterCard`s (`showMenu={false}`, `onNavigate` closes the sheet). The sheet also opens by itself on the video's `ended` event (`onVideoEnded`).
 - **Clicking a card starts that movie.** The watch page component is reused and the session restarts. The audio pick is keyed by slug, so it doesn't carry into the next title.
 - **Watch parties:** the button is hidden during a party. A movie party can't change title, because the room rejects another slug.
 - **Shared sheet:** both sheets render through `PlayerSheet` (`player-sheet.svelte`: surface, title row and ✕), with the panel class (`.episodes-panel` / `.similar-panel`) that the player's click-outside handler matches.

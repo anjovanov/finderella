@@ -15,6 +15,7 @@
   Higher-rated titles win ties.
 
 - The movie page's **More like this** row uses the same ranking. It now lists movies only, best matches first, instead of every title from the first genre.
+- When a movie plays to the end, the More Like This row opens by itself.
 - The button is hidden during a watch party, because a movie party stays on its title.
 
 ## 2026-10-08

@@ -496,6 +496,8 @@
 
 	function onVideoEnded() {
 		if (autoplayNext) advanceToNext(true);
+		// A movie that played to the end offers what to watch next.
+		if (similar?.length && similarHref) similarOpen = true;
 	}
 
 	// Episodes panel (series) / "More like this" (movies). While open, player
