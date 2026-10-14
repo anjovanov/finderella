@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm';
 import type { CastMember } from '$lib/data/types';
 import {
+	date,
 	integer,
 	jsonb,
 	pgTable,
@@ -88,6 +89,8 @@ export const movie = pgTable('movie', {
 	director: text('director').notNull().default(''),
 	/** USD, from TMDB; null when unknown. */
 	budget: integer('budget'),
+	/** TMDB release date (YYYY-MM-DD); null when unknown or unmatched. Feeds "New releases". */
+	releaseDate: date('release_date', { mode: 'string' }),
 	// Nullable + runtime default (read as []) so drizzle-kit never has to
 	// reconcile a JSON DDL default.
 	castPeople: jsonb('cast_people')
@@ -191,6 +194,8 @@ export const episode = pgTable(
 		stillUrl: text('still_url'),
 		// TMDB vote average (0–10, one decimal); null = not rated yet.
 		rating: real('rating'),
+		/** TMDB air date (YYYY-MM-DD); null when unknown. A series' newest one feeds "New releases". */
+		airDate: date('air_date', { mode: 'string' }),
 		// Set once a TMDB season fetch has processed this episode (matched or not).
 		metadataUpdatedAt: timestamp('metadata_updated_at', { withTimezone: true })
 	},

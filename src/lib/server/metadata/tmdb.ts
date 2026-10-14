@@ -235,6 +235,7 @@ export const TvSeason = z.object({
 		.array(
 			z.object({
 				episode_number: z.number(),
+				air_date: z.string().nullish(),
 				name: z.string().nullish(),
 				overview: z.string().nullish(),
 				runtime: z.number().nullish(),

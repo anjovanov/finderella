@@ -7,6 +7,7 @@
 		continueTarget,
 		episodeLabel,
 		episodeWatchHref,
+		isJustAdded,
 		mediaHref,
 		type MediaItem
 	} from '$lib/data';
@@ -51,6 +52,8 @@
 	// An episode tile rates the episode; an unrated episode shows no badge rather
 	// than the series rating next to its "S2E4" label.
 	const rating = $derived(target ? target.episode.rating : item.rating);
+	// Not on "Continue watching" tiles: the viewer has already started those.
+	const justAdded = $derived(!continueWatching && isJustAdded(item.addedAt));
 </script>
 
 <!-- The ⋮ menu button can't live inside the link (interactive content inside
@@ -76,6 +79,14 @@
 				>
 					<HugeiconsIcon icon={StarIcon} class="size-3 text-yellow-400" />
 					{rating.toFixed(1)}
+				</span>
+			{/if}
+			{#if justAdded}
+				<!-- A tag tucked into the corner (the box clips it to the card's rounding), not a pill. -->
+				<span
+					class="absolute right-0 bottom-0 rounded-tl-md bg-primary px-2 pt-0.5 pb-1 text-[9px] leading-none font-bold tracking-[0.12em] text-primary-foreground uppercase sm:text-[10px]"
+				>
+					Just Added
 				</span>
 			{/if}
 		</div>

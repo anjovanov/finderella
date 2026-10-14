@@ -3,6 +3,7 @@ import {
 	collectionSlug,
 	episodeRating,
 	isCanonicalBrandName,
+	isoDate,
 	mapGenres,
 	movieMaturity,
 	normalizeTitle,
@@ -294,5 +295,19 @@ describe('recommendationSignals', () => {
 			voteCount: null,
 			originalLanguage: null
 		});
+	});
+});
+
+describe('isoDate', () => {
+	it('keeps real calendar dates', () => {
+		expect(isoDate('2025-07-11')).toBe('2025-07-11');
+	});
+
+	it('drops empty, partial and impossible dates', () => {
+		expect(isoDate('')).toBeNull();
+		expect(isoDate(null)).toBeNull();
+		expect(isoDate('2025')).toBeNull();
+		expect(isoDate('2025-13-45')).toBeNull();
+		expect(isoDate('2025-02-30')).toBeNull();
 	});
 });

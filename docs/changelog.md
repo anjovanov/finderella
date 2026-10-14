@@ -2,6 +2,12 @@
 
 ## 2026-10-14
 
+**Just added, New releases and the "Just Added" label** (schema: `movie.release_date`, `episode.air_date`, migration `0032_release_dates`; `METADATA_VERSION` 6 re-fetches every matched title and its seasons once).
+
+- The home row that listed what was most recently added to the library is now called **Just added**. Before, it was titled "New releases".
+- A new **New releases** row shows titles actually released in the last 12 months, newest first. Movies count by their release date, series by the air date of the newest episode in your library, so a returning show appears once its new season has been scanned. Titles without TMDB data aren't included.
+- Posters and backdrops of titles added in the last 14 days carry a small **Just Added** label in the bottom-right corner, everywhere except Continue watching.
+
 **Better TMDB matching for titles with `&` or apostrophes** (no schema change).
 
 - A file named "Minions.Monsters" or "Minions Monsters" now matches TMDB's "Minions & Monsters", and "Dont.Look.Up" matches "Don't Look Up". Before, these titles stayed without metadata. "Refresh all metadata" had the same problem even for correctly named files, because it searches from the URL slug, which drops `&` and apostrophes.

@@ -37,6 +37,8 @@ interface MediaBase {
 	progress?: number;
 	/** true when the signed-in viewer saved it to their watchlist; unset for guests. */
 	inWatchlist?: boolean;
+	/** ISO timestamp of when the title entered the library (drives the "Just Added" label). */
+	addedAt?: string;
 }
 
 export interface CastMember {

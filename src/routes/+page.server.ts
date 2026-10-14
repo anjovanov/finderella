@@ -1,6 +1,6 @@
 import { resolve } from '$app/paths';
 import { byGenre, type MediaItem } from '$lib/data';
-import { featured, listMovies, listSeries, recentlyAdded } from '$lib/server/catalog';
+import { featured, listMovies, listSeries, newReleases, recentlyAdded } from '$lib/server/catalog';
 import { applyProgress, continueWatching, loadProgress } from '$lib/server/progress';
 import { homeRecommendations } from '$lib/server/recommendations';
 import { watchlistKey } from '$lib/server/watchlist';
@@ -12,16 +12,18 @@ type Row = { title: string; items: MediaItem[]; href?: string; continueWatching?
 export const load: PageServerLoad = async ({ locals }) => {
 	const profileId = viewerProfileId(locals);
 	const progressPromise = loadProgress(profileId);
-	const [hero, movies, series, recent, watching, progress, recommended] = await Promise.all([
-		featured(),
-		listMovies(),
-		listSeries(),
-		recentlyAdded(),
-		progressPromise.then((overlay) => continueWatching(profileId, overlay)),
-		progressPromise,
-		homeRecommendations(profileId)
-	]);
-	for (const list of [movies, series, recent, watching, hero ? [hero] : []]) {
+	const [hero, movies, series, recent, releases, watching, progress, recommended] =
+		await Promise.all([
+			featured(),
+			listMovies(),
+			listSeries(),
+			recentlyAdded(),
+			newReleases(),
+			progressPromise.then((overlay) => continueWatching(profileId, overlay)),
+			progressPromise,
+			homeRecommendations(profileId)
+		]);
+	for (const list of [movies, series, recent, releases, watching, hero ? [hero] : []]) {
 		applyProgress(list, progress);
 	}
 	const allItems = [...movies, ...series];
@@ -47,8 +49,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 		},
 		{ title: 'Trending now', items: items(recommended.trending) },
 		because[0],
-		{ title: 'New releases', items: recent },
+		{ title: 'New releases', items: releases },
 		because[1],
+		{ title: 'Just added', items: recent },
 		{ title: 'Movies', items: movies, href: resolve('/movies') },
 		{ title: 'Series', items: series, href: resolve('/series') },
 		{

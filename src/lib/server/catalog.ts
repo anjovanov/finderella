@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, lte, max, sql, type SQL } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { episode, mediaAudio, mediaFile, movie, season, series } from '$lib/server/db/schema';
 import {
@@ -12,6 +12,7 @@ import {
 	type Season,
 	type Series
 } from '$lib/data/types';
+import { isoDay, newReleaseCutoff } from '$lib/data/recency';
 
 /**
  * Catalog reads. Every function returns the exact shapes in
@@ -47,7 +48,8 @@ function rowToMovie(row: MovieRow): Movie {
 		theme: { hue: row.hue, hue2: row.hue2 },
 		posterUrl: row.posterUrl ?? undefined,
 		backdropUrl: row.backdropUrl ?? undefined,
-		trailerKey: row.trailerKey ?? undefined
+		trailerKey: row.trailerKey ?? undefined,
+		addedAt: row.addedAt.toISOString()
 	};
 }
 
@@ -89,6 +91,7 @@ function rowToSeries(row: SeriesRow & { seasons: SeasonRow[] }): Series {
 		posterUrl: row.posterUrl ?? undefined,
 		backdropUrl: row.backdropUrl ?? undefined,
 		trailerKey: row.trailerKey ?? undefined,
+		addedAt: row.addedAt.toISOString(),
 		seasons
 	};
 }
@@ -340,7 +343,7 @@ export async function featured(): Promise<MediaItem | undefined> {
 	return items.toSorted((a, b) => b.rating - a.rating)[0];
 }
 
-/** Most recently added items (DB insertion order, not release year). */
+/** Most recently added items (the home "Just added" row; DB insertion order, not release date). */
 export async function recentlyAdded(limit = 12): Promise<MediaItem[]> {
 	const [m, s] = await Promise.all([
 		db.query.movie.findMany({ orderBy: [desc(movie.addedAt)], limit }),
@@ -352,6 +355,61 @@ export async function recentlyAdded(limit = 12): Promise<MediaItem[]> {
 	];
 	return dated
 		.toSorted((a, b) => b.addedAt.getTime() - a.addedAt.getTime())
+		.slice(0, limit)
+		.map((entry) => entry.item);
+}
+
+/**
+ * The home "New releases" row: titles released in the last NEW_RELEASE_MONTHS,
+ * newest first. A movie counts by its release date, a series by the air date
+ * of its newest episode in the library, so a new season brings it back once
+ * it's scanned (and enrichment fills that season's air dates). Titles without
+ * a TMDB date are left out.
+ */
+export async function newReleases(limit = 12): Promise<MediaItem[]> {
+	const now = new Date();
+	const [from, to] = [newReleaseCutoff(now), isoDay(now)];
+	const latestAired = max(episode.airDate);
+	const [movies, aired] = await Promise.all([
+		db.query.movie.findMany({
+			where: and(gte(movie.releaseDate, from), lte(movie.releaseDate, to)),
+			orderBy: [desc(movie.releaseDate)],
+			limit
+		}),
+		// Episodes dated after today (TMDB schedules) don't count.
+		db
+			.select({ seriesId: episode.seriesId, released: latestAired })
+			.from(episode)
+			.where(lte(episode.airDate, to))
+			.groupBy(episode.seriesId)
+			.having(gte(latestAired, from))
+			.orderBy(desc(latestAired))
+			.limit(limit)
+	]);
+	const shows =
+		aired.length > 0
+			? await db.query.series.findMany({
+					with: withSeasons,
+					where: inArray(
+						series.id,
+						aired.map((row) => row.seriesId)
+					)
+				})
+			: [];
+	const releasedBySeries = new Map(aired.map((row) => [row.seriesId, row.released ?? '']));
+	// The where clauses guarantee a date; YYYY-MM-DD strings sort chronologically.
+	const dated: { released: string; item: MediaItem }[] = [
+		...movies.map((row) => ({
+			released: row.releaseDate ?? '',
+			item: rowToMovie(row) as MediaItem
+		})),
+		...shows.map((row) => ({
+			released: releasedBySeries.get(row.id) ?? '',
+			item: rowToSeries(row) as MediaItem
+		}))
+	];
+	return dated
+		.toSorted((a, b) => b.released.localeCompare(a.released))
 		.slice(0, limit)
 		.map((entry) => entry.item);
 }

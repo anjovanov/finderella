@@ -152,6 +152,14 @@ export function yearOf(date: string | null | undefined): number | undefined {
 	return match ? Number(match[1]) : undefined;
 }
 
+/** A TMDB date kept as-is when it is a real YYYY-MM-DD date (TMDB sends "" when unknown). */
+export function isoDate(date: string | null | undefined): string | null {
+	if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+	// Round-trip: Date.parse accepts "2025-02-30" (rolls over), Postgres doesn't.
+	const parsed = new Date(`${date}T00:00:00Z`);
+	return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(date) ? date : null;
+}
+
 export interface MatchCandidate {
 	id: number;
 	titles: (string | null | undefined)[];

@@ -18,6 +18,7 @@ import {
 	scanTitleFromSlug,
 	studioBrand,
 	tvMaturity,
+	isoDate,
 	yearOf,
 	type MatchCandidate
 } from './map';
@@ -50,15 +51,16 @@ export { isTmdbConfigured };
  * Bump when enrichment starts storing a new TMDB field. Matched titles below
  * it are re-fetched by their stored tmdb_id on the next (non-forced) pass —
  * no re-search. 2 = networks / studios + collections, 3 = episode ratings,
- * 4 = recommendation signals (keywords, TMDB recommendations, popularity…).
+ * 4 = recommendation signals (keywords, TMDB recommendations, popularity…),
+ * 5 = movie release dates, 6 = episode air dates ("New releases").
  */
-export const METADATA_VERSION = 4;
+export const METADATA_VERSION = 6;
 
 /**
  * The last METADATA_VERSION that added a season/episode field: series enriched
  * below it re-fetch their seasons too, not just the series row.
  */
-const SEASONS_VERSION = 3;
+const SEASONS_VERSION = 6;
 
 /**
  * Bump when title matching changes (`pickBestMatch`, `titleMatchKey`,
@@ -212,6 +214,7 @@ function movieUpdate(
 		trailerKey: pickTrailer(details.videos?.results)?.key ?? null,
 		// TMDB reports 0 for "unknown".
 		budget: details.budget && details.budget > 0 ? details.budget : null,
+		releaseDate: isoDate(details.release_date),
 		...recommendationSignals(details, details.id)
 	};
 	if (details.title?.trim()) values.title = details.title.trim();
@@ -329,6 +332,7 @@ async function enrichSeasons(
 				if (ep.runtimeMinutes === 0 && match.runtime) values.runtimeMinutes = match.runtime;
 				values.stillUrl = imageUrl(match.still_path, STILL_SIZE);
 				values.rating = episodeRating(match.vote_average, match.vote_count);
+				values.airDate = isoDate(match.air_date);
 			}
 			await db.update(episode).set(values).where(eq(episode.id, ep.id));
 		}

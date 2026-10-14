@@ -7,6 +7,7 @@ export * from './progress';
 export * from './time';
 export * from './search';
 export * from './categories';
+export * from './recency';
 
 /** Pure ranking/filtering helpers shared by page loads (DB rows in, rows out). */
 
