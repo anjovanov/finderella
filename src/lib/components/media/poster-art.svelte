@@ -40,10 +40,13 @@
 		<LoadedImage {src} bind:loaded class="absolute inset-0 size-full object-cover" />
 	{/if}
 	{#if ready}
-		<div
-			class="absolute inset-0"
-			style:background="linear-gradient(to top, rgb(0 0 0 / 0.55), transparent 45%)"
-		></div>
+		<!-- Backdrops keep the fade under callers' overlays (e.g. the episode play badge). -->
+		{#if showTitle || variant === 'backdrop'}
+			<div
+				class="absolute inset-0"
+				style:background="linear-gradient(to top, rgb(0 0 0 / 0.55), transparent 45%)"
+			></div>
+		{/if}
 		{#if showTitle}
 			<div class="relative flex w-full flex-col gap-0.5 text-white">
 				<span

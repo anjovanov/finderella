@@ -68,7 +68,8 @@
 		<div
 			class="relative overflow-hidden rounded-xl ring-1 ring-border transition-all duration-200 group-focus-within:ring-2 group-focus-within:ring-primary group-hover:scale-[1.015] group-hover:ring-2 group-hover:ring-primary"
 		>
-			<PosterArt {item} {variant} showTitle />
+			<!-- A poster's artwork already carries the title; the name/year below the card stay. -->
+			<PosterArt {item} {variant} showTitle={variant === 'backdrop'} />
 			{#if rating !== undefined}
 				<span
 					class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm"

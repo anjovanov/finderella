@@ -137,7 +137,7 @@
 	<div class="relative flex page-gutter flex-col gap-6 pt-40 pb-8 sm:flex-row sm:items-end">
 		<div class="flex w-56 shrink-0 flex-col gap-2 sm:w-72 lg:w-80">
 			<div class="overflow-hidden rounded-xl shadow-2xl ring-1 ring-border">
-				<PosterArt {item} showTitle />
+				<PosterArt {item} />
 			</div>
 			{#if showProgress}
 				<ProgressLine fraction={item.progress} />
