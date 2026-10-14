@@ -20,7 +20,8 @@ import {
  * src/lib/server/metadata): stamped even when unmatched so scans don't retry.
  * `metadata_version` is the enrichment schema the row was filled with; a
  * matched row below `METADATA_VERSION` is re-fetched (by its stored tmdb_id)
- * on the next pass, which is how new TMDB fields backfill.
+ * on the next pass, which is how new TMDB fields backfill. On an unmatched row
+ * it holds the `MATCHER_VERSION` that missed; a newer matcher searches again.
  */
 
 /** A TMDB movie collection ("Harry Potter Collection"); rows exist only while a movie points at one. */

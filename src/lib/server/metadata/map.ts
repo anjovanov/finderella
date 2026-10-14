@@ -124,6 +124,18 @@ export function normalizeTitle(title: string): string {
 }
 
 /**
+ * normalizeTitle without "and" words or spaces, so "Minions & Monsters",
+ * "Minions.Monsters" and the slug's "minions monsters" (slugify drops `&`), or
+ * "Don't" / "Dont" / the slug's "don t", compare equal.
+ */
+export function titleMatchKey(title: string): string {
+	return normalizeTitle(title)
+		.split(' ')
+		.filter((w) => w !== 'and')
+		.join('');
+}
+
+/**
  * An episode's TMDB vote average rounded to one decimal, or null while nobody
  * has voted (TMDB reports 0 then, which isn't a rating).
  */
@@ -149,7 +161,8 @@ export interface MatchCandidate {
 
 /**
  * Score search results against the filename-derived title/year: an exact
- * normalized title is worth most, a prefix overlap less, a year within ±1
+ * title key (`titleMatchKey`: filenames and slugs lose `&` and apostrophes,
+ * so "and" and spaces don't count) is worth most, a prefix overlap less, a year within ±1
  * (release dates straddle new year across regions) is a bonus on top, and
  * popularity only breaks ties. The title must match — a year alone proves
  * nothing, and the ingest year is often just the file's mtime (better an
@@ -160,14 +173,14 @@ export function pickBestMatch<T extends MatchCandidate>(
 	title: string,
 	year?: number
 ): T | undefined {
-	const wanted = normalizeTitle(title);
+	const wanted = titleMatchKey(title);
 	if (!wanted) return undefined;
 	let best: { candidate: T; score: number } | undefined;
 	for (const candidate of candidates) {
 		// Non-Latin original titles normalize to '' — and '' is a prefix of everything.
 		const names = candidate.titles
 			.filter((t): t is string => Boolean(t))
-			.map(normalizeTitle)
+			.map(titleMatchKey)
 			.filter(Boolean);
 		let score = 0;
 		if (names.includes(wanted)) score += 2;

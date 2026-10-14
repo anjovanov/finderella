@@ -40,8 +40,8 @@ import { getMetadataSettings, tmdbCredentials, type TmdbKeySource } from './sett
  * synopsis / genres / cast / crew / ratings / artwork / episode titles from
  * TMDB and records the match (`tmdb_id`). `metadata_updated_at` is stamped
  * whether or not a match was found, so unmatched titles aren't re-searched on
- * every scan — only a forced refresh retries them. `slug` and the gradient
- * hues are never touched: the slug is the URL and the ingest key.
+ * every scan — a forced refresh or a MATCHER_VERSION bump retries them. `slug`
+ * and the gradient hues are never touched: the slug is the URL and the ingest key.
  */
 
 export { isTmdbConfigured };
@@ -59,6 +59,16 @@ export const METADATA_VERSION = 4;
  * below it re-fetch their seasons too, not just the series row.
  */
 const SEASONS_VERSION = 3;
+
+/**
+ * Bump when title matching changes (`pickBestMatch`, `titleMatchKey`,
+ * `findTmdbId`): titles that matched nothing are searched again once. An
+ * unmatched row stores the MATCHER_VERSION that missed in `metadata_version`.
+ * Keep it below METADATA_VERSION: a row with a tmdb_id whose details fetch
+ * failed is stamped with it too, and must stay pending as a matched title.
+ * 1 = loose title key ("Minions Monsters" = "Minions & Monsters").
+ */
+export const MATCHER_VERSION = 1;
 
 const CONCURRENCY = 2;
 const CAST_LIMIT = 8;
@@ -239,7 +249,11 @@ export async function enrichMovie(movieId: string, opts: { force?: boolean } = {
 	if (!details) {
 		await db
 			.update(movie)
-			.set({ metadataUpdatedAt: new Date(), tmdbId: tmdbId ?? null })
+			.set({
+				metadataUpdatedAt: new Date(),
+				tmdbId: tmdbId ?? null,
+				metadataVersion: MATCHER_VERSION
+			})
 			.where(eq(movie.id, movieId));
 		log.info({ slug: row.slug, title: row.title, year: row.year }, 'movie unmatched on tmdb');
 		return;
@@ -362,7 +376,7 @@ export async function enrichSeries(
 		const now = new Date();
 		await db
 			.update(series)
-			.set({ metadataUpdatedAt: now, tmdbId: tmdbId ?? null })
+			.set({ metadataUpdatedAt: now, tmdbId: tmdbId ?? null, metadataVersion: MATCHER_VERSION })
 			.where(eq(series.id, seriesId));
 		await db.update(episode).set({ metadataUpdatedAt: now }).where(eq(episode.seriesId, seriesId));
 		log.info({ slug: row.slug, title: row.title, year: row.year }, 'series unmatched on tmdb');
@@ -380,8 +394,8 @@ export async function enrichSeries(
 // ---------- runner ----------
 
 /**
- * Nothing left to fetch: enriched, and either unmatched (only a forced refresh
- * retries those) or filled at the current METADATA_VERSION.
+ * Nothing left to fetch: enriched, and either unmatched by the current
+ * MATCHER_VERSION or filled at the current METADATA_VERSION.
  */
 function isCurrent(row: {
 	metadataUpdatedAt: Date | null;
@@ -390,17 +404,19 @@ function isCurrent(row: {
 }): boolean {
 	return (
 		row.metadataUpdatedAt !== null &&
-		(row.tmdbId === null || row.metadataVersion >= METADATA_VERSION)
+		row.metadataVersion >= (row.tmdbId === null ? MATCHER_VERSION : METADATA_VERSION)
 	);
 }
 
 const moviePending = or(
 	isNull(movie.metadataUpdatedAt),
-	and(isNotNull(movie.tmdbId), lt(movie.metadataVersion, METADATA_VERSION))
+	and(isNotNull(movie.tmdbId), lt(movie.metadataVersion, METADATA_VERSION)),
+	and(isNull(movie.tmdbId), lt(movie.metadataVersion, MATCHER_VERSION))
 );
 const seriesPending = or(
 	isNull(series.metadataUpdatedAt),
-	and(isNotNull(series.tmdbId), lt(series.metadataVersion, METADATA_VERSION))
+	and(isNotNull(series.tmdbId), lt(series.metadataVersion, METADATA_VERSION)),
+	and(isNull(series.tmdbId), lt(series.metadataVersion, MATCHER_VERSION))
 );
 
 /** Series already matched whose newer episodes still lack metadata → season numbers. */

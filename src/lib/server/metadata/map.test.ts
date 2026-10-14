@@ -12,6 +12,7 @@ import {
 	scanTitleFromSlug,
 	studioBrand,
 	studioBrands,
+	titleMatchKey,
 	tvMaturity,
 	type TrailerCandidate,
 	yearOf
@@ -66,6 +67,18 @@ describe('normalizeTitle / yearOf', () => {
 		expect(normalizeTitle('Copper & Salt')).toBe('copper and salt');
 	});
 
+	it('keys titles loosely: no "and", no spaces', () => {
+		// Filenames and slugs lose `&` and apostrophes.
+		const minions = titleMatchKey('Minions & Monsters');
+		expect(titleMatchKey('Minions Monsters')).toBe(minions);
+		expect(titleMatchKey('minions monsters')).toBe(minions);
+		const dontLookUp = titleMatchKey("Don't Look Up");
+		expect(titleMatchKey('Dont Look Up')).toBe(dontLookUp);
+		expect(titleMatchKey('don t look up')).toBe(dontLookUp);
+		expect(titleMatchKey('Rick and Morty')).toBe(titleMatchKey('Rick & Morty'));
+		expect(titleMatchKey('&')).toBe('');
+	});
+
 	it('reads the year off a TMDB date', () => {
 		expect(yearOf('2023-05-05')).toBe(2023);
 		expect(yearOf('')).toBeUndefined();
@@ -112,6 +125,17 @@ describe('pickBestMatch', () => {
 		expect(pickBestMatch(foreign, 'Silo', 2026)).toBeUndefined();
 		expect(pickBestMatch(foreign, 'Invincible', 2026)).toBeUndefined();
 		expect(pickBestMatch(results, 'Silo', 2010)).toBeUndefined();
+	});
+
+	it('matches titles whose filename dropped the ampersand', () => {
+		const found = [
+			{ id: 1, titles: ['Minions & Monsters'], year: 2026, popularity: 30 },
+			{ id: 2, titles: ['Monsters, Inc.'], year: 2001, popularity: 60 }
+		];
+		expect(pickBestMatch(found, 'Minions Monsters', 2026)?.id).toBe(1);
+		expect(pickBestMatch(found, 'Minions Monsters')?.id).toBe(1);
+		expect(pickBestMatch(found, 'Minions and Monsters')?.id).toBe(1);
+		expect(pickBestMatch(found, 'Monsters Minions')).toBeUndefined();
 	});
 
 	it('uses the year to split exact-title candidates', () => {

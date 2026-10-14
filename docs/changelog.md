@@ -2,6 +2,11 @@
 
 ## 2026-10-14
 
+**Better TMDB matching for titles with `&` or apostrophes** (no schema change).
+
+- A file named "Minions.Monsters" or "Minions Monsters" now matches TMDB's "Minions & Monsters", and "Dont.Look.Up" matches "Don't Look Up". Before, these titles stayed without metadata. "Refresh all metadata" had the same problem even for correctly named files, because it searches from the URL slug, which drops `&` and apostrophes.
+- Titles that previously found no match are searched again once, automatically (`MATCHER_VERSION` 1).
+
 **Recommendations** (schema: `keywords`, `tmdb_genre_ids`, `tmdb_recommendations`, `popularity`, `vote_count`, `original_language` on `movie` and `series`, migration `0031_recommendation_signals`; `METADATA_VERSION` 4 re-fetches every matched title once).
 
 - **Top picks for you**: a personal home row for each profile, learned from what it finished, is watching, saved to its list or gave up on. Recent viewing counts more. The row mixes movies and series, never shows one franchise more than twice, and rotates a little each day. Guests and new profiles see **Popular picks** instead, ranked by rating and popularity.
