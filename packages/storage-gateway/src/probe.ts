@@ -297,8 +297,11 @@ export async function probeTrickplaySource(absPath: string): Promise<TrickplaySo
 			'error',
 			'-select_streams',
 			'v:0',
-			'-show_entries',
-			'stream=width,height,sample_aspect_ratio,display_aspect_ratio,color_transfer:stream_side_data=rotation:format=duration',
+			// Whole sections, not `-show_entries …:stream_side_data=rotation`: ffprobe
+			// before 5.x has no `stream_side_data` section and rejects the whole call
+			// (the bundled Apple Silicon ffprobe is 4.4).
+			'-show_streams',
+			'-show_format',
 			'-of',
 			'json',
 			absPath

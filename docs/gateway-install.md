@@ -13,9 +13,8 @@ forwarding or router configuration**.
 
 ## Prerequisites
 
-- Node.js 20 or newer on the media device (`node --version`); 22 LTS is
-  recommended. Linux, macOS and Windows on x64 or arm64 (Intel, AMD, Apple
-  Silicon) are supported.
+- Node.js 22 or newer on the media device (`node --version`). Linux, macOS
+  and Windows on x64 or arm64 (Intel, AMD, Apple Silicon) are supported.
 - ffmpeg is **optional**: a static build ships with the gateway (on Linux,
   macOS and Windows x64, Apple Silicon and Linux arm64). If the device has its
   own ffmpeg, the gateway checks it has what it needs (ffmpeg 5.1+, libx264,

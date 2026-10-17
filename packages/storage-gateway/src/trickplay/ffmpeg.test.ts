@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { TrickplayGeometry } from '@finderella/protocol';
 import { HDR_TONEMAP_FILTERS } from '../transcode/ffmpeg.js';
@@ -42,7 +43,7 @@ describe('trickplayArgs', () => {
 		expect(valueAfter(args, '-f')).toBe('image2');
 		expect(valueAfter(args, '-atomic_writing')).toBe('1');
 		expect(valueAfter(args, '-start_number')).toBe('0');
-		expect(args.at(-1)).toBe('/cache/abc/sheet-%03d.jpg');
+		expect(args.at(-1)).toBe(join(base.dir, 'sheet-%03d.jpg'));
 	});
 
 	it('tone-maps HDR sources between scaling and tiling', () => {

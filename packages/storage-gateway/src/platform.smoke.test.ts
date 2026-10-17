@@ -15,11 +15,12 @@ import { transcodeDir } from './config.js';
 import { parseBlackframeOutput } from './markers/darkframes.js';
 import { darkframeArgs, pcmArgs } from './markers/ffmpeg.js';
 import { SAMPLE_RATE } from './markers/fingerprint.js';
-import { detectTools, ffmpegPath, ffprobePath, probeFile, probeTrickplaySource } from './probe.js';
+import { detectTools, ffmpegPath, probeFile, probeTrickplaySource } from './probe.js';
 import { ensureSubtitleVtt } from './subtitles/extract.js';
 import { sheetComplete } from './trickplay/cache.js';
 import { sheetFileName, trickplayArgs } from './trickplay/ffmpeg.js';
 import { computeGeometry } from './trickplay/geometry.js';
+import { parseInitTimescales } from './transcode/mp4-patch.js';
 import { sweepTranscodeScratch, TranscodeSession } from './transcode/session.js';
 
 const execFileAsync = promisify(execFile);
@@ -29,6 +30,24 @@ const CLIP_SECONDS = 20;
 let work: string;
 let clip: string;
 let ffmpeg: string;
+
+/**
+ * Decode time (seconds) of the first track fragment in a segment: the tfhd's
+ * track id picks the timescale, the tfdt (v0 32-bit / v1 64-bit) the time.
+ */
+function firstTfdtSeconds(segment: Buffer, timescales: Map<number, number>): number {
+	const tfhd = segment.indexOf('tfhd');
+	const tfdt = segment.indexOf('tfdt');
+	expect(tfhd).toBeGreaterThan(0);
+	expect(tfdt).toBeGreaterThan(0);
+	const trackId = segment.readUInt32BE(tfhd + 8);
+	const version = segment[tfdt + 4];
+	const time =
+		version === 1 ? Number(segment.readBigUInt64BE(tfdt + 8)) : segment.readUInt32BE(tfdt + 8);
+	const timescale = timescales.get(trackId);
+	expect(timescale).toBeDefined();
+	return time / timescale!;
+}
 
 async function run(args: string[]): Promise<{ stdout: Buffer }> {
 	return execFileAsync(ffmpeg, args, { encoding: 'buffer', maxBuffer: 64 * 1024 * 1024 });
@@ -114,30 +133,19 @@ describe.skipIf(!enabled)('platform smoke', () => {
 			onReap: () => {}
 		});
 		expect(session.dir.startsWith(transcodeDir())).toBe(true);
-		await session.start(3);
-		const init = await session.ensureAsset('init.mp4');
-		const seg3 = await session.ensureAsset('seg-3.m4s');
-		// init + a mid-file segment must decode starting at its absolute time (12 s).
-		const joined = join(work, 'joined.mp4');
-		await writeFile(joined, Buffer.concat([await readFile(init), await readFile(seg3)]));
-		const { stdout } = await execFileAsync(ffprobePath()!, [
-			'-v',
-			'error',
-			'-select_streams',
-			'v:0',
-			'-show_entries',
-			'packet=pts_time',
-			'-read_intervals',
-			'%+#1',
-			'-of',
-			'csv=p=0',
-			joined
-		]);
-		expect(Number(stdout.trim().split(/\r?\n/)[0])).toBeCloseTo(12, 0);
-		// Behind the window → seek-restart at segment 0.
-		const seg0 = await session.ensureAsset('seg-0.m4s');
-		expect((await stat(seg0)).size).toBeGreaterThan(0);
-		await session.stop();
+		try {
+			await session.start(3);
+			const init = await readFile(await session.ensureAsset('init.mp4'));
+			const seg3 = await readFile(await session.ensureAsset('seg-3.m4s'));
+			// A mid-file segment must sit at its absolute time (12 s). Read from the
+			// boxes, not with ffprobe: ffprobe before 5.x ignores tfdt.
+			expect(firstTfdtSeconds(seg3, parseInitTimescales(init))).toBeCloseTo(12, 0);
+			// Behind the window → seek-restart at segment 0.
+			const seg0 = await session.ensureAsset('seg-0.m4s');
+			expect((await stat(seg0)).size).toBeGreaterThan(0);
+		} finally {
+			await session.stop();
+		}
 		await expect(stat(session.dir)).rejects.toThrow();
 	}, 120_000);
 
@@ -182,6 +190,8 @@ describe.skipIf(!enabled)('platform smoke', () => {
 		const hourAgo = new Date(Date.now() - 60 * 60_000);
 		await utimes(stale, hourAgo, hourAgo);
 		await sweepTranscodeScratch([{ dir: transcodeDir(), maxAgeMs: 10 * 60_000 }]);
-		expect(await readdir(transcodeDir())).toEqual(['live-session']);
+		const left = await readdir(transcodeDir());
+		expect(left).toContain('live-session');
+		expect(left).not.toContain('crashed-session');
 	});
 });

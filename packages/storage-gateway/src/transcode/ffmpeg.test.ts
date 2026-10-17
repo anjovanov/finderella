@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { HDR_TONEMAP_FILTERS, hlsArgs, type TranscodeQuality } from './ffmpeg.js';
 
@@ -41,8 +42,8 @@ describe('hlsArgs', () => {
 		// `vod` defers the playlist until exit; readiness detection needs `event`.
 		expect(valueAfter(args, '-hls_playlist_type')).toBe('event');
 		expect(valueAfter(args, '-hls_segment_type')).toBe('fmp4');
-		expect(valueAfter(args, '-hls_segment_filename')).toBe('/tmp/sess/seg-%d.m4s');
-		expect(args.at(-1)).toBe('/tmp/sess/playlist.m3u8');
+		expect(valueAfter(args, '-hls_segment_filename')).toBe(join(base.dir, 'seg-%d.m4s'));
+		expect(args.at(-1)).toBe(join(base.dir, 'playlist.m3u8'));
 		expect(args).not.toContain('-ss');
 		expect(valueAfter(args, '-start_number')).toBe('0');
 	});
