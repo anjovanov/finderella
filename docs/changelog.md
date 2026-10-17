@@ -15,7 +15,7 @@
 - **Stopping the gateway stops its ffmpeg processes.** Before, a transcode kept running after the gateway exited under Task Scheduler, NSSM, pm2 or nohup. Leftover transcode folders from crashes are removed at startup. On Windows, the gateway now waits for a stopped ffmpeg to exit before deleting its files or starting the next one after a seek.
 - The hub refuses relative library paths and names a new library after its last folder on Windows paths too.
 - The gateway now requires Node.js 22 or newer (Node 20 reached end of life in April 2026).
-- The install guide covers macOS (launchd, Full Disk Access) and Windows (Task Scheduler/NSSM, network drives). A new CI workflow runs the gateway's tests and a real-ffmpeg smoke test on Linux, macOS (Apple Silicon and Intel) and Windows.
+- The install guide covers macOS (launchd, Full Disk Access) and Windows (Task Scheduler/NSSM, network drives). A new CI workflow runs the gateway's tests and a real-ffmpeg smoke test on Ubuntu, Fedora, Arch, Windows and macOS 15 (Intel), 26 and 27 (Apple Silicon), on Node 22 and 24.
 
 ## 2026-10-14
 

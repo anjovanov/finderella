@@ -47,3 +47,45 @@ jobs:
         run: npm run build --workspace @finderella/storage-gateway
       - name: CLI starts
         run: node packages/storage-gateway/dist/cli.js --version
+
+  # GitHub has no Fedora or Arch runners, so these run in the distros' official containers on
+  # the Ubuntu runner (same kernel, real userland and real distro ffmpeg packages). They prove the
+  # ffmpeg selection: Fedora's stock ffmpeg-free has no libx264 and must lose to the bundled
+  # build; Arch's full ffmpeg must win.
+  distros:
+    name: ${{ matrix.distro }} (container) / node 24
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: fedora
+            image: fedora:latest
+            packages: dnf install -y git tar xz gzip ffmpeg-free
+            expect: bundled
+          - distro: arch
+            image: archlinux:latest
+            packages: pacman -Syu --noconfirm --needed git tar xz gzip ffmpeg
+            expect: system
+    steps:
+      - name: Install distro packages
+        run: ${{ matrix.packages }}
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        run: npx vitest run packages/storage-gateway
+      - name: Smoke test (distro ffmpeg selection)
+        run: npx vitest run packages/storage-gateway/src/platform.smoke.test.ts
+        env:
+          FINDERELLA_SMOKE: '1'
+          FINDERELLA_SMOKE_EXPECT_FFMPEG: ${{ matrix.expect }}
+      - name: Smoke test (bundled ffmpeg)
+        run: npx vitest run packages/storage-gateway/src/platform.smoke.test.ts
+        env:
+          FINDERELLA_SMOKE: '1'
+          FINDERELLA_SMOKE_BUNDLED: '1'

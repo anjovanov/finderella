@@ -3,7 +3,9 @@
  * through the ffmpeg/ffprobe this OS resolves, on a generated clip. Skipped
  * unless FINDERELLA_SMOKE=1 (CI runs it on Linux, macOS and Windows);
  * FINDERELLA_SMOKE_BUNDLED=1 forces the bundled static binaries instead of
- * whatever `detectTools` would pick.
+ * whatever `detectTools` would pick. FINDERELLA_SMOKE_EXPECT_FFMPEG=system|bundled
+ * asserts which build `detectTools` picks (CI's distro jobs: Arch's full ffmpeg
+ * must win, Fedora's `ffmpeg-free` must lose to the bundled build).
  */
 import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises';
@@ -66,6 +68,16 @@ describe.skipIf(!enabled)('platform smoke', () => {
 		}
 		const tools = await detectTools();
 		for (const note of tools.notes) console.log(`[smoke] ${note}`);
+		const expected = process.env.FINDERELLA_SMOKE_EXPECT_FFMPEG;
+		if (expected) {
+			expect(tools.notes.some((note) => note.startsWith(`using ${expected} ffmpeg`))).toBe(true);
+			// Picking the bundled build only proves something when a system one was there to reject.
+			if (expected === 'bundled') {
+				expect(tools.notes.some((note) => /^system ffmpeg .* skipped: missing /.test(note))).toBe(
+					true
+				);
+			}
+		}
 		expect(tools.capabilities.ffmpeg).toBe(true);
 		expect(tools.ffprobe).toBe(true);
 		ffmpeg = ffmpegPath()!;
