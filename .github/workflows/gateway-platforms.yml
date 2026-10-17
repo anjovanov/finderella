@@ -20,8 +20,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macos-14 = Apple Silicon, macos-15-intel = Intel.
-        os: [ubuntu-latest, macos-14, macos-15-intel, windows-latest]
+        # macos-26 = macOS 26 on Apple Silicon, xcode-27 = macOS 27 on Apple Silicon
+        # (GitHub's public-preview image, named after its Xcode 27 beta),
+        # macos-15-intel = macOS 15 on Intel.
+        os: [ubuntu-latest, windows-latest, macos-26, xcode-27, macos-15-intel]
         node: [22, 24]
     steps:
       - uses: actions/checkout@v5
