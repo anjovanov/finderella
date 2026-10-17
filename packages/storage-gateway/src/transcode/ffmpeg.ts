@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 
 /** Mirrors TranscodePlan in the hub's src/lib/playback-quality.ts. */
 export interface TranscodeQuality {
@@ -22,6 +22,16 @@ export interface HlsJobOptions {
 	audioStreamIndex?: number;
 	/** Output audio channels (1 mono, 2 stereo, 6 = 5.1); absent = stereo. */
 	audioChannels?: 1 | 2 | 6;
+}
+
+/**
+ * A path for ffmpeg's HLS outputs. The muxer finds the playlist's folder with
+ * `strrchr(playlist, '/')` to place `init.mp4`, so on Windows a backslash path
+ * puts every session's init segment in the gateway's working directory.
+ * Windows accepts forward slashes (UNC `\\nas\x` → `//nas/x` too).
+ */
+export function ffmpegOutputPath(path: string, separator: string = sep): string {
+	return separator === '\\' ? path.replaceAll('\\', '/') : path;
 }
 
 /** Widest output the transcoder emits regardless of plan; larger sources are downscaled. */
@@ -122,8 +132,8 @@ export function hlsArgs(opts: HlsJobOptions): string[] {
 		'-start_number',
 		String(opts.startSegment),
 		'-hls_segment_filename',
-		join(opts.dir, 'seg-%d.m4s'),
-		join(opts.dir, 'playlist.m3u8')
+		ffmpegOutputPath(join(opts.dir, 'seg-%d.m4s')),
+		ffmpegOutputPath(join(opts.dir, 'playlist.m3u8'))
 	);
 	return args;
 }

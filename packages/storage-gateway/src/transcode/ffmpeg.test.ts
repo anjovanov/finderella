@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { HDR_TONEMAP_FILTERS, hlsArgs, type TranscodeQuality } from './ffmpeg.js';
+import { HDR_TONEMAP_FILTERS, ffmpegOutputPath, hlsArgs, type TranscodeQuality } from './ffmpeg.js';
 
 const auto: TranscodeQuality = { maxWidth: 3840, audioKbps: 192, level: '4.1' };
 const base = { absPath: '/media/show.mkv', dir: '/tmp/sess', segmentSeconds: 4, quality: auto };
@@ -42,8 +42,10 @@ describe('hlsArgs', () => {
 		// `vod` defers the playlist until exit; readiness detection needs `event`.
 		expect(valueAfter(args, '-hls_playlist_type')).toBe('event');
 		expect(valueAfter(args, '-hls_segment_type')).toBe('fmp4');
-		expect(valueAfter(args, '-hls_segment_filename')).toBe(join(base.dir, 'seg-%d.m4s'));
-		expect(args.at(-1)).toBe(join(base.dir, 'playlist.m3u8'));
+		expect(valueAfter(args, '-hls_segment_filename')).toBe(
+			ffmpegOutputPath(join(base.dir, 'seg-%d.m4s'))
+		);
+		expect(args.at(-1)).toBe(ffmpegOutputPath(join(base.dir, 'playlist.m3u8')));
 		expect(args).not.toContain('-ss');
 		expect(valueAfter(args, '-start_number')).toBe('0');
 	});
@@ -86,5 +88,22 @@ describe('hlsArgs', () => {
 		expect(valueAfter(hlsArgs({ ...base, startSegment: 0, audioChannels: 2 }), '-ac')).toBe('2');
 		expect(valueAfter(hlsArgs({ ...base, startSegment: 0, audioChannels: 6 }), '-ac')).toBe('6');
 		expect(valueAfter(hlsArgs({ ...base, startSegment: 0 }), '-ac')).toBe('2');
+	});
+});
+
+describe('ffmpegOutputPath', () => {
+	it('gives ffmpeg forward slashes on Windows so init.mp4 lands beside the playlist', () => {
+		expect(ffmpegOutputPath('C:\\Users\\me\\cache\\s1\\playlist.m3u8', '\\')).toBe(
+			'C:/Users/me/cache/s1/playlist.m3u8'
+		);
+		expect(ffmpegOutputPath('\\\\nas\\media\\s1\\seg-%d.m4s', '\\')).toBe(
+			'//nas/media/s1/seg-%d.m4s'
+		);
+	});
+
+	it('leaves POSIX paths alone', () => {
+		expect(ffmpegOutputPath('/home/me/.cache/s1/playlist.m3u8', '/')).toBe(
+			'/home/me/.cache/s1/playlist.m3u8'
+		);
 	});
 });
