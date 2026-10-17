@@ -9,7 +9,7 @@ import { cacheDir } from './config.js';
  * Bump when `probeFile`'s output changes (a new field, different parsing):
  * every cached probe is then discarded and the next scan re-probes everything.
  */
-export const PROBE_CACHE_VERSION = 1;
+export const PROBE_CACHE_VERSION = 2;
 
 /** What `probeFile` returns — the ffprobe-derived part of a `ProbedFile`. */
 export const ProbeResult = ProbedFile.pick({

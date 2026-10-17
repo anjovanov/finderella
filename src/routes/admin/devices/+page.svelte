@@ -271,7 +271,10 @@
 							autocomplete="off"
 							aria-invalid={addLibrary.error ? true : undefined}
 						/>
-						<Field.Description>The full path as the device sees it.</Field.Description>
+						<Field.Description
+							>The full path as the device sees it, e.g. <code>/mnt/media/Movies</code> or
+							<code>D:\Movies</code>.</Field.Description
+						>
 						{#if addLibrary.error}<Field.Error>{addLibrary.error}</Field.Error>{/if}
 					</Field.Field>
 					<div class="grid gap-4 sm:grid-cols-[1fr_10rem]">

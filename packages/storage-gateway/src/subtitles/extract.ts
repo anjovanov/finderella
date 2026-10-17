@@ -1,13 +1,28 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
-import { mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import {
+	mkdir,
+	open,
+	readdir,
+	readFile,
+	rename,
+	rm,
+	stat,
+	utimes,
+	writeFile
+} from 'node:fs/promises';
 import { extname, join } from 'node:path';
+import { cacheDir } from '../config.js';
 import { decodeSubtitleText, normalizeVtt, srtToVtt, subtitleArgs } from './convert.js';
 
 /** Converted tracks live here, keyed by source identity; a big MKV is demuxed once. */
-export const SUBTITLE_CACHE_DIR = join(tmpdir(), 'finderella', 'subs');
+export function subtitleCacheDir(): string {
+	return join(cacheDir(), 'subs');
+}
+/** Converted tracks nobody asked for in this long are swept at startup. */
+const CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60_000;
+const PARTIAL_MAX_AGE_MS = 60 * 60_000;
 /** ffmpeg extractions in flight at once — they read whole containers, so keep them from starving HLS. */
 const MAX_CONCURRENT_EXTRACTIONS = 2;
 const STDERR_TAIL_CHARS = 2000;
@@ -81,10 +96,14 @@ export async function ensureSubtitleVtt(
 	if (job.source === 'sidecar' && !job.absSidecarPath) {
 		throw new Error('sidecar subtitle needs a path');
 	}
-	await mkdir(SUBTITLE_CACHE_DIR, { recursive: true });
+	const cache = subtitleCacheDir();
+	await mkdir(cache, { recursive: true });
 	const key = await cacheKey(job);
-	const finalPath = join(SUBTITLE_CACHE_DIR, `${key}.vtt`);
+	const finalPath = join(cache, `${key}.vtt`);
 	if (await exists(finalPath)) {
+		// mtime = last use, which is what the startup sweep ages by.
+		const now = new Date();
+		await utimes(finalPath, now, now).catch(() => {});
 		return { path: finalPath, complete: true, done: Promise.resolve(finalPath) };
 	}
 	const current = inflight.get(key);
@@ -99,7 +118,7 @@ export async function ensureSubtitleVtt(
 			return { path: finalPath, complete: true, done: Promise.resolve(finalPath) };
 		}
 		// ass/ssa: ffmpeg reads the charset-normalized copy, never the original.
-		ffmpegInput = join(SUBTITLE_CACHE_DIR, `${key}.src.${format}`);
+		ffmpegInput = join(cache, `${key}.src.${format}`);
 		await writeFile(ffmpegInput, text, 'utf8');
 	} else {
 		ffmpegInput = job.absVideoPath;
@@ -216,4 +235,29 @@ export async function* tailSubtitle(handle: SubtitleHandle): AsyncGenerator<Uint
 		}
 		await new Promise((resolveWait) => setTimeout(resolveWait, TAIL_POLL_MS));
 	}
+}
+
+/**
+ * Startup housekeeping: drop converted tracks unused for 30 days, and
+ * leftover `.part`/`.tmp`/`.src.*` files older than an hour (younger ones may
+ * belong to a second gateway sharing this cache).
+ */
+export async function sweepSubtitleCache(now = Date.now()): Promise<number> {
+	const dir = subtitleCacheDir();
+	let names: string[];
+	try {
+		names = await readdir(dir);
+	} catch {
+		return 0;
+	}
+	let removed = 0;
+	for (const name of names) {
+		const path = join(dir, name);
+		const maxAge = /^[0-9a-f]{64}\.vtt$/.test(name) ? CACHE_MAX_AGE_MS : PARTIAL_MAX_AGE_MS;
+		const info = await stat(path).catch(() => null);
+		if (!info || now - info.mtimeMs < maxAge) continue;
+		await rm(path, { force: true }).catch(() => {});
+		removed++;
+	}
+	return removed;
 }

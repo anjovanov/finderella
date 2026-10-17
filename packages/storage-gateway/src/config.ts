@@ -26,6 +26,17 @@ export function cacheDir(): string {
 	return join(base, 'finderella-storage-gateway');
 }
 
+/**
+ * HLS transcode scratch (one folder per session, removed when it stops).
+ * Never `os.tmpdir()`: on Fedora, Arch and Debian 13 `/tmp` is a RAM-backed
+ * tmpfs, and a long transcode would fill memory. `FINDERELLA_TRANSCODE_DIR`
+ * points it at a bigger or faster disk.
+ */
+export function transcodeDir(): string {
+	const override = process.env.FINDERELLA_TRANSCODE_DIR;
+	return override && override !== '' ? override : join(cacheDir(), 'transcode');
+}
+
 export function configPath(): string {
 	return join(configDir(), 'config.json');
 }

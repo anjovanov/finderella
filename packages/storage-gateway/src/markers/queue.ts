@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { stat } from 'node:fs/promises';
 import { constants as osConstants, setPriority } from 'node:os';
 import {
@@ -6,6 +6,7 @@ import {
 	type MarkersAnalysis,
 	type MarkersAnalyzeResult
 } from '@finderella/protocol';
+import { killAndWait } from '../process.js';
 import { readAnalysis, writeAnalysis } from './cache.js';
 import { parseBlackframeOutput } from './darkframes.js';
 import { darkframeArgs, pcmArgs } from './ffmpeg.js';
@@ -42,6 +43,8 @@ export class MarkersQueue {
 	#queue: Job[] = [];
 	#running = false;
 	#failed = new Map<string, string>();
+	#procs = new Set<ChildProcess>();
+	#closed = false;
 
 	constructor(opts: QueueOptions) {
 		this.#opts = opts;
@@ -79,8 +82,15 @@ export class MarkersQueue {
 		return { status: 'failed', error };
 	}
 
+	/** Shutdown: drop queued jobs and kill the running ffmpeg (nothing is cached for it). */
+	async close(): Promise<void> {
+		this.#closed = true;
+		this.#queue = [];
+		await Promise.all([...this.#procs].map((proc) => killAndWait(proc)));
+	}
+
 	#pump(): void {
-		if (this.#running) return;
+		if (this.#running || this.#closed) return;
 		const job = this.#queue.shift();
 		if (!job) return;
 		void this.#run(job);
@@ -158,7 +168,13 @@ export class MarkersQueue {
 	/** Run ffmpeg to completion; rejects with the stderr tail on failure. */
 	#spawn(bin: string, args: string[], onStdout: (chunk: Buffer) => void): Promise<void> {
 		return new Promise((resolveExit, rejectExit) => {
+			if (this.#closed) {
+				rejectExit(new Error('gateway shutting down'));
+				return;
+			}
 			const proc = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+			this.#procs.add(proc);
+			proc.on('close', () => this.#procs.delete(proc));
 			try {
 				// nice 19 / IDLE_PRIORITY_CLASS: playback on the same device comes first.
 				if (proc.pid) setPriority(proc.pid, osConstants.priority.PRIORITY_LOW);

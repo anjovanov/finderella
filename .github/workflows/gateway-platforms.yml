@@ -1,0 +1,50 @@
+# Runs the storage gateway's tests on every OS/CPU it supports, plus a smoke test that drives
+# every ffmpeg command the gateway builds through the real binaries (src/platform.smoke.test.ts):
+# once with the ffmpeg the gateway would pick on that runner, once forced to the bundled builds.
+name: Storage gateway platforms
+
+on:
+  push:
+    branches: [main]
+    paths: ['packages/**', 'package-lock.json', '.github/workflows/gateway-platforms.yml']
+  pull_request:
+    paths: ['packages/**', 'package-lock.json', '.github/workflows/gateway-platforms.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  gateway:
+    name: ${{ matrix.os }} / node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-14 = Apple Silicon, macos-15-intel = Intel.
+        os: [ubuntu-latest, macos-14, macos-15-intel, windows-latest]
+        node: [22]
+        include:
+          - os: ubuntu-latest
+            node: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        run: npx vitest run packages/storage-gateway
+      - name: Smoke test (resolved ffmpeg)
+        run: npx vitest run packages/storage-gateway/src/platform.smoke.test.ts
+        env:
+          FINDERELLA_SMOKE: '1'
+      - name: Smoke test (bundled ffmpeg)
+        run: npx vitest run packages/storage-gateway/src/platform.smoke.test.ts
+        env:
+          FINDERELLA_SMOKE: '1'
+          FINDERELLA_SMOKE_BUNDLED: '1'
+      - name: Build CLI
+        run: npm run build --workspace @finderella/storage-gateway
+      - name: CLI starts
+        run: node packages/storage-gateway/dist/cli.js --version

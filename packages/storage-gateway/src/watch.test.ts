@@ -20,6 +20,12 @@ describe('isRelevantChange', () => {
 		expect(isRelevantChange('Movie (2020)/Movie.mkv.part')).toBe(false);
 	});
 
+	it('skips OS housekeeping folders at a drive root', () => {
+		expect(isRelevantChange('$RECYCLE.BIN\\S-1-5-21\\$R1.mkv')).toBe(false);
+		expect(isRelevantChange('System Volume Information')).toBe(false);
+		expect(isRelevantChange('@eaDir/Movie.mkv/SYNOVIDEO_VIDEO_SCREENSHOT.jpg')).toBe(false);
+	});
+
 	it('handles Windows separators', () => {
 		expect(isRelevantChange('Movie\\.hidden\\a.mkv')).toBe(false);
 		expect(isRelevantChange('Movie\\a.mkv')).toBe(true);

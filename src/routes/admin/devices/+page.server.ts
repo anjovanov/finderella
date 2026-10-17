@@ -15,6 +15,7 @@ import {
 	trickplayBulkStatus
 } from '$lib/server/trickplay/bulk';
 import { LibraryKind } from '@finderella/protocol';
+import { isAbsoluteLibraryPath, libraryNameFromPath } from '$lib/data/library-path';
 import type { Actions, PageServerLoad } from './$types';
 
 const PAIRING_CODE_TTL_MS = 10 * 60 * 1000;
@@ -105,10 +106,15 @@ export const actions: Actions = {
 		const gatewayId = formData.get('gatewayId')?.toString() ?? '';
 		const rootPath = formData.get('rootPath')?.toString().trim() ?? '';
 		const kindRaw = formData.get('kind')?.toString() ?? '';
-		const name = formData.get('name')?.toString().trim() || rootPath.split('/').at(-1) || rootPath;
+		const name = formData.get('name')?.toString().trim() || libraryNameFromPath(rootPath);
 		const kind = LibraryKind.safeParse(kindRaw);
 		if (!gatewayId || !rootPath || !kind.success) {
 			return fail(400, { message: 'Gateway, folder path, and kind are required' });
+		}
+		if (!isAbsoluteLibraryPath(rootPath)) {
+			return fail(400, {
+				message: 'Use the full folder path, e.g. /mnt/media/Movies or D:\\Movies'
+			});
 		}
 		const [lib] = await db
 			.insert(library)

@@ -1,6 +1,7 @@
 import { watch as fsWatch, type FSWatcher, type WatchListener } from 'node:fs';
 import { extname } from 'node:path';
 import { SUBTITLE_EXTENSIONS, VIDEO_EXTENSIONS } from '@finderella/protocol';
+import { isIgnoredDirName } from './ignored.js';
 
 /** Quiet period after the last change before the hub hears about it (a long copy keeps resetting it). */
 const QUIET_MS = 30_000;
@@ -35,14 +36,17 @@ const IGNORED_EXTENSIONS = new Set([
 
 /**
  * Whether a watch event (path relative to the library root, or null when the
- * platform doesn't say) can change what a scan finds. Dot-files and anything
- * under a dot-folder are skipped by the scanner, so they're skipped here too.
+ * platform doesn't say) can change what a scan finds. Dot-files, anything
+ * under a dot-folder and OS housekeeping folders (`$RECYCLE.BIN`, …) are
+ * skipped by the scanner, so they're skipped here too.
  */
 export function isRelevantChange(filename: string | null): boolean {
 	if (filename === null) return true;
 	const segments = filename.split(/[\\/]/).filter(Boolean);
 	if (segments.length === 0) return true;
-	if (segments.some((segment) => segment.startsWith('.'))) return false;
+	if (segments.some((segment) => segment.startsWith('.') || isIgnoredDirName(segment))) {
+		return false;
+	}
 	const ext = extname(segments[segments.length - 1]).toLowerCase();
 	return MEDIA_EXTENSIONS.has(ext) || !IGNORED_EXTENSIONS.has(ext);
 }

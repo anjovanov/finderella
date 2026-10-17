@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-17
+
+**Storage gateway: works the same on Linux, macOS and Windows** (no schema change; `PROBE_CACHE_VERSION` 2 re-probes every file once with the new ffprobe).
+
+- **Libraries at a drive root work.** A library at `E:\` (or `/`) used to refuse every play, subtitle and thumbnail request with "path escapes library root". UNC shares (`\\nas\media`) work too.
+- **Scans of a whole drive finish properly.** `$RECYCLE.BIN`, `System Volume Information`, `lost+found` and Synology `@eaDir`/`#recycle` folders are skipped. Before, deleted videos in the recycle bin showed up in the catalog. Unreadable system folders also marked every scan incomplete, so removed files never left the library.
+- **Symlinked folders and files (and Windows junctions) are scanned.** Before, they were silently ignored. Link loops are detected.
+- **Transcodes no longer fill memory on Fedora, Arch/CachyOS and Debian 13**, where `/tmp` lives in RAM. In-progress transcodes now go to `~/.cache/finderella-storage-gateway/transcode/` (or `FINDERELLA_TRANSCODE_DIR`), and parts more than about 2 minutes behind the playhead are deleted as you watch. Before, a session kept the whole film until playback stopped. Converted subtitles moved to the same cache and are cleaned up after 30 days unused.
+- **The right ffmpeg is picked.** The gateway used to prefer any system ffmpeg. Now it checks each candidate and takes the bundled build when the system one can't do the job: Fedora's `ffmpeg-free` has no H.264 encoder (every transcode failed), and Ubuntu 22.04's ffmpeg 4.4 broke credits detection. An ffmpeg without HDR filters now plays HDR without tone-mapping instead of failing. The startup log says which build was chosen and why.
+- **Newer bundled ffprobe.** The bundled ffprobe was from 2018. It's now a 2023 build, and Linux arm64 has one too. Bundled binaries are optional, so the gateway still installs on platforms without them (it then needs a system ffmpeg).
+- **Stopping the gateway stops its ffmpeg processes.** Before, a transcode kept running after the gateway exited under Task Scheduler, NSSM, pm2 or nohup. Leftover transcode folders from crashes are removed at startup. On Windows, the gateway now waits for a stopped ffmpeg to exit before deleting its files or starting the next one after a seek.
+- The hub refuses relative library paths and names a new library after its last folder on Windows paths too.
+- The install guide covers macOS (launchd, Full Disk Access) and Windows (Task Scheduler/NSSM, network drives). A new CI workflow runs the gateway's tests and a real-ffmpeg smoke test on Linux, macOS (Apple Silicon and Intel) and Windows.
+
 ## 2026-10-14
 
 **Just added, New releases and the "Just Added" label** (schema: `movie.release_date`, `episode.air_date`, migration `0032_release_dates`; `METADATA_VERSION` 6 re-fetches every matched title and its seasons once).

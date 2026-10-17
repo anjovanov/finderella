@@ -1,8 +1,9 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { stat } from 'node:fs/promises';
 import { constants as osConstants, setPriority } from 'node:os';
 import type { TrickplayEnsureResult, TrickplayGeometry } from '@finderella/protocol';
-import { probeTrickplaySource } from '../probe.js';
+import { hdrTonemapAvailable, probeTrickplaySource } from '../probe.js';
+import { killAndWait } from '../process.js';
 import {
 	clearEntry,
 	countSheets,
@@ -69,6 +70,8 @@ export class TrickplayQueue {
 	#failed = new Map<string, string>();
 	/** Per-key single-flight for the probe + enqueue step. */
 	#ensuring = new Map<string, Promise<TrickplayEnsureResult>>();
+	#procs = new Set<ChildProcess>();
+	#closed = false;
 
 	constructor(opts: QueueOptions) {
 		this.#opts = opts;
@@ -122,7 +125,8 @@ export class TrickplayQueue {
 			size,
 			mtimeMs,
 			geometry,
-			hdr: src.hdr,
+			// Without zscale/tonemap the tiles come out grey, which beats no previews.
+			hdr: src.hdr && hdrTonemapAvailable(),
 			priority,
 			state: 'queued'
 		};
@@ -183,7 +187,15 @@ export class TrickplayQueue {
 		return { status: 'failed', error };
 	}
 
+	/** Shutdown: drop queued jobs and kill running ffmpegs (a folder without a manifest is redone later). */
+	async close(): Promise<void> {
+		this.#closed = true;
+		this.#queue = [];
+		await Promise.all([...this.#procs].map((proc) => killAndWait(proc)));
+	}
+
 	#pump(): void {
+		if (this.#closed) return;
 		for (;;) {
 			let job: Job | undefined;
 			if (this.#running.high < 1) job = this.#queue.find((j) => j.priority === 'high');
@@ -235,6 +247,8 @@ export class TrickplayQueue {
 		this.#opts.log(`trickplay generating ${job.absPath} (${job.priority} priority)`);
 		return new Promise((resolveExit) => {
 			const proc = spawn(bin, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+			this.#procs.add(proc);
+			proc.on('close', () => this.#procs.delete(proc));
 			try {
 				// nice 19 / IDLE_PRIORITY_CLASS: a transcode on the same device comes first.
 				if (proc.pid) setPriority(proc.pid, osConstants.priority.PRIORITY_LOW);

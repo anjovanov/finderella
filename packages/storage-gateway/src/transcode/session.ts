@@ -1,10 +1,13 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { isHdrTransfer, probeColorTransfer } from '../probe.js';
+import { transcodeDir } from '../config.js';
+import { hdrTonemapAvailable, isHdrTransfer, probeColorTransfer } from '../probe.js';
+import { killAndWait } from '../process.js';
 import { hlsArgs, type TranscodeQuality } from './ffmpeg.js';
 import { parseInitTimescales, patchSegmentTfdt } from './mp4-patch.js';
+import { segmentsToPrune } from './prune.js';
 
 const MAX_AHEAD_SEGMENTS = 8;
 const SEGMENT_WAIT_TIMEOUT_MS = 30_000;
@@ -13,6 +16,8 @@ const IDLE_REAP_MS = 120_000;
 /** How long start() watches a fresh ffmpeg for an immediate failure. */
 const EARLY_EXIT_GRACE_MS = 1_500;
 const STDERR_TAIL_CHARS = 4_000;
+/** A session folder untouched this long is left over from a crash (live ones change every few seconds). */
+const STALE_DIR_MS = 10 * 60_000;
 
 export interface TranscodeOptions {
 	sessionId: string;
@@ -32,7 +37,8 @@ export interface TranscodeOptions {
 
 /**
  * One HLS transcode session: an ffmpeg process writing 4s fmp4 segments to a
- * per-session temp dir. A segment is "ready" once it appears in ffmpeg's own
+ * per-session folder under `transcodeDir()` (on disk, never tmpfs `/tmp`).
+ * Segments well behind the playhead are deleted as playback moves on. A segment is "ready" once it appears in ffmpeg's own
  * playlist (files exist before they're finalized) — which is why hlsArgs uses
  * the `event` playlist type: `vod` writes that playlist only on exit, so
  * nothing would ever be ready. Requesting a segment
@@ -43,6 +49,12 @@ export class TranscodeSession {
 	readonly dir: string;
 	#opts: TranscodeOptions;
 	#proc: ChildProcess | null = null;
+	/** Resolves when the current run exits. */
+	#exited: Promise<void> = Promise.resolve();
+	/** Resolves once every run we killed has exited. */
+	#dying: Promise<void> = Promise.resolve();
+	/** A launch is waiting for the previous run to die: ffmpeg counts as running. */
+	#launching = false;
 	#procError: string | null = null;
 	#startSegment = 0;
 	#hdr = false;
@@ -52,11 +64,13 @@ export class TranscodeSession {
 	// Per-run bookkeeping for tfdt patching (each ffmpeg run is 0-based).
 	#runToken = 0;
 	#patched = new Set<number>();
+	/** Segments of this run deleted behind the playhead; asking for one again restarts there. */
+	#pruned = new Set<number>();
 	#timescales: Map<number, number> | null = null;
 
 	constructor(opts: TranscodeOptions) {
 		this.#opts = opts;
-		this.dir = join(tmpdir(), 'finderella', opts.sessionId);
+		this.dir = join(transcodeDir(), opts.sessionId);
 		this.#reapTimer = setInterval(() => {
 			if (Date.now() - this.#lastAccess > IDLE_REAP_MS) {
 				this.#opts.log(`session ${this.#opts.sessionId} idle; reaping`);
@@ -80,24 +94,43 @@ export class TranscodeSession {
 	async start(startSegment = 0): Promise<void> {
 		await mkdir(this.dir, { recursive: true });
 		// One cheap probe per session: HDR sources need tone-mapping on every run.
-		this.#hdr = isHdrTransfer(await probeColorTransfer(this.#opts.absPath));
+		const hdr = isHdrTransfer(await probeColorTransfer(this.#opts.absPath));
+		this.#hdr = hdr && hdrTonemapAvailable();
 		if (this.#hdr) this.#opts.log(`tone-mapping HDR source (${this.#opts.sessionId})`);
-		const exited = this.#launch(startSegment);
+		else if (hdr) {
+			this.#opts.log(
+				`HDR source but this ffmpeg lacks zscale/tonemap; transcoding without tone-mapping (${this.#opts.sessionId})`
+			);
+		}
+		await this.#launch(startSegment);
 		await Promise.race([
-			exited,
+			this.#exited,
 			new Promise((resolveWait) => setTimeout(resolveWait, EARLY_EXIT_GRACE_MS))
 		]);
 		if (this.#procError) throw new Error(this.#procError);
 	}
 
-	/** Spawn a new ffmpeg run; the returned promise settles when it exits. */
-	#launch(startSegment: number): Promise<void> {
-		this.#killProc();
+	/**
+	 * Start a new ffmpeg run at `startSegment`, after the previous run has
+	 * really exited (Windows keeps a killed process's files open for a moment).
+	 * The window moves at once so concurrent requests don't launch again; a
+	 * newer launch that arrives while this one waits supersedes it.
+	 */
+	async #launch(startSegment: number): Promise<void> {
 		this.#startSegment = startSegment;
 		this.#procError = null;
-		this.#runToken++;
+		const token = ++this.#runToken;
 		this.#patched.clear();
+		this.#pruned.clear();
 		this.#timescales = null;
+		this.#launching = true;
+		await this.#killProc();
+		if (token !== this.#runToken || this.#stopped) return;
+		// The dead run's playlist would list its segments as ready until the new
+		// run writes its own.
+		await rm(join(this.dir, 'playlist.m3u8'), { force: true }).catch(() => {});
+		if (token !== this.#runToken || this.#stopped) return;
+		this.#launching = false;
 		const args = hlsArgs({
 			absPath: this.#opts.absPath,
 			dir: this.dir,
@@ -137,13 +170,17 @@ export class TranscodeSession {
 			});
 		});
 		this.#proc = proc;
-		return exited;
+		this.#exited = exited;
 	}
 
+	/** Segments of the current run that are finished and still on disk. */
 	async #playlistSegments(): Promise<Set<number>> {
 		try {
 			const playlist = await readFile(join(this.dir, 'playlist.m3u8'), 'utf8');
-			return new Set([...playlist.matchAll(/^seg-(\d+)\.m4s$/gm)].map((match) => Number(match[1])));
+			const listed = [...playlist.matchAll(/^seg-(\d+)\.m4s\r?$/gm)].map((match) =>
+				Number(match[1])
+			);
+			return new Set(listed.filter((n) => !this.#pruned.has(n)));
 		} catch {
 			return new Set();
 		}
@@ -161,8 +198,11 @@ export class TranscodeSession {
 			const produced = await this.#playlistSegments();
 			const head = produced.size > 0 ? Math.max(...produced) : this.#startSegment - 1;
 			// Outside the window ffmpeg is producing → seek: restart there.
-			if (!produced.has(n) && (n < this.#startSegment || n > head + MAX_AHEAD_SEGMENTS)) {
-				this.#launch(n);
+			if (
+				!produced.has(n) &&
+				(n < this.#startSegment || n > head + MAX_AHEAD_SEGMENTS || this.#pruned.has(n))
+			) {
+				await this.#launch(n);
 			}
 		}
 
@@ -178,7 +218,7 @@ export class TranscodeSession {
 				if (produced.size > 0) break;
 			}
 			if (this.#procError) throw new Error(this.#procError);
-			if (!this.#proc && !this.#procError) {
+			if (!this.#proc && !this.#procError && !this.#launching) {
 				// ffmpeg finished; whatever the playlist has now is all there is.
 				const produced = await this.#playlistSegments();
 				if (wantedSegment && !produced.has(Number(wantedSegment[1]))) {
@@ -190,8 +230,27 @@ export class TranscodeSession {
 			await new Promise((resolveWait) => setTimeout(resolveWait, POLL_INTERVAL_MS));
 		}
 
-		if (wantedSegment) await this.#patchIfNeeded(Number(wantedSegment[1]));
+		if (wantedSegment) {
+			const n = Number(wantedSegment[1]);
+			await this.#patchIfNeeded(n);
+			await this.#prune(n);
+		}
 		return join(this.dir, name);
+	}
+
+	/** Delete segments far behind the one just served (any run's), so the folder stays small. */
+	async #prune(servedSegment: number): Promise<void> {
+		let names: string[];
+		try {
+			names = await readdir(this.dir);
+		} catch {
+			return;
+		}
+		for (const n of segmentsToPrune(names, servedSegment)) {
+			this.#pruned.add(n);
+			this.#patched.delete(n);
+			await rm(join(this.dir, `seg-${n}.m4s`), { force: true }).catch(() => {});
+		}
 	}
 
 	/**
@@ -217,18 +276,59 @@ export class TranscodeSession {
 		this.#patched.add(segmentNumber);
 	}
 
-	#killProc(): void {
-		if (this.#proc) {
-			this.#proc.kill('SIGKILL');
+	/** Detach and kill the current run, resolving once every killed run has exited (bounded). */
+	async #killProc(): Promise<void> {
+		const proc = this.#proc;
+		if (proc) {
 			this.#proc = null;
+			const previous = this.#dying;
+			this.#dying = Promise.all([previous, killAndWait(proc)]).then(() => {});
 		}
+		await this.#dying;
 	}
 
 	async stop(): Promise<void> {
 		if (this.#stopped) return;
 		this.#stopped = true;
 		clearInterval(this.#reapTimer);
-		this.#killProc();
-		await rm(this.dir, { recursive: true, force: true }).catch(() => {});
+		await this.#killProc();
+		// maxRetries covers Windows EBUSY/EPERM while handles close.
+		await rm(this.dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }).catch(
+			(err: Error) => this.#opts.log(`could not remove ${this.dir}: ${err.message}`)
+		);
 	}
+}
+
+/**
+ * Startup housekeeping: remove session folders a crash or a failed delete
+ * left behind, plus the pre-`transcodeDir` scratch under `tmpdir()/finderella`
+ * (after a day: an older gateway on this machine may still be using it).
+ * Age-gated, so a second gateway sharing the folder keeps its live sessions.
+ */
+export async function sweepTranscodeScratch(
+	roots: { dir: string; maxAgeMs: number }[] = [
+		{ dir: transcodeDir(), maxAgeMs: STALE_DIR_MS },
+		{ dir: join(tmpdir(), 'finderella'), maxAgeMs: 24 * 60 * 60_000 }
+	],
+	now = Date.now()
+): Promise<number> {
+	let removed = 0;
+	for (const { dir: root, maxAgeMs } of roots) {
+		let names: string[];
+		try {
+			names = await readdir(root);
+		} catch {
+			continue;
+		}
+		for (const name of names) {
+			const path = join(root, name);
+			const info = await stat(path).catch(() => null);
+			if (!info || now - info.mtimeMs < maxAgeMs) continue;
+			await rm(path, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 }).then(
+				() => removed++,
+				() => {}
+			);
+		}
+	}
+	return removed;
 }

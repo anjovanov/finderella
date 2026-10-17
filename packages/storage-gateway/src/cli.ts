@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { lstat, realpath, rename, stat, unlink, writeFile } from 'node:fs/promises';
-import { dirname, extname, resolve, sep } from 'node:path';
+import { dirname, extname, isAbsolute } from 'node:path';
 import { Command } from 'commander';
 import { DEFAULT_LIMITS, MAX_SUBTITLE_PUT_BYTES, SUBTITLE_EXTENSIONS } from '@finderella/protocol';
 import { GatewayConnection } from './connection.js';
@@ -8,16 +8,19 @@ import { configPath, loadConfig, saveConfig } from './config.js';
 import { FileTransfer, type Transfer } from './file-reader.js';
 import { MarkersQueue } from './markers/queue.js';
 import { normalizeSpec } from './markers/spec.js';
+import { isInside, resolveInRoot } from './paths.js';
 import { detectTools, ffmpegPath } from './probe.js';
 import { runScan } from './scanner.js';
 import { StreamTransfer } from './stream-transfer.js';
-import { ensureSubtitleVtt, tailSubtitle } from './subtitles/extract.js';
+import { ensureSubtitleVtt, sweepSubtitleCache, tailSubtitle } from './subtitles/extract.js';
 import { TrickplayQueue } from './trickplay/queue.js';
 import { LibraryWatcher } from './watch.js';
 
 const SUBTITLE_EXTENSION_SET = new Set<string>(SUBTITLE_EXTENSIONS);
 /** How long a `trickplay.get` waits for the sheet ffmpeg is writing next. */
 const TRICKPLAY_SHEET_WAIT_MS = 20_000;
+/** Shutdown waits this long for ffmpeg children to die and scratch folders to go. */
+const SHUTDOWN_GRACE_MS = 5_000;
 
 /**
  * Write a downloaded subtitle beside its video. Only subtitle extensions,
@@ -45,7 +48,7 @@ async function putSubtitle(
 		realpath(root).catch(() => null)
 	]);
 	if (!realDir || !realRoot) throw new Error('target folder does not exist');
-	if (realDir !== realRoot && !realDir.startsWith(realRoot + sep)) {
+	if (!isInside(realRoot, realDir)) {
 		throw new Error('target folder is outside the library');
 	}
 	const dir = await stat(realDir).catch(() => null);
@@ -62,15 +65,9 @@ async function putSubtitle(
 	const info = await stat(absPath);
 	return { size: info.size, mtimeMs: Math.round(info.mtimeMs) };
 }
-import { TranscodeSession } from './transcode/session.js';
+import { sweepTranscodeScratch, TranscodeSession } from './transcode/session.js';
 
 const log = (message: string) => console.log(`[gateway] ${message}`);
-
-/** Resolve a hub-supplied library-relative path, or null when it escapes the root. */
-function resolveInRoot(root: string, relPath: string): string | null {
-	const abs = resolve(root, relPath);
-	return abs === root || abs.startsWith(root + sep) ? abs : null;
-}
 
 const program = new Command();
 
@@ -123,11 +120,10 @@ program
 		}
 
 		const tools = await detectTools();
-		log(
-			tools.capabilities.ffmpeg
-				? `ffmpeg ${tools.capabilities.ffmpegVersion ?? ''} detected`
-				: 'ffmpeg NOT found — transcoding will be unavailable from this device'
-		);
+		for (const note of tools.notes) log(note);
+		if (!tools.capabilities.ffmpeg) {
+			log('ffmpeg NOT found — transcoding will be unavailable from this device');
+		}
 		if (!tools.ffprobe) log('ffprobe NOT found — scans will lack codec/duration metadata');
 
 		const transfers = new Map<number, Transfer>();
@@ -173,6 +169,17 @@ program
 			onMessage: (message, conn) => {
 				switch (message.type) {
 					case 'scan.start': {
+						if (!isAbsolute(message.rootPath)) {
+							log(`refusing to scan ${message.rootPath}: library paths must be absolute`);
+							// incomplete: the hub must not mark this library's files missing.
+							conn.send({
+								type: 'scan.done',
+								libraryId: message.libraryId,
+								stats: { files: 0, errors: 1 },
+								incomplete: true
+							});
+							break;
+						}
 						if (scans.has(message.libraryId)) {
 							log(`scan of ${message.rootPath} already running; ignoring the new request`);
 							break;
@@ -191,11 +198,11 @@ program
 						break;
 					}
 					case 'libraries.watch':
-						watcher.setLibraries(message.libraries);
+						watcher.setLibraries(message.libraries.filter((lib) => isAbsolute(lib.rootPath)));
 						break;
 					case 'file.read': {
 						// Never read outside the library root, whatever the hub asks for.
-						const abs = resolveInRoot(resolve(message.rootPath), message.relPath);
+						const abs = resolveInRoot(message.rootPath, message.relPath);
 						if (!abs) {
 							conn.send({
 								type: 'resp',
@@ -209,7 +216,7 @@ program
 						break;
 					}
 					case 'subtitle.get': {
-						const root = resolve(message.rootPath);
+						const root = message.rootPath;
 						const absVideoPath = resolveInRoot(root, message.relPath);
 						const absSidecarPath = message.subtitlePath
 							? resolveInRoot(root, message.subtitlePath)
@@ -249,7 +256,7 @@ program
 						break;
 					}
 					case 'subtitle.put': {
-						const root = resolve(message.rootPath);
+						const root = message.rootPath;
 						const abs = resolveInRoot(root, message.relPath);
 						if (!abs) {
 							conn.send({
@@ -271,7 +278,7 @@ program
 						break;
 					}
 					case 'trickplay.ensure': {
-						const root = resolve(message.rootPath);
+						const root = message.rootPath;
 						const abs = resolveInRoot(root, message.relPath);
 						if (!abs) {
 							conn.send({
@@ -291,7 +298,7 @@ program
 						break;
 					}
 					case 'markers.analyze': {
-						const root = resolve(message.rootPath);
+						const root = message.rootPath;
 						const abs = resolveInRoot(root, message.relPath);
 						if (!abs) {
 							conn.send({
@@ -311,7 +318,7 @@ program
 						break;
 					}
 					case 'trickplay.get': {
-						const root = resolve(message.rootPath);
+						const root = message.rootPath;
 						const abs = resolveInRoot(root, message.relPath);
 						if (!abs) {
 							conn.send({
@@ -369,7 +376,7 @@ program
 							conn.send({ type: 'resp', re: message.id, ok: false, error: 'device busy' });
 							break;
 						}
-						const abs = resolveInRoot(resolve(message.rootPath), message.relPath);
+						const abs = resolveInRoot(message.rootPath, message.relPath);
 						if (!abs) {
 							conn.send({
 								type: 'resp',
@@ -430,27 +437,50 @@ program
 						break;
 				}
 			},
-			onDisconnect: () => {
-				// Batches sent while offline are lost: the hub rescans after the next hello.
-				for (const controller of scans.values()) controller.abort();
-				scans.clear();
-				// The hub re-sends the list after every hello.
-				watcher.closeAll();
-				for (const transfer of transfers.values()) transfer.abort();
-				transfers.clear();
-				for (const session of sessions.values()) void session.stop();
-				sessions.clear();
+			onDisconnect: () => void stopAll()
+		});
+
+		/** Abort everything tied to the hub connection; resolves once every transcode's ffmpeg is gone. */
+		function stopAll(): Promise<unknown> {
+			// Batches sent while offline are lost: the hub rescans after the next hello.
+			for (const controller of scans.values()) controller.abort();
+			scans.clear();
+			// The hub re-sends the list after every hello.
+			watcher.closeAll();
+			for (const transfer of transfers.values()) transfer.abort();
+			transfers.clear();
+			const stopping = [...sessions.values()].map((session) => session.stop());
+			sessions.clear();
+			return Promise.all(stopping);
+		}
+
+		void Promise.all([sweepTranscodeScratch(), sweepSubtitleCache()]).then(([dirs, files]) => {
+			if (dirs + files > 0) {
+				log(`removed ${dirs} stale transcode folder(s) and ${files} old subtitle file(s)`);
 			}
 		});
 		connection.start();
 
-		const shutdown = () => {
-			log('shutting down');
+		// Children don't die with us everywhere (Windows, pm2, nohup): kill every
+		// ffmpeg before exiting, so none keeps transcoding into the scratch folder.
+		let shuttingDown = false;
+		const shutdown = (signal: NodeJS.Signals) => {
+			if (shuttingDown) {
+				log(`${signal} again; exiting now`);
+				process.exit(1);
+			}
+			shuttingDown = true;
+			log(`shutting down (${signal})`);
 			connection.stop();
-			process.exit(0);
+			const grace = new Promise((resolveGrace) => setTimeout(resolveGrace, SHUTDOWN_GRACE_MS));
+			void Promise.race([Promise.all([stopAll(), trickplay.close(), markers.close()]), grace]).then(
+				() => process.exit(0)
+			);
 		};
-		process.on('SIGINT', shutdown);
-		process.on('SIGTERM', shutdown);
+		// SIGBREAK = Ctrl+Break on Windows; SIGTERM/SIGHUP never arrive there but are harmless.
+		const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
+		if (process.platform === 'win32') signals.push('SIGBREAK');
+		for (const signal of signals) process.on(signal, () => shutdown(signal));
 	});
 
 program.parse();

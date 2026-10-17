@@ -1,4 +1,5 @@
-import { readdir, stat } from 'node:fs/promises';
+import type { Dirent } from 'node:fs';
+import { readdir, realpath, stat } from 'node:fs/promises';
 import { extname, join, relative, sep } from 'node:path';
 import {
 	VIDEO_EXTENSIONS,
@@ -7,6 +8,7 @@ import {
 	type SubtitleSource
 } from '@finderella/protocol';
 import type { GatewayConnection } from './connection.js';
+import { isIgnoredDirName } from './ignored.js';
 import { probeFile } from './probe.js';
 import { ProbeCache, loadProbeCache, saveProbeCache } from './probe-cache.js';
 import {
@@ -29,6 +31,21 @@ function isVideoFile(name: string): boolean {
 	return VIDEO_EXTENSION_SET.has(extname(name).toLowerCase());
 }
 
+/**
+ * What a directory entry is, following symlinks (and Windows junctions, which
+ * Node reports as symlinks) to their target. Null for a dangling link or
+ * anything that is neither a file nor a folder.
+ */
+async function entryKind(full: string, entry: Dirent): Promise<'file' | 'dir' | null> {
+	if (entry.isFile()) return 'file';
+	if (entry.isDirectory()) return 'dir';
+	if (!entry.isSymbolicLink()) return null;
+	const target = await stat(full).catch(() => null);
+	if (target?.isFile()) return 'file';
+	if (target?.isDirectory()) return 'dir';
+	return null;
+}
+
 /** Subtitle files in a `Subs/` folder and its immediate subfolders (`Subs/<video>/2_English.srt`). */
 async function listSubsDir(dir: string): Promise<string[]> {
 	const out: string[] = [];
@@ -41,8 +58,9 @@ async function listSubsDir(dir: string): Promise<string[]> {
 	for (const entry of entries) {
 		if (entry.name.startsWith('.')) continue;
 		const full = join(dir, entry.name);
-		if (entry.isFile() && isSubtitleFile(entry.name)) out.push(full);
-		else if (entry.isDirectory()) {
+		const kind = await entryKind(full, entry);
+		if (kind === 'file' && isSubtitleFile(entry.name)) out.push(full);
+		else if (kind === 'dir' && !isIgnoredDirName(entry.name)) {
 			let nested;
 			try {
 				nested = await readdir(full, { withFileTypes: true });
@@ -50,7 +68,9 @@ async function listSubsDir(dir: string): Promise<string[]> {
 				continue;
 			}
 			for (const child of nested) {
-				if (child.isFile() && isSubtitleFile(child.name)) out.push(join(full, child.name));
+				const childPath = join(full, child.name);
+				if (!isSubtitleFile(child.name)) continue;
+				if ((await entryKind(childPath, child)) === 'file') out.push(childPath);
 			}
 		}
 	}
@@ -60,14 +80,21 @@ async function listSubsDir(dir: string): Promise<string[]> {
 /**
  * Walk a library root one directory at a time so every video sees its
  * folder's sidecar subtitles (same folder + `Subs/`). `Subs` folders are not
- * descended for videos. A folder that can't be read is reported through
- * `onDirError` and skipped; the rest of the walk carries on.
+ * descended for videos, nor are OS/NAS housekeeping folders
+ * (`isIgnoredDirName`). Symlinked files and folders are followed and reported
+ * under the link's path; `visited` (real paths) stops link cycles and walks a
+ * folder reachable twice only once. A folder that can't be read is reported
+ * through `onDirError` and skipped; the rest of the walk carries on.
  */
-async function* walkLibrary(
+export async function* walkLibrary(
 	root: string,
 	onDirError: (dir: string, err: Error) => void,
-	dir: string = root
+	dir: string = root,
+	visited: Set<string> = new Set()
 ): AsyncGenerator<VideoEntry> {
+	const real = await realpath(dir).catch(() => dir);
+	if (visited.has(real)) return;
+	visited.add(real);
 	const toRel = (abs: string) => relative(root, abs).split(sep).join('/');
 	const videos: string[] = [];
 	const subtitles: string[] = [];
@@ -82,18 +109,20 @@ async function* walkLibrary(
 	for (const entry of entries) {
 		if (entry.name.startsWith('.')) continue;
 		const full = join(dir, entry.name);
-		if (entry.isDirectory()) {
+		const kind = await entryKind(full, entry);
+		if (kind === 'dir') {
+			if (isIgnoredDirName(entry.name)) continue;
 			if (SUBS_DIR_NAMES.has(entry.name.toLowerCase()))
 				subtitles.push(...(await listSubsDir(full)));
 			else subdirs.push(full);
-		} else if (entry.isFile()) {
+		} else if (kind === 'file') {
 			if (isVideoFile(entry.name)) videos.push(full);
 			else if (isSubtitleFile(entry.name)) subtitles.push(full);
 		}
 	}
 	const listing: DirListing = { videos: videos.map(toRel), subtitles: subtitles.map(toRel) };
 	for (const absPath of videos) yield { absPath, listing };
-	for (const sub of subdirs) yield* walkLibrary(root, onDirError, sub);
+	for (const sub of subdirs) yield* walkLibrary(root, onDirError, sub, visited);
 }
 
 /**

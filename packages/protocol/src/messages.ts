@@ -23,6 +23,11 @@ const base = z.object({
 export const GatewayCapabilities = z.object({
 	ffmpeg: z.boolean(),
 	ffmpegVersion: z.string().optional(),
+	/**
+	 * `ffmpeg -hwaccels`: methods compiled into the build, not working devices
+	 * (a static build lists cuda/qsv on machines with neither). Informational
+	 * only — transcodes are CPU-only.
+	 */
 	hwaccels: z.array(z.string()).default([]),
 	/** Answers `subtitle.get` (older gateways never do — the hub must not wait on them). */
 	subtitles: z.boolean().default(false),

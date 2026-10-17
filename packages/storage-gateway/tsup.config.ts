@@ -7,5 +7,8 @@ export default defineConfig({
 	clean: true,
 	// The protocol package ships source TypeScript (bundled by Vite on the hub
 	// side); plain Node can't import it, so inline it into the CLI bundle.
-	noExternal: ['@finderella/protocol']
+	noExternal: ['@finderella/protocol'],
+	// tsup externalizes only `dependencies`; these optional ones locate their
+	// binaries relative to their own install folder, so they must never be inlined.
+	external: ['ffmpeg-static', '@ffprobe-installer/ffprobe']
 });
