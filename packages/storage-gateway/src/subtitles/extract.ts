@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import {
@@ -14,6 +14,7 @@ import {
 } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { cacheDir } from '../config.js';
+import { killAndWait } from '../process.js';
 import { decodeSubtitleText, normalizeVtt, srtToVtt, subtitleArgs } from './convert.js';
 
 /** Converted tracks live here, keyed by source identity; a big MKV is demuxed once. */
@@ -53,6 +54,8 @@ interface ExtractOptions {
 }
 
 const inflight = new Map<string, SubtitleHandle>();
+/** Running extractions, so shutdown can kill them (a whole-container demux can take minutes). */
+const procs = new Set<ChildProcess>();
 let running = 0;
 
 async function exists(path: string): Promise<boolean> {
@@ -140,6 +143,8 @@ export async function ensureSubtitleVtt(
 		);
 		const out = createWriteStream(partPath);
 		const proc = spawn(ffmpegBin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+		procs.add(proc);
+		proc.on('close', () => procs.delete(proc));
 		let stderr = '';
 		proc.stderr?.on('data', (chunk: Buffer) => {
 			stderr = (stderr + chunk.toString()).slice(-STDERR_TAIL_CHARS);
@@ -260,4 +265,9 @@ export async function sweepSubtitleCache(now = Date.now()): Promise<number> {
 		removed++;
 	}
 	return removed;
+}
+
+/** Shutdown: kill running extractions (their `.part` files are swept at the next start). */
+export async function closeSubtitleExtractions(): Promise<void> {
+	await Promise.all([...procs].map((proc) => killAndWait(proc)));
 }

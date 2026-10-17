@@ -12,7 +12,12 @@ import { isInside, resolveInRoot } from './paths.js';
 import { detectTools, ffmpegPath } from './probe.js';
 import { runScan } from './scanner.js';
 import { StreamTransfer } from './stream-transfer.js';
-import { ensureSubtitleVtt, sweepSubtitleCache, tailSubtitle } from './subtitles/extract.js';
+import {
+	closeSubtitleExtractions,
+	ensureSubtitleVtt,
+	sweepSubtitleCache,
+	tailSubtitle
+} from './subtitles/extract.js';
 import { TrickplayQueue } from './trickplay/queue.js';
 import { LibraryWatcher } from './watch.js';
 
@@ -473,11 +478,13 @@ program
 			log(`shutting down (${signal})`);
 			connection.stop();
 			const grace = new Promise((resolveGrace) => setTimeout(resolveGrace, SHUTDOWN_GRACE_MS));
-			void Promise.race([Promise.all([stopAll(), trickplay.close(), markers.close()]), grace]).then(
-				() => process.exit(0)
-			);
+			void Promise.race([
+				Promise.all([stopAll(), trickplay.close(), markers.close(), closeSubtitleExtractions()]),
+				grace
+			]).then(() => process.exit(0));
 		};
-		// SIGBREAK = Ctrl+Break on Windows; SIGTERM/SIGHUP never arrive there but are harmless.
+		// Windows: SIGHUP = console window closed (Windows kills us ~10 s later),
+		// SIGBREAK = Ctrl+Break; SIGTERM never arrives there but is harmless.
 		const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
 		if (process.platform === 'win32') signals.push('SIGBREAK');
 		for (const signal of signals) process.on(signal, () => shutdown(signal));

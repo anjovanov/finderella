@@ -60,6 +60,15 @@ describe('walkLibrary', () => {
 		});
 	});
 
+	it('reports a folder reachable through two links under the same path every time', async () => {
+		const outside = join(base, 'disk2');
+		await mkdir(outside);
+		await touch(join(outside, 'B (2021).mkv'));
+		await symlink(outside, join(root, 'Zed'), isWindows ? 'junction' : 'dir');
+		await symlink(outside, join(root, 'Alpha'), isWindows ? 'junction' : 'dir');
+		expect((await walk()).videos).toEqual(['Alpha/B (2021).mkv', 'Movies/A (2020).mkv']);
+	});
+
 	it('stops at a link cycle', async () => {
 		await symlink(root, join(root, 'Movies', 'loop'), isWindows ? 'junction' : 'dir');
 		expect(await walk()).toEqual({ videos: ['Movies/A (2020).mkv'], errors: [] });

@@ -106,6 +106,10 @@ export async function* walkLibrary(
 		onDirError(dir, err as Error);
 		return;
 	}
+	// Byte order, not readdir order (which varies by filesystem): a folder reachable
+	// through two links must be reported under the same path on every scan, or the
+	// hub would see its files vanish and reappear elsewhere.
+	entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 	for (const entry of entries) {
 		if (entry.name.startsWith('.')) continue;
 		const full = join(dir, entry.name);

@@ -88,7 +88,7 @@ MCP servers (configured in the git-ignored `.mcp.json`) and project skills (`.cl
 - **Gateway scratch never goes in `os.tmpdir()`**: `/tmp` is a RAM-backed tmpfs on Fedora, Arch/CachyOS and Debian 13. Transcodes use `transcodeDir()`, caches `cacheDir()`; sessions prune segments behind the playhead (`transcode/prune.ts`).
 - **Path containment = `isInside`/`resolveInRoot` (`paths.ts`), never `startsWith(root + sep)`**: a drive or filesystem root already ends in a separator (`E:\` → `E:\\`), which refused every request for drive-root libraries.
 - **A new ffmpeg encoder/filter/option in an argv builder goes into `tools.ts`** (`REQUIRED_*`, or an optional flag like `hdrTonemap`) and the smoke test: `detectTools` only prefers a system ffmpeg that has everything listed (Fedora's `ffmpeg-free` lacks libx264, Ubuntu 22.04's 4.4 lacks `-fps_mode`), so an unlisted dependency silently picks a build that fails.
-- Kill gateway ffmpegs with `killAndWait` (`process.ts`) before deleting or rewriting their output: Windows' `TerminateProcess` returns while the files are still open (EBUSY, racing restarts). Children don't die with the gateway on every platform, so shutdown closes sessions and both queues.
+- Kill gateway ffmpegs with `killAndWait` (`process.ts`) before deleting or rewriting their output: Windows' `TerminateProcess` returns while the files are still open (EBUSY, racing restarts). Children don't die with the gateway on every platform, so shutdown closes sessions, both queues and subtitle extractions.
 - The gateway reaps an idle HLS ffmpeg after 120 s even while the hub session is kept alive by heartbeats — resuming a long-paused transcode can fail (known, direct play unaffected).
 
 ### Database / Drizzle
