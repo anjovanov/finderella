@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-19
+
+**Storage gateway: GPU transcoding** (migration `0033_hardware_acceleration`; additive `hwEncoder`/`hwDecoder` capability fields and `session.start.hwaccel`, `PROTOCOL_VERSION` stays 1).
+
+- **Transcodes use the GPU when there is one.** Supported: NVIDIA (NVENC), AMD and Intel on Linux (VAAPI), AMD (AMF) and Intel (Quick Sync) on Windows, Apple Silicon and Intel Macs (VideoToolbox), and the Raspberry Pi 4's H.264 encoder. The GPU decodes the source and encodes the H.264 output; scaling and HDR tone-mapping stay on the CPU. A 4K HEVC transcode on an AMD laptop iGPU used 60 % less CPU time.
+- **Nothing to configure.** At startup the gateway runs two short test encodes per GPU it finds and uses the first that produces exactly what the player expects. If none does, it transcodes on the CPU as before. On machines with two GPUs the dedicated one is preferred; `FINDERELLA_HWACCEL` / `FINDERELLA_HWACCEL_DEVICE` change that or turn the GPU off. The startup log says what was picked and why the rest weren't.
+- **A system ffmpeg with GPU support beats the bundled one.** On Linux the bundled ffmpeg has no GPU encoders (the Pi 4's excepted), so GPU transcoding there needs the distro's ffmpeg and the GPU's VA-API or NVIDIA driver. See `docs/gateway-install.md` → _Hardware acceleration_.
+- **A GPU that can't start a transcode never blocks playback.** If a transcode fails to start on the GPU (NVENC's session limit, a busy GPU), it runs on the CPU instead. A GPU failing partway through a film shows the usual playback error, and pressing play again starts a new transcode.
+- **Raspberry Pi 5:** it has no H.264 encoder, so encoding stays on the CPU, but with Raspberry Pi OS's ffmpeg, HEVC sources are decoded in hardware.
+- Admin **Devices** shows each device's encoder (GPU name or "CPU transcoding").
+- **Admin switch:** Site settings → **Hardware acceleration** (on by default). Off = every device transcodes on the CPU, as before. It applies to the next transcode, with no device restart needed.
+
 ## 2026-10-17
 
 **Storage gateway: works the same on Linux, macOS and Windows** (no schema change; `PROBE_CACHE_VERSION` 2 re-probes every file once with the new ffprobe).

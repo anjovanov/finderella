@@ -9,7 +9,7 @@ import { FileTransfer, type Transfer } from './file-reader.js';
 import { MarkersQueue } from './markers/queue.js';
 import { normalizeSpec } from './markers/spec.js';
 import { isInside, resolveInRoot } from './paths.js';
-import { detectTools, ffmpegPath } from './probe.js';
+import { detectTools, ffmpegPath, hwAccel } from './probe.js';
 import { runScan } from './scanner.js';
 import { StreamTransfer } from './stream-transfer.js';
 import {
@@ -400,6 +400,8 @@ program
 							audioStreamIndex: message.audioStreamIndex,
 							audioChannels: message.audioChannels,
 							ffmpegBin: ffmpeg,
+							// The hub's admin switch; absent (older hubs) = allowed.
+							hwaccel: message.hwaccel === false ? null : hwAccel(),
 							log,
 							onReap: () => sessions.delete(message.sessionId)
 						});

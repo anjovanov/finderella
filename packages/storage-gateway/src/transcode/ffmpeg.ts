@@ -1,4 +1,5 @@
 import { join, sep } from 'node:path';
+import { hwFilterTail, hwInputArgs, hwVideoArgs, type HwAccel } from './hwaccel.js';
 
 /** Mirrors TranscodePlan in the hub's src/lib/playback-quality.ts. */
 export interface TranscodeQuality {
@@ -22,6 +23,12 @@ export interface HlsJobOptions {
 	audioStreamIndex?: number;
 	/** Output audio channels (1 mono, 2 stereo, 6 = 5.1); absent = stereo. */
 	audioChannels?: 1 | 2 | 6;
+	/** GPU decode/encode; absent = software (libx264). */
+	hwaccel?: HwAccel;
+	/** Source video codec (ffprobe name), for accelerators that decode only some codecs. */
+	sourceCodec?: string | null;
+	/** Flags before `-i` describing the input (the detection self-test feeds `-f lavfi`). */
+	inputArgs?: string[];
 }
 
 /**
@@ -59,7 +66,8 @@ export const HDR_TONEMAP_FILTERS =
  * MSE in every browser refuses, with ffmpeg exiting 0 and every segment
  * looking healthy. The hub's master-playlist CODECS string comes from the same
  * plan (`transcodePlan` in src/lib/playback-quality.ts), so profile/level
- * here and there must agree.
+ * here and there must agree. With `hwaccel`, a GPU encoder replaces libx264
+ * under the same contract (hwaccel.ts); detection proved it honours it.
  *
  * Timestamps are 0-based per run (ffmpeg's mov muxer rebases regardless of
  * -copyts/-output_ts_offset); after a mid-file restart the gateway patches
@@ -74,11 +82,15 @@ export function hlsArgs(opts: HlsJobOptions): string[] {
 	const { quality } = opts;
 	const maxWidth = Math.min(HLS_MAX_WIDTH, quality.maxWidth);
 	// `\,` keeps the comma inside min() from splitting the filtergraph.
+	const hwEncoder = opts.hwaccel?.encoder ?? null;
 	const filters = [`scale=trunc(min(${maxWidth}\\,iw)/2)*2:-2`];
 	if (opts.hdr) filters.push(HDR_TONEMAP_FILTERS);
+	if (hwEncoder) filters.push(...hwFilterTail(hwEncoder));
 
 	const args = ['-hide_banner', '-loglevel', 'error', '-y'];
+	if (opts.hwaccel) args.push(...hwInputArgs(opts.hwaccel, opts.sourceCodec));
 	if (startTime > 0) args.push('-ss', String(startTime));
+	if (opts.inputArgs) args.push(...opts.inputArgs);
 	args.push(
 		'-i',
 		opts.absPath,
@@ -88,25 +100,7 @@ export function hlsArgs(opts: HlsJobOptions): string[] {
 		opts.audioStreamIndex === undefined ? '0:a:0?' : `0:${opts.audioStreamIndex}`,
 		'-vf',
 		filters.join(','),
-		'-c:v',
-		'libx264',
-		'-preset',
-		'veryfast',
-		'-crf',
-		'23'
-	);
-	if (quality.maxVideoKbps) {
-		// CRF still decides quality, but VBV keeps peaks under the rung's cap so a
-		// remote uplink at that rate never falls behind.
-		args.push('-maxrate', `${quality.maxVideoKbps}k`, '-bufsize', `${quality.maxVideoKbps * 2}k`);
-	}
-	args.push(
-		'-profile:v',
-		'high',
-		'-level',
-		quality.level,
-		'-pix_fmt',
-		'yuv420p',
+		...(hwEncoder ? hwVideoArgs(opts.hwaccel!, quality) : softwareVideoArgs(quality)),
 		'-force_key_frames',
 		`expr:gte(t,n_forced*${len})`,
 		'-c:a',
@@ -135,5 +129,17 @@ export function hlsArgs(opts: HlsJobOptions): string[] {
 		ffmpegOutputPath(join(opts.dir, 'seg-%d.m4s')),
 		ffmpegOutputPath(join(opts.dir, 'playlist.m3u8'))
 	);
+	return args;
+}
+
+/** libx264 at CRF 23, pinned to 8-bit High at the plan's level. */
+function softwareVideoArgs(quality: TranscodeQuality): string[] {
+	const args = ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23'];
+	if (quality.maxVideoKbps) {
+		// CRF still decides quality, but VBV keeps peaks under the rung's cap so a
+		// remote uplink at that rate never falls behind.
+		args.push('-maxrate', `${quality.maxVideoKbps}k`, '-bufsize', `${quality.maxVideoKbps * 2}k`);
+	}
+	args.push('-profile:v', 'high', '-level', quality.level, '-pix_fmt', 'yuv420p');
 	return args;
 }

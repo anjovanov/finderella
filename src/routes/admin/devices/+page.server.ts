@@ -59,6 +59,8 @@ export const load: PageServerLoad = async ({ url }) => {
 			online: registry.isOnline(a.id),
 			gatewayVersion: a.gatewayVersion,
 			trickplay: a.capabilities?.trickplay ?? false,
+			ffmpeg: a.capabilities?.ffmpeg ?? false,
+			hwEncoder: a.capabilities?.hwEncoder ?? null,
 			markers: a.capabilities?.markers ?? false,
 			lastSeenAt: a.lastSeenAt?.toISOString() ?? null,
 			createdAt: a.createdAt.toISOString(),
@@ -80,6 +82,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		})),
 		trickplayJob: trickplayBulkStatus(),
 		trickplayEnabled: siteSettings.trickplayEnabled,
+		hardwareAcceleration: siteSettings.hardwareAcceleration,
 		markersJob: markersJobStatus(),
 		markersEnabled: siteSettings.markersEnabled,
 		events

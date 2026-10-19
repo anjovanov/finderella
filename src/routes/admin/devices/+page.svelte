@@ -162,6 +162,7 @@
 		<DeviceCard
 			{device}
 			trickplayEnabled={data.trickplayEnabled}
+			hardwareAcceleration={data.hardwareAcceleration}
 			markersEnabled={data.markersEnabled}
 			markersJobRunning={markersJob.running}
 			onRename={() => rename.show(device)}

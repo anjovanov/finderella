@@ -25,6 +25,10 @@ export interface GatewayCapabilitiesJson {
 	ffmpeg: boolean;
 	ffmpegVersion?: string;
 	hwaccels: string[];
+	/** GPU encoder the gateway transcodes with; absent = CPU (or a gateway that predates GPU support). */
+	hwEncoder?: string;
+	/** `-hwaccel` decode method; absent = software decoding. */
+	hwDecoder?: string;
 	/** Answers `subtitle.get`; absent/false on gateways that predate subtitles. */
 	subtitles?: boolean;
 	/** Answers `subtitle.put` (downloaded sidecars). */

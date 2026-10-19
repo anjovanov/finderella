@@ -30,6 +30,9 @@
 	let markersForm = $state<HTMLFormElement | null>(null);
 	let remuxEnabled = $derived(data.settings.remuxEnabled);
 	let remuxForm = $state<HTMLFormElement | null>(null);
+	let hardwareAcceleration = $derived(data.settings.hardwareAcceleration);
+	let hardwareForm = $state<HTMLFormElement | null>(null);
+	let savingHardware = $state(false);
 
 	async function submitSettings() {
 		await tick(); // let the hidden inputs pick up the new switch state
@@ -64,6 +67,11 @@
 	async function submitRemux() {
 		await tick();
 		remuxForm?.requestSubmit();
+	}
+
+	async function submitHardware() {
+		await tick();
+		hardwareForm?.requestSubmit();
 	}
 
 	// Account limits: a switch per limit (off = unlimited) and the number,
@@ -478,6 +486,56 @@
 							bind:checked={remuxEnabled}
 							disabled={savingRemux}
 							onCheckedChange={submitRemux}
+						/>
+					</Field.Field>
+				</Field.Group>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- GPU transcoding -->
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>Hardware acceleration</Card.Title>
+			<Card.Description>Transcode on the devices' graphics cards.</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form
+				bind:this={hardwareForm}
+				method="POST"
+				action="?/updateHardwareAcceleration"
+				autocomplete="off"
+				use:enhance={() => {
+					savingHardware = true;
+					return async ({ update }) => {
+						savingHardware = false;
+						await update();
+					};
+				}}
+			>
+				<input
+					type="hidden"
+					name="hardwareAcceleration"
+					value={hardwareAcceleration ? 'true' : 'false'}
+				/>
+				<Field.Group>
+					<Field.Field orientation="horizontal">
+						<Field.Content>
+							<Field.Label for="hardware-acceleration">Use the GPU for transcoding</Field.Label>
+							<Field.Description>
+								Devices decode and encode transcodes on their GPU (NVIDIA, AMD, Intel, Apple,
+								Raspberry Pi 4) when they have one that passed their startup check, which leaves the
+								CPU free for more streams. Anything the GPU can't handle, or a GPU that can't start
+								a transcode, falls back to the CPU. Turn this off to transcode everything on the
+								CPU. Applies to transcodes started after the change; the Devices page shows which
+								GPU each device found.
+							</Field.Description>
+						</Field.Content>
+						<Switch
+							id="hardware-acceleration"
+							bind:checked={hardwareAcceleration}
+							disabled={savingHardware}
+							onCheckedChange={submitHardware}
 						/>
 					</Field.Field>
 				</Field.Group>

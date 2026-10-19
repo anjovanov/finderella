@@ -23,7 +23,12 @@ import {
 	trickplayVttSrc,
 	usableGeometry
 } from '$lib/server/trickplay/ensure';
-import { loginRequired, remuxEnabled, trickplayEnabled } from '$lib/server/site-settings';
+import {
+	hardwareAccelerationEnabled,
+	loginRequired,
+	remuxEnabled,
+	trickplayEnabled
+} from '$lib/server/site-settings';
 import { pickEpisodeSource, pickMovieSource } from '$lib/server/streaming/source-picker';
 import { markTrickplayReady } from '$lib/server/trickplay/bulk';
 import { QUALITY_IDS, QUALITY_LADDER, transcodePlan } from '$lib/playback-quality';
@@ -269,7 +274,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					level: plan.level
 				},
 				audioStreamIndex: audio?.streamIndex,
-				audioChannels: audioOut.channels
+				audioChannels: audioOut.channels,
+				hwaccel: await hardwareAccelerationEnabled()
 			},
 			{ timeoutMs: 15_000 }
 		);

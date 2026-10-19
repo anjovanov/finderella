@@ -14,6 +14,8 @@ export const siteSettings = pgTable('site_settings', {
 	markersEnabled: boolean('markers_enabled').notNull().default(true),
 	/** Play MKVs & co. by remuxing them in the browser (Media Source Extensions) instead of transcoding. */
 	remuxEnabled: boolean('remux_enabled').notNull().default(true),
+	/** Devices may transcode on their GPU (when one passed their self-test); off = always CPU. */
+	hardwareAcceleration: boolean('hardware_acceleration').notNull().default(true),
 	/** Devices watch library folders and ask for a rescan when files change. */
 	watchLibraries: boolean('watch_libraries').notNull().default(true),
 	/** Rescan every library this often (SCAN_INTERVAL_HOURS in $lib/data/library-scanning). null = never. */

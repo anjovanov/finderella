@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
+		CpuIcon,
 		FolderAddIcon,
+		GpuIcon,
 		MoreVerticalIcon,
 		PencilEdit01Icon,
 		Unlink01Icon
@@ -17,6 +19,7 @@
 	let {
 		device,
 		trickplayEnabled,
+		hardwareAcceleration,
 		markersEnabled,
 		markersJobRunning,
 		onRename,
@@ -26,6 +29,8 @@
 	}: {
 		device: Device;
 		trickplayEnabled: boolean;
+		/** Site setting; off = every device transcodes on the CPU whatever it found. */
+		hardwareAcceleration: boolean;
 		markersEnabled: boolean;
 		markersJobRunning: boolean;
 		onRename: () => void;
@@ -37,6 +42,14 @@
 	const blocker = $derived(thumbnailBlocker(device, { enabled: trickplayEnabled }));
 	const markersBlock = $derived(
 		markersBlocker(device, { enabled: markersEnabled, jobRunning: markersJobRunning })
+	);
+	const gpu = $derived(hardwareAcceleration ? device.hwEncoder : null);
+	const transcoderTitle = $derived(
+		gpu
+			? `Transcodes on the GPU: ${gpu}`
+			: device.hwEncoder
+				? `GPU available (${device.hwEncoder}); hardware acceleration is off in Site settings`
+				: 'Transcodes on the CPU'
 	);
 	const pairedLabel = $derived(
 		new Date(device.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })
@@ -75,6 +88,18 @@
 				{#if device.gatewayVersion}
 					<span aria-hidden="true">·</span>
 					<Badge variant="outline" class="tabular-nums">v{device.gatewayVersion}</Badge>
+				{/if}
+				{#if device.ffmpeg}
+					<span aria-hidden="true">·</span>
+					<Badge variant="outline" title={transcoderTitle}>
+						{#if gpu}
+							<HugeiconsIcon icon={GpuIcon} />
+							<span class="max-w-48 truncate">{gpu}</span>
+						{:else}
+							<HugeiconsIcon icon={CpuIcon} />
+							CPU transcoding
+						{/if}
+					</Badge>
 				{/if}
 				<span aria-hidden="true">·</span>
 				<span>paired {pairedLabel}</span>

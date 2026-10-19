@@ -25,10 +25,13 @@ export const GatewayCapabilities = z.object({
 	ffmpegVersion: z.string().optional(),
 	/**
 	 * `ffmpeg -hwaccels`: methods compiled into the build, not working devices
-	 * (a static build lists cuda/qsv on machines with neither). Informational
-	 * only — transcodes are CPU-only.
+	 * (a static build lists cuda/qsv on machines with neither). Informational.
 	 */
 	hwaccels: z.array(z.string()).default([]),
+	/** GPU encoder HLS transcodes use (`NVIDIA NVENC`, `VAAPI (AMD, /dev/dri/renderD128)`); absent = CPU. Informational. */
+	hwEncoder: z.string().optional(),
+	/** `-hwaccel` method transcodes decode with (`cuda`, `vaapi`, …); absent = software. Informational. */
+	hwDecoder: z.string().optional(),
 	/** Answers `subtitle.get` (older gateways never do — the hub must not wait on them). */
 	subtitles: z.boolean().default(false),
 	/** Answers `subtitle.put` (writes downloaded sidecars next to the video). */
@@ -217,7 +220,12 @@ export const SessionStartMessage = base.extend({
 	/** Absolute ffprobe index of the audio stream to encode. Absent = the first audio stream. */
 	audioStreamIndex: z.number().int().nonnegative().optional(),
 	/** Output audio channels (the viewer's cap applied to the source). Absent = stereo. */
-	audioChannels: z.union([z.literal(1), z.literal(2), z.literal(6)]).optional()
+	audioChannels: z.union([z.literal(1), z.literal(2), z.literal(6)]).optional(),
+	/**
+	 * May the device use its GPU (admin → Site settings)? Absent = yes (older hubs).
+	 * Gateways that predate GPU support ignore it; they transcode on the CPU anyway.
+	 */
+	hwaccel: z.boolean().optional()
 });
 export type SessionStartMessage = z.infer<typeof SessionStartMessage>;
 

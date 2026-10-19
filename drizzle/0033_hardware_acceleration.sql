@@ -1,0 +1,1 @@
+ALTER TABLE "site_settings" ADD COLUMN "hardware_acceleration" boolean DEFAULT true NOT NULL;

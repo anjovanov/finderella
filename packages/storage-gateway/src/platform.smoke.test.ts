@@ -6,6 +6,8 @@
  * whatever `detectTools` would pick. FINDERELLA_SMOKE_EXPECT_FFMPEG=system|bundled
  * asserts which build `detectTools` picks (CI's distro jobs: Arch's full ffmpeg
  * must win, Fedora's `ffmpeg-free` must lose to the bundled build).
+ * FINDERELLA_SMOKE_EXPECT_HW=none|<backend> asserts the GPU detection result;
+ * when a GPU accelerator is found, the HLS session test also runs through it.
  */
 import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises';
@@ -17,11 +19,12 @@ import { transcodeDir } from './config.js';
 import { parseBlackframeOutput } from './markers/darkframes.js';
 import { darkframeArgs, pcmArgs } from './markers/ffmpeg.js';
 import { SAMPLE_RATE } from './markers/fingerprint.js';
-import { detectTools, ffmpegPath, probeFile, probeTrickplaySource } from './probe.js';
+import { detectTools, ffmpegPath, hwAccel, probeFile, probeTrickplaySource } from './probe.js';
 import { ensureSubtitleVtt } from './subtitles/extract.js';
 import { sheetComplete } from './trickplay/cache.js';
 import { sheetFileName, trickplayArgs } from './trickplay/ffmpeg.js';
 import { computeGeometry } from './trickplay/geometry.js';
+import { avcProfileLevel, type HwAccel } from './transcode/hwaccel.js';
 import { parseInitTimescales } from './transcode/mp4-patch.js';
 import { sweepTranscodeScratch, TranscodeSession } from './transcode/session.js';
 
@@ -78,6 +81,8 @@ describe.skipIf(!enabled)('platform smoke', () => {
 				);
 			}
 		}
+		const expectedHw = process.env.FINDERELLA_SMOKE_EXPECT_HW;
+		if (expectedHw) expect(hwAccel()?.encoder ?? 'none').toBe(expectedHw);
 		expect(tools.capabilities.ffmpeg).toBe(true);
 		expect(tools.ffprobe).toBe(true);
 		ffmpeg = ffmpegPath()!;
@@ -133,15 +138,20 @@ describe.skipIf(!enabled)('platform smoke', () => {
 		expect(probed.audioTracks).toHaveLength(1);
 	});
 
-	it('transcodes to HLS, restarts on a seek and patches tfdt', async () => {
+	async function transcodeSeekAndPatch(hwaccel: HwAccel | null, sessionId: string) {
+		const logs: string[] = [];
 		const session = new TranscodeSession({
-			sessionId: 'smoke-session',
+			sessionId,
 			absPath: clip,
 			segmentSeconds: 4,
 			durationMs: CLIP_SECONDS * 1000,
 			quality: { maxWidth: 640, audioKbps: 128, level: '4.1' },
 			ffmpegBin: ffmpeg,
-			log: (message) => console.log(`[smoke] ${message}`),
+			hwaccel,
+			log: (message) => {
+				logs.push(message);
+				console.log(`[smoke] ${message}`);
+			},
 			onReap: () => {}
 		});
 		expect(session.dir.startsWith(transcodeDir())).toBe(true);
@@ -152,6 +162,7 @@ describe.skipIf(!enabled)('platform smoke', () => {
 			// A mid-file segment must sit at its absolute time (12 s). Read from the
 			// boxes, not with ffprobe: ffprobe before 5.x ignores tfdt.
 			expect(firstTfdtSeconds(seg3, parseInitTimescales(init))).toBeCloseTo(12, 0);
+			expect(avcProfileLevel(init)?.[0]).toBe(100);
 			// Behind the window → seek-restart at segment 0.
 			const seg0 = await session.ensureAsset('seg-0.m4s');
 			expect((await stat(seg0)).size).toBeGreaterThan(0);
@@ -159,6 +170,33 @@ describe.skipIf(!enabled)('platform smoke', () => {
 			await session.stop();
 		}
 		await expect(stat(session.dir)).rejects.toThrow();
+		return logs;
+	}
+
+	it('transcodes to HLS, restarts on a seek and patches tfdt', async () => {
+		await transcodeSeekAndPatch(null, 'smoke-session');
+	}, 120_000);
+
+	it('does the same on the detected GPU without falling back', async () => {
+		const accel = hwAccel();
+		if (!accel?.encoder) {
+			console.log('[smoke] no GPU encoder detected; skipping the GPU session');
+			return;
+		}
+		const logs = await transcodeSeekAndPatch(accel, 'smoke-gpu-session');
+		expect(logs.some((line) => line.includes(accel.label))).toBe(true);
+		expect(logs.some((line) => line.includes('GPU transcode failed'))).toBe(false);
+	}, 120_000);
+
+	it('falls back to the CPU when the GPU fails at start', async () => {
+		// A render node that doesn't exist makes ffmpeg exit at once.
+		const broken: HwAccel = {
+			encoder: 'vaapi',
+			device: '/nonexistent/renderD999',
+			label: 'broken GPU'
+		};
+		const logs = await transcodeSeekAndPatch(broken, 'smoke-fallback-session');
+		expect(logs.some((line) => line.includes('GPU transcode failed'))).toBe(true);
 	}, 120_000);
 
 	it('renders a trickplay sheet', async () => {

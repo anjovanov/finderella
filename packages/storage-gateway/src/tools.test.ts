@@ -113,4 +113,17 @@ describe('pickBestCandidate', () => {
 		expect(pickBestCandidate([make('system', []), make('bundled', [])])?.name).toBe('system');
 		expect(pickBestCandidate([])).toBeNull();
 	});
+
+	it('prefers a working GPU encoder among equally complete builds, never over correctness', () => {
+		const gpu = (c: ReturnType<typeof make>) => ({ ...c, hardware: true });
+		expect(pickBestCandidate([make('system', []), gpu(make('bundled', []))])?.name).toBe('bundled');
+		expect(pickBestCandidate([gpu(make('system', [])), make('bundled', [])])?.name).toBe('system');
+		// HDR tone-mapping and required pieces outrank speed.
+		expect(pickBestCandidate([gpu(make('system', [], false)), make('bundled', [])])?.name).toBe(
+			'bundled'
+		);
+		expect(
+			pickBestCandidate([gpu(make('system', ['filter tpad'])), make('bundled', [])])?.name
+		).toBe('bundled');
+	});
 });

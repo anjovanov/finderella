@@ -14,6 +14,7 @@ export type SiteSettings = Pick<
 	| 'trickplayAuto'
 	| 'markersEnabled'
 	| 'remuxEnabled'
+	| 'hardwareAcceleration'
 	| 'watchLibraries'
 	| 'scanIntervalHours'
 	| 'maxSessionsPerAccount'
@@ -34,6 +35,7 @@ type SiteSettingsPatch = Partial<
 		| 'trickplayAuto'
 		| 'markersEnabled'
 		| 'remuxEnabled'
+		| 'hardwareAcceleration'
 		| 'watchLibraries'
 		| 'scanIntervalHours'
 		| 'maxSessionsPerAccount'
@@ -108,6 +110,11 @@ export async function markersEnabled(): Promise<boolean> {
 /** Admin switch for in-browser remux; off = everything the browser can't open directly transcodes. */
 export async function remuxEnabled(): Promise<boolean> {
 	return (await getSiteSettings()).remuxEnabled;
+}
+
+/** Admin switch for GPU transcoding; off = every device transcodes on the CPU (sent per `session.start`). */
+export async function hardwareAccelerationEnabled(): Promise<boolean> {
+	return (await getSiteSettings()).hardwareAcceleration;
 }
 
 /** Signed-in devices allowed per account; null = unlimited. */

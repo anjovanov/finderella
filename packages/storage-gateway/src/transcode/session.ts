@@ -3,9 +3,10 @@ import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/p
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { transcodeDir } from '../config.js';
-import { hdrTonemapAvailable, isHdrTransfer, probeColorTransfer } from '../probe.js';
+import { hdrTonemapAvailable, isHdrTransfer, probeVideoStream } from '../probe.js';
 import { killAndWait } from '../process.js';
 import { hlsArgs, type TranscodeQuality } from './ffmpeg.js';
+import { accelFitsQuality, type HwAccel } from './hwaccel.js';
 import { parseInitTimescales, patchSegmentTfdt } from './mp4-patch.js';
 import { segmentsToPrune } from './prune.js';
 
@@ -30,6 +31,8 @@ export interface TranscodeOptions {
 	/** Output audio channels; absent = stereo. */
 	audioChannels?: 1 | 2 | 6;
 	ffmpegBin: string;
+	/** GPU accelerator (`hwAccel()`); absent/null = software. A GPU that fails at start falls back to it. */
+	hwaccel?: HwAccel | null;
 	log: (message: string) => void;
 	/** Called when the session self-reaps (idle) so the owner can drop it. */
 	onReap: () => void;
@@ -58,6 +61,9 @@ export class TranscodeSession {
 	#procError: string | null = null;
 	#startSegment = 0;
 	#hdr = false;
+	#sourceCodec: string | null = null;
+	/** Cleared when the first GPU run fails at start: the session runs on the CPU. */
+	#hwaccel: HwAccel | null;
 	#stopped = false;
 	#lastAccess = Date.now();
 	#reapTimer: NodeJS.Timeout;
@@ -71,6 +77,9 @@ export class TranscodeSession {
 	constructor(opts: TranscodeOptions) {
 		this.#opts = opts;
 		this.dir = join(transcodeDir(), opts.sessionId);
+		// A plan wider than the encoder handles (Pi 4 at 4K) keeps the hub's level promise in software.
+		this.#hwaccel =
+			opts.hwaccel && accelFitsQuality(opts.hwaccel, opts.quality) ? opts.hwaccel : null;
 		this.#reapTimer = setInterval(() => {
 			if (Date.now() - this.#lastAccess > IDLE_REAP_MS) {
 				this.#opts.log(`session ${this.#opts.sessionId} idle; reaping`);
@@ -93,8 +102,11 @@ export class TranscodeSession {
 	 */
 	async start(startSegment = 0): Promise<void> {
 		await mkdir(this.dir, { recursive: true });
-		// One cheap probe per session: HDR sources need tone-mapping on every run.
-		const hdr = isHdrTransfer(await probeColorTransfer(this.#opts.absPath));
+		// One cheap probe per session: HDR sources need tone-mapping on every run,
+		// and codec-limited GPU decoders (the Pi's HEVC-only one) need the codec.
+		const video = await probeVideoStream(this.#opts.absPath);
+		this.#sourceCodec = video.codec;
+		const hdr = isHdrTransfer(video.transfer);
 		this.#hdr = hdr && hdrTonemapAvailable();
 		if (this.#hdr) this.#opts.log(`tone-mapping HDR source (${this.#opts.sessionId})`);
 		else if (hdr) {
@@ -103,11 +115,28 @@ export class TranscodeSession {
 			);
 		}
 		await this.#launch(startSegment);
+		await this.#survivesGrace();
+		if (this.#procError && this.#hwaccel) {
+			// NVENC session limit, a busy or sleeping GPU, a source the driver
+			// rejects. Only here, before the player has fetched init.mp4: a GPU and
+			// a libx264 run have different SPS/PPS, libx264 doesn't repeat them in
+			// segments, and hls.js never re-fetches init — so a GPU failure later in
+			// the session fails like any ffmpeg error and a new session starts clean.
+			this.#opts.log(
+				`GPU transcode failed (${this.#opts.sessionId}): ${this.#procError}; using the CPU`
+			);
+			this.#hwaccel = null;
+			await this.#launch(startSegment);
+			await this.#survivesGrace();
+		}
+		if (this.#procError) throw new Error(this.#procError);
+	}
+
+	async #survivesGrace(): Promise<void> {
 		await Promise.race([
 			this.#exited,
 			new Promise((resolveWait) => setTimeout(resolveWait, EARLY_EXIT_GRACE_MS))
 		]);
-		if (this.#procError) throw new Error(this.#procError);
 	}
 
 	/**
@@ -139,9 +168,13 @@ export class TranscodeSession {
 			quality: this.#opts.quality,
 			hdr: this.#hdr,
 			audioStreamIndex: this.#opts.audioStreamIndex,
-			audioChannels: this.#opts.audioChannels
+			audioChannels: this.#opts.audioChannels,
+			hwaccel: this.#hwaccel ?? undefined,
+			sourceCodec: this.#sourceCodec
 		});
-		this.#opts.log(`ffmpeg starting at segment ${startSegment} (${this.#opts.sessionId})`);
+		this.#opts.log(
+			`ffmpeg starting at segment ${startSegment} (${this.#opts.sessionId}${this.#hwaccel ? `, ${this.#hwaccel.label}` : ''})`
+		);
 		const proc = spawn(this.#opts.ffmpegBin, args, { stdio: ['ignore', 'ignore', 'pipe'] });
 		let stderr = '';
 		proc.stderr?.on('data', (chunk: Buffer) => {

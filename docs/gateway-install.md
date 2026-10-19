@@ -21,8 +21,9 @@ forwarding or router configuration**.
   the filters used for thumbnails and credits detection, zscale for HDR) and
   uses whichever build is more complete. `connect` prints what it picked and
   why. `FFMPEG_PATH` / `FFPROBE_PATH` force a specific build.
-- No GPU is needed or used: transcoding runs on the CPU, so any graphics
-  setup works, including laptops with both integrated and dedicated GPUs.
+- A GPU is optional. When the device has one the chosen ffmpeg can drive,
+  transcodes decode and encode on it; otherwise they run on the CPU. See
+  [Hardware acceleration](#hardware-acceleration-gpu).
 
 ## 1. Install the storage gateway
 
@@ -240,20 +241,79 @@ npm install -g <new release tarball URL>
 sudo systemctl restart finderella-storage-gateway
 ```
 
+## Hardware acceleration (GPU)
+
+At startup the gateway looks for a GPU encoder and **proves it works** with
+two short test encodes, using the same settings real transcodes use. A
+compiled-in encoder alone proves nothing: static builds list NVENC on machines
+without an NVIDIA card, and drivers differ in which settings they accept. The
+first accelerator that passes is used. If none pass, transcodes run on the CPU
+exactly as before. `connect` prints the result:
+
+```
+GPU encoding: VAAPI (AMD, /dev/dri/renderD128), decoding: vaapi
+```
+
+When choosing between a system ffmpeg and the bundled one, a build with a
+working GPU encoder wins over one without. Completeness (libx264, filters, HDR
+tone-mapping) still comes first. If the GPU can't start a transcode (for
+example NVENC's concurrent-session limit, or a busy GPU), that transcode runs
+on the CPU instead, and the log says `GPU transcode failed … using the CPU`. A
+GPU that fails partway through a film stops playback like any other transcode
+error; pressing play again starts a new transcode, on the CPU if need be.
+
+The GPU decodes the video and encodes the H.264 output. Scaling and HDR
+tone-mapping stay on the CPU. A codec the GPU can't decode (e.g. AV1 on an
+older card) is decoded in software automatically. The admin **Devices** page
+shows each device's encoder.
+
+| Hardware                  | Encoder               | What you need                                                                                                                                                                                |
+| ------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NVIDIA (Linux, Windows)   | NVENC                 | The proprietary NVIDIA driver. On Linux, a system ffmpeg built with NVENC (Arch/CachyOS `ffmpeg`, RPM Fusion `ffmpeg`, Ubuntu/Debian `ffmpeg`). The bundled Linux build has no GPU encoders. |
+| AMD (Linux)               | VAAPI                 | Mesa's VA-API driver (`libva-mesa-driver` / `mesa-va-drivers`) and a system ffmpeg with VAAPI.                                                                                               |
+| Intel (Linux)             | VAAPI                 | `intel-media-driver` (`intel-media-va-driver-non-free` on Debian/Ubuntu) and a system ffmpeg with VAAPI.                                                                                     |
+| AMD / Intel (Windows)     | AMF / Quick Sync      | A current GPU driver. The bundled Windows build includes both encoders.                                                                                                                      |
+| Apple Silicon / Intel Mac | VideoToolbox          | Nothing extra: VideoToolbox is part of macOS. If the startup log says the bundled build lacks `h264_videotoolbox`, `brew install ffmpeg`.                                                    |
+| Raspberry Pi 4            | V4L2 (`h264_v4l2m2m`) | Works with the bundled build, up to 1080p (4K plans transcode on the CPU). Raspberry Pi OS's `ffmpeg` (`sudo apt install ffmpeg`) also decodes HEVC on the GPU.                              |
+| Raspberry Pi 5            | none                  | The Pi 5 has **no hardware H.264 encoder**, so encoding stays on the CPU. With Raspberry Pi OS's `ffmpeg`, HEVC sources are still decoded in hardware.                                       |
+
+**Linux permissions.** VAAPI opens `/dev/dri/renderD*`, which usually belongs
+to the `render` (sometimes `video`) group. The account running the gateway must
+be in it: `sudo usermod -aG render,video YOUR_USER`, then log in again, or add
+`SupplementaryGroups=render video` under `[Service]` in the systemd unit.
+Docker needs `--device /dev/dri` (or the NVIDIA container runtime).
+
+**Laptops and desktops with two GPUs.** The dedicated GPU is preferred: NVENC
+before any VAAPI device, and a discrete AMD card before an APU or Intel iGPU.
+To prefer the integrated one (cooler, keeps the dGPU asleep), set
+`FINDERELLA_HWACCEL=vaapi,nvenc` or pin a device.
+
+Admins can turn GPU transcoding off for every device under **Site settings →
+Hardware acceleration** (on by default). It takes effect at the next transcode.
+The variables below act on a single device.
+
+| Variable                                        | Effect                                                                                          |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `FINDERELLA_HWACCEL=0`                          | Never use the GPU (CPU transcoding only).                                                       |
+| `FINDERELLA_HWACCEL=vaapi,nvenc`                | Only these backends, in this order (`nvenc`, `vaapi`, `qsv`, `amf`, `videotoolbox`, `v4l2m2m`). |
+| `FINDERELLA_HWACCEL_DEVICE=/dev/dri/renderD129` | Use this VAAPI render node (Linux).                                                             |
+| `FINDERELLA_HWACCEL_DEVICE=1`                   | Use this NVIDIA GPU (index as in `nvidia-smi`).                                                 |
+
 ## Troubleshooting
 
-| Symptom                                                | Cause / fix                                                                                                                                                                                                                 |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `401` on connect                                       | Device was revoked, or stale token — generate a new code and re-`pair`.                                                                                                                                                     |
-| Pairs fine but never connects (hub behind nginx/Caddy) | The reverse proxy must forward WebSocket upgrades on `/gateway/ws` (nginx: `proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";`). Pairing is plain HTTPS, so it can succeed while WS is broken. |
-| "Add library" disabled                                 | The device is offline (or the page is stale — refresh).                                                                                                                                                                     |
-| Titles missing codec/duration; transcoding refused     | The library was scanned without ffprobe — check `connect` startup output, then Rescan.                                                                                                                                      |
-| Player shows "Can't play this right now" mid-stream    | The transcode failed. The gateway's `connect` output has ffmpeg's stderr (`ffmpeg failed (…)`), and the hub log has a `gateway request failed` line with the same reason.                                                   |
-| 4K transcodes stutter or seeks take long               | A 4K HEVC→H.264 software transcode runs near real-time on a desktop-class CPU (veryfast preset); pick a lower quality in the player, or host 4K files on a machine with more cores.                                         |
-| `ffmpeg NOT found` at startup                          | Transcoding unavailable from this device; direct-play still works. Install ffmpeg or rely on the bundled static build (absent only on unusual platforms).                                                                   |
-| `WARNING: it lacks …` at startup                       | The only ffmpeg found is missing something (e.g. libx264). Install a full build (RPM Fusion, Homebrew, gyan.dev on Windows) or point `FFMPEG_PATH` at one.                                                                  |
-| macOS: `Operation not permitted` in scan logs          | Grant Full Disk Access to the `node` binary (see _macOS_ above).                                                                                                                                                            |
-| Windows: library on `Z:` not found as a service        | Mapped drives are per-login; use the `\\server\share\…` path.                                                                                                                                                               |
+| Symptom                                                | Cause / fix                                                                                                                                                                                                                               |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `401` on connect                                       | Device was revoked, or stale token — generate a new code and re-`pair`.                                                                                                                                                                   |
+| Pairs fine but never connects (hub behind nginx/Caddy) | The reverse proxy must forward WebSocket upgrades on `/gateway/ws` (nginx: `proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";`). Pairing is plain HTTPS, so it can succeed while WS is broken.               |
+| "Add library" disabled                                 | The device is offline (or the page is stale — refresh).                                                                                                                                                                                   |
+| Titles missing codec/duration; transcoding refused     | The library was scanned without ffprobe — check `connect` startup output, then Rescan.                                                                                                                                                    |
+| Player shows "Can't play this right now" mid-stream    | The transcode failed. The gateway's `connect` output has ffmpeg's stderr (`ffmpeg failed (…)`), and the hub log has a `gateway request failed` line with the same reason.                                                                 |
+| 4K transcodes stutter or seeks take long               | A 4K HEVC→H.264 software transcode runs near real-time on a desktop-class CPU (veryfast preset); set up [GPU transcoding](#hardware-acceleration-gpu), pick a lower quality in the player, or host 4K files on a machine with more cores. |
+| `no working GPU encoder` although the device has a GPU | The lines above it (`GPU: …`) say why each candidate failed. Usual causes: the bundled Linux build has no GPU encoders (install a system ffmpeg), a missing VA-API driver, or the gateway's account isn't in the `render` group.          |
+| `ffmpeg NOT found` at startup                          | Transcoding unavailable from this device; direct-play still works. Install ffmpeg or rely on the bundled static build (absent only on unusual platforms).                                                                                 |
+| `WARNING: it lacks …` at startup                       | The only ffmpeg found is missing something (e.g. libx264). Install a full build (RPM Fusion, Homebrew, gyan.dev on Windows) or point `FFMPEG_PATH` at one.                                                                                |
+| macOS: `Operation not permitted` in scan logs          | Grant Full Disk Access to the `node` binary (see _macOS_ above).                                                                                                                                                                          |
+| Windows: library on `Z:` not found as a service        | Mapped drives are per-login; use the `\\server\share\…` path.                                                                                                                                                                             |
 
 ## Security notes
 

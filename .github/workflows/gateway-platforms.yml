@@ -84,6 +84,8 @@ jobs:
         env:
           FINDERELLA_SMOKE: '1'
           FINDERELLA_SMOKE_EXPECT_FFMPEG: ${{ matrix.expect }}
+          # No /dev/dri in the container: GPU detection must come back empty, not fail.
+          FINDERELLA_SMOKE_EXPECT_HW: none
       - name: Smoke test (bundled ffmpeg)
         run: npx vitest run packages/storage-gateway/src/platform.smoke.test.ts
         env:

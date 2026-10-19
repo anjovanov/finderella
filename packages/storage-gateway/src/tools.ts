@@ -9,7 +9,11 @@
 /** Oldest release with every option the argv builders use (`-fps_mode` arrived in 5.1). */
 export const MIN_FFMPEG_VERSION: readonly [number, number] = [5, 1];
 
-/** Encoders HLS transcodes need (`hlsArgs`). */
+/**
+ * Encoders HLS transcodes need (`hlsArgs`). GPU encoders are optional: each
+ * backend's encoder (`HW_ENCODER_NAMES` in transcode/hwaccel.ts) is looked up
+ * in the same `-encoders` list and then proven by a self-test encode.
+ */
 export const REQUIRED_ENCODERS = ['libx264', 'aac'] as const;
 
 /** Filters used by HLS scaling, trickplay sheets and dark-frame analysis. */
@@ -83,8 +87,12 @@ export function assessFfmpeg(input: {
 	return { ok: missing.length === 0, missing, hdrTonemap };
 }
 
-/** Rank candidates: fully capable first, then fewest missing pieces, then HDR support; ties keep order. */
-export function pickBestCandidate<T extends { assessment: FfmpegAssessment }>(
+/**
+ * Rank candidates: fully capable first, then fewest missing pieces, then HDR
+ * support, then a working GPU encoder (correct output beats fast output);
+ * ties keep order, so a system build beats the bundled one.
+ */
+export function pickBestCandidate<T extends { assessment: FfmpegAssessment; hardware?: boolean }>(
 	candidates: T[]
 ): T | null {
 	let best: T | null = null;
@@ -97,7 +105,11 @@ export function pickBestCandidate<T extends { assessment: FfmpegAssessment }>(
 		const b = best.assessment;
 		if (
 			a.missing.length < b.missing.length ||
-			(a.missing.length === b.missing.length && a.hdrTonemap && !b.hdrTonemap)
+			(a.missing.length === b.missing.length && a.hdrTonemap && !b.hdrTonemap) ||
+			(a.missing.length === b.missing.length &&
+				a.hdrTonemap === b.hdrTonemap &&
+				!!candidate.hardware &&
+				!best.hardware)
 		) {
 			best = candidate;
 		}

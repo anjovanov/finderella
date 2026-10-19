@@ -5,6 +5,8 @@ import type { GatewayCapabilities, ProbedFile } from '@finderella/protocol';
 import { embeddedAudio, type FfprobeAudioStream } from './audio/embedded.js';
 import { probedChapters, type FfprobeChapter } from './markers/chapters.js';
 import { embeddedSubtitles, type FfprobeSubtitleStream } from './subtitles/embedded.js';
+import { detectHwAccel, listHwaccels, type HwDetection } from './transcode/hwaccel-detect.js';
+import { hwaccelDisabled, type HwAccel } from './transcode/hwaccel.js';
 import {
 	assessFfmpeg,
 	parseComponentList,
@@ -19,12 +21,15 @@ const execFileAsync = promisify(execFile);
  * bundled static build (ffmpeg-static / @ffprobe-installer). An explicit
  * override always wins; otherwise every candidate is feature-checked
  * (`assessFfmpeg`) and the most capable one is used, so a distro build that
- * lacks libx264 or `-fps_mode` loses to the bundled build. ffprobe comes from
- * the same source as ffmpeg when it can, so the two stay one release.
+ * lacks libx264 or `-fps_mode` loses to the bundled build. Among complete
+ * builds, one with a working GPU encoder (self-tested, hwaccel-detect.ts)
+ * wins. ffprobe comes from the same source as ffmpeg when it can, so the two
+ * stay one release.
  */
 let resolvedFfmpeg: string | null = null;
 let resolvedFfprobe: string | null = null;
 let hdrTonemap = false;
+let resolvedHwAccel: HwAccel | null = null;
 
 export function ffmpegPath(): string | null {
 	return resolvedFfmpeg;
@@ -37,6 +42,11 @@ export function ffprobePath(): string | null {
 /** Whether the resolved ffmpeg has `zscale` + `tonemap`; without them HDR sources aren't tone-mapped. */
 export function hdrTonemapAvailable(): boolean {
 	return hdrTonemap;
+}
+
+/** The GPU accelerator the self-test proved on the resolved ffmpeg; null = software only. */
+export function hwAccel(): HwAccel | null {
+	return resolvedHwAccel;
 }
 
 /** First line of `<bin> -version`, or null when the binary doesn't run. */
@@ -83,6 +93,12 @@ interface ToolSource {
 interface AssessedSource extends ToolSource {
 	versionLine: string;
 	assessment: FfmpegAssessment;
+	/** `-encoders` names, for the GPU encoder lookup. */
+	encoders: Set<string>;
+	/** GPU self-test result (only run on builds that can transcode at all). */
+	hw?: HwDetection;
+	/** A GPU accelerator works with this build. */
+	hardware?: boolean;
 }
 
 async function assessSource(source: ToolSource): Promise<AssessedSource | null> {
@@ -93,17 +109,19 @@ async function assessSource(source: ToolSource): Promise<AssessedSource | null> 
 			execFileAsync(source.ffmpeg, ['-hide_banner', '-encoders']),
 			execFileAsync(source.ffmpeg, ['-hide_banner', '-filters'])
 		]);
+		const encoderNames = parseComponentList(encoders.stdout);
 		const assessment = assessFfmpeg({
 			versionLine: line,
-			encoders: parseComponentList(encoders.stdout),
+			encoders: encoderNames,
 			filters: parseComponentList(filters.stdout)
 		});
-		return { ...source, versionLine: line, assessment };
+		return { ...source, versionLine: line, assessment, encoders: encoderNames };
 	} catch {
 		return {
 			...source,
 			versionLine: line,
-			assessment: { ok: false, missing: ['component listing'], hdrTonemap: false }
+			assessment: { ok: false, missing: ['component listing'], hdrTonemap: false },
+			encoders: new Set()
 		};
 	}
 }
@@ -142,11 +160,20 @@ export async function detectTools(): Promise<ToolAvailability> {
 		notes.push(`FFMPEG_PATH=${envFfmpeg} does not run; ignoring it`);
 	}
 	// An explicit override is the operator's call, even when it lacks something.
-	const chosen =
-		assessed.find((source) => source.label === 'FFMPEG_PATH') ?? pickBestCandidate(assessed);
+	const override = assessed.find((source) => source.label === 'FFMPEG_PATH');
+	// GPU self-tests (sequential: they share the device) on the builds that can
+	// transcode at all, so a working GPU encoder can decide between them.
+	for (const source of override ? [override] : assessed.filter((s) => s.assessment.ok)) {
+		source.hw = await detectHwAccel(source.ffmpeg, source.encoders);
+		source.hardware = source.hw.accel !== null;
+	}
+	const chosen = override ?? pickBestCandidate(assessed);
 	for (const source of assessed) {
-		if (source !== chosen && !source.assessment.ok) {
+		if (source === chosen) continue;
+		if (!source.assessment.ok) {
 			notes.push(`${describe(source)} skipped: missing ${source.assessment.missing.join(', ')}`);
+		} else if (chosen?.hardware && !source.hardware) {
+			notes.push(`${describe(source)} skipped: no working GPU encoder`);
 		}
 	}
 	if (chosen) {
@@ -162,6 +189,8 @@ export async function detectTools(): Promise<ToolAvailability> {
 	}
 	resolvedFfmpeg = chosen?.ffmpeg ?? null;
 	hdrTonemap = chosen?.assessment.hdrTonemap ?? false;
+	resolvedHwAccel = chosen?.hw?.accel ?? null;
+	if (chosen?.hw) notes.push(...hardwareNotes(chosen.hw));
 
 	// ffprobe: explicit override, then the chosen source's own, then any other.
 	const probeCandidates = [
@@ -178,27 +207,16 @@ export async function detectTools(): Promise<ToolAvailability> {
 	}
 	if (resolvedFfprobe) notes.push(`using ffprobe ${resolvedFfprobe}`);
 
-	let ffmpegVersion: string | undefined;
-	let hwaccels: string[] = [];
-	if (chosen) {
-		ffmpegVersion = /ffmpeg version (\S+)/.exec(chosen.versionLine)?.[1];
-		try {
-			const hw = await execFileAsync(chosen.ffmpeg, ['-hide_banner', '-hwaccels']);
-			hwaccels = hw.stdout
-				.split(/\r?\n/)
-				.slice(1)
-				.map((line) => line.trim())
-				.filter(Boolean);
-		} catch {
-			// best-effort
-		}
-	}
+	const ffmpegVersion = chosen ? /ffmpeg version (\S+)/.exec(chosen.versionLine)?.[1] : undefined;
+	const hwaccels = chosen ? await listHwaccels(chosen.ffmpeg) : [];
 
 	return {
 		capabilities: {
 			ffmpeg: resolvedFfmpeg !== null,
 			ffmpegVersion,
 			hwaccels,
+			hwEncoder: resolvedHwAccel?.encoder ? resolvedHwAccel.label : undefined,
+			hwDecoder: resolvedHwAccel?.decode,
 			// srt/vtt sidecars convert in-process; ass and embedded tracks need ffmpeg (checked per request).
 			subtitles: true,
 			subtitleWrite: true,
@@ -219,6 +237,21 @@ export async function detectTools(): Promise<ToolAvailability> {
 	};
 }
 
+function hardwareNotes(hw: HwDetection): string[] {
+	if (hwaccelDisabled(process.env.FINDERELLA_HWACCEL)) {
+		return ['GPU acceleration off (FINDERELLA_HWACCEL); transcoding on the CPU'];
+	}
+	const notes = hw.rejected.map((reason) => `GPU: ${reason}`);
+	const accel = hw.accel;
+	if (!accel) notes.push('no working GPU encoder; transcoding on the CPU');
+	else if (accel.encoder) {
+		notes.push(
+			`GPU encoding: ${accel.label}, decoding: ${accel.decode ?? 'software'}${accel.maxWidth ? ` (up to ${accel.maxWidth} px wide)` : ''}`
+		);
+	} else notes.push(`GPU decoding: ${accel.label} (${accel.decode}); encoding on the CPU`);
+	return notes;
+}
+
 interface FfprobeStream extends FfprobeSubtitleStream {
 	channels?: number;
 	width?: number;
@@ -236,10 +269,12 @@ export function isHdrTransfer(transfer: string | null | undefined): boolean {
 	return transfer === 'smpte2084' || transfer === 'arib-std-b67';
 }
 
-/** `color_transfer` of the first video stream, or null when unknown / no ffprobe. */
-export async function probeColorTransfer(absPath: string): Promise<string | null> {
+/** Codec and `color_transfer` of the first video stream; nulls when unknown / no ffprobe. */
+export async function probeVideoStream(
+	absPath: string
+): Promise<{ codec: string | null; transfer: string | null }> {
 	const bin = resolvedFfprobe;
-	if (!bin) return null;
+	if (!bin) return { codec: null, transfer: null };
 	try {
 		const { stdout } = await execFileAsync(bin, [
 			'-v',
@@ -247,15 +282,21 @@ export async function probeColorTransfer(absPath: string): Promise<string | null
 			'-select_streams',
 			'v:0',
 			'-show_entries',
-			'stream=color_transfer',
+			'stream=codec_name,color_transfer',
 			'-of',
-			'csv=p=0',
+			'json',
 			absPath
 		]);
-		const value = stdout.trim();
-		return value && value !== 'unknown' ? value : null;
+		const stream = (
+			JSON.parse(stdout) as { streams?: { codec_name?: string; color_transfer?: string }[] }
+		).streams?.[0];
+		const transfer = stream?.color_transfer;
+		return {
+			codec: stream?.codec_name ?? null,
+			transfer: transfer && transfer !== 'unknown' ? transfer : null
+		};
 	} catch {
-		return null;
+		return { codec: null, transfer: null };
 	}
 }
 

@@ -30,6 +30,7 @@ export const load: PageServerLoad = async () => {
 			scanIntervalHours: settings.scanIntervalHours,
 			markersEnabled: settings.markersEnabled,
 			remuxEnabled: settings.remuxEnabled,
+			hardwareAcceleration: settings.hardwareAcceleration,
 			maxSessionsPerAccount: settings.maxSessionsPerAccount,
 			maxProfilesPerAccount: settings.maxProfilesPerAccount
 		},
@@ -127,6 +128,14 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const remuxEnabled = formData.get('remuxEnabled')?.toString() === 'true';
 		await updateSiteSettings({ remuxEnabled });
+		return { saved: true };
+	},
+
+	// Applies to the next transcode each device starts; running ones keep their encoder.
+	updateHardwareAcceleration: async (event) => {
+		const formData = await event.request.formData();
+		const hardwareAcceleration = formData.get('hardwareAcceleration')?.toString() === 'true';
+		await updateSiteSettings({ hardwareAcceleration });
 		return { saved: true };
 	},
 

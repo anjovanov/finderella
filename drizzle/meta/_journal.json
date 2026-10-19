@@ -232,6 +232,13 @@
       "when": 1791939030660,
       "tag": "0032_release_dates",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792443365924,
+      "tag": "0033_hardware_acceleration",
+      "breakpoints": true
     }
   ]
 }

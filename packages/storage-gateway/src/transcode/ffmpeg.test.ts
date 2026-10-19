@@ -106,4 +106,37 @@ describe('ffmpegOutputPath', () => {
 			'/home/me/.cache/s1/playlist.m3u8'
 		);
 	});
+
+	it('swaps libx264 for a GPU encoder, keeping the grid and the CPU filters', () => {
+		const accel = {
+			encoder: 'vaapi' as const,
+			device: '/dev/dri/renderD128',
+			decode: 'vaapi' as const,
+			label: 'VAAPI'
+		};
+		const args = hlsArgs({ ...base, startSegment: 2, hdr: true, hwaccel: accel });
+		expect(valueAfter(args, '-c:v')).toBe('h264_vaapi');
+		expect(args).not.toContain('libx264');
+		expect(valueAfter(args, '-vf')).toBe(
+			`scale=trunc(min(3840\\,iw)/2)*2:-2,${HDR_TONEMAP_FILTERS},format=nv12,hwupload`
+		);
+		expect(args.indexOf('-hwaccel')).toBeLessThan(args.indexOf('-i'));
+		expect(args.indexOf('-init_hw_device')).toBeLessThan(args.indexOf('-ss'));
+		expect(valueAfter(args, '-force_key_frames')).toBe('expr:gte(t,n_forced*4)');
+		expect(args.at(-1)).toBe(ffmpegOutputPath(join(base.dir, 'playlist.m3u8')));
+	});
+
+	it('keeps libx264 for a decode-only accelerator and places input flags before -i', () => {
+		const args = hlsArgs({
+			...base,
+			startSegment: 0,
+			hwaccel: { encoder: null, decode: 'drm', decodeCodecs: ['hevc'], label: 'Pi' },
+			sourceCodec: 'hevc',
+			inputArgs: ['-f', 'lavfi']
+		});
+		expect(valueAfter(args, '-c:v')).toBe('libx264');
+		expect(valueAfter(args, '-hwaccel')).toBe('drm');
+		expect(valueAfter(args, '-f')).toBe('lavfi');
+		expect(args.indexOf('-f')).toBeLessThan(args.indexOf('-i'));
+	});
 });

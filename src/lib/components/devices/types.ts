@@ -19,6 +19,10 @@ export interface Device {
 	online: boolean;
 	gatewayVersion: string | null;
 	trickplay: boolean;
+	/** The gateway has ffmpeg (can transcode at all). */
+	ffmpeg: boolean;
+	/** GPU encoder its transcodes use (`NVIDIA NVENC`, …); null = CPU. */
+	hwEncoder: string | null;
 	/** The gateway can analyse files for intro/credits markers. */
 	markers: boolean;
 	lastSeenAt: string | null;
