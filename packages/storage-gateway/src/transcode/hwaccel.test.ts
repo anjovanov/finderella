@@ -74,7 +74,7 @@ describe('hwVideoArgs', () => {
 		);
 		const vbr = hwVideoArgs(vaapi, capped);
 		expect(valueAfter(vbr, '-rc_mode')).toBe('VBR');
-		expect(valueAfter(vbr, '-b:v')).toBe('6000k');
+		expect(valueAfter(vbr, '-b:v')).toBe('5200k');
 		expect(valueAfter(vbr, '-maxrate')).toBe('8000k');
 		expect(valueAfter(vbr, '-bufsize')).toBe('16000k');
 

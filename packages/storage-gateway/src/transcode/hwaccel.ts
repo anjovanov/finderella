@@ -50,6 +50,9 @@ export interface HwAccel {
 	label: string;
 }
 
+/** VBR target as a share of the plan's cap, for encoders without a quality-plus-ceiling mode. */
+export const HW_VBR_TARGET = 0.65;
+
 /** CRF-equivalent quality for the hardware encoders' constant-quality modes. */
 export const HW_QUALITY = 23;
 
@@ -108,7 +111,7 @@ export function hwFilterTail(encoder: HwBackend): string[] {
 /**
  * Video encoder flags, replacing libx264's `-c:v … -pix_fmt yuv420p`. Every
  * backend keeps the HLS contract: 8-bit H.264 High at the plan's level, a VBV
- * cap when the plan has one (VBR at 75 % of the cap), constant quality
+ * cap when the plan has one (VBR at `HW_VBR_TARGET` of the cap), constant quality
  * otherwise. Forced keyframes become IDR frames where the encoder needs to be
  * told. Flags whose behaviour differs between drivers are proven by the
  * detection self-test, not trusted.
@@ -118,7 +121,14 @@ export function hwVideoArgs(accel: HwAccel, quality: TranscodeQuality): string[]
 	if (!encoder) throw new Error('hwVideoArgs needs a hardware encoder');
 	const cap = quality.maxVideoKbps;
 	const capped = cap
-		? ['-b:v', `${Math.round(cap * 0.75)}k`, '-maxrate', `${cap}k`, '-bufsize', `${cap * 2}k`]
+		? [
+				'-b:v',
+				`${Math.round(cap * HW_VBR_TARGET)}k`,
+				'-maxrate',
+				`${cap}k`,
+				'-bufsize',
+				`${cap * 2}k`
+			]
 		: [];
 	const q = String(HW_QUALITY);
 	const args = ['-c:v', HW_ENCODER_NAMES[encoder]];
@@ -153,7 +163,10 @@ export function hwVideoArgs(accel: HwAccel, quality: TranscodeQuality): string[]
 			else args.push('-q:v', String(VIDEOTOOLBOX_QUALITY));
 			break;
 		case 'v4l2m2m':
-			args.push('-b:v', `${cap ? Math.round(cap * 0.75) : defaultVideoKbps(quality.maxWidth)}k`);
+			args.push(
+				'-b:v',
+				`${cap ? Math.round(cap * HW_VBR_TARGET) : defaultVideoKbps(quality.maxWidth)}k`
+			);
 			break;
 	}
 	args.push('-g', String(HW_GOP_FRAMES));

@@ -118,8 +118,6 @@ export type GatewayMessage = z.infer<typeof GatewayMessage>;
 /* ---------- hub → gateway ---------- */
 
 export const HubLimits = z.object({
-	maxConcurrentTransfers: z.number().int().positive(),
-	maxTranscodeSessions: z.number().int().positive(),
 	chunkBytes: z.number().int().positive(),
 	creditWindowBytes: z.number().int().positive()
 });
@@ -454,8 +452,6 @@ export function parseHubMessage(raw: string): ParseResult<HubMessage> {
 }
 
 export const DEFAULT_LIMITS: HubLimits = {
-	maxConcurrentTransfers: 4,
-	maxTranscodeSessions: 2,
 	chunkBytes: 256 * 1024,
 	creditWindowBytes: 8 * 1024 * 1024
 };

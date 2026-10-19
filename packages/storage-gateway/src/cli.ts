@@ -141,10 +141,6 @@ program
 			log,
 			onChange: (libraryId) => connection.send({ type: 'library.changed', libraryId })
 		});
-		// Only file/HLS transfers count against maxConcurrentTransfers: a subtitle
-		// stream can idle for minutes and must never make segment fetches "busy".
-		let fileTransfers = 0;
-
 		const startTransfer = (
 			conn: GatewayConnection,
 			requestId: number,
@@ -153,17 +149,9 @@ program
 			length: number
 		) => {
 			const limits = conn.limits ?? DEFAULT_LIMITS;
-			if (fileTransfers >= limits.maxConcurrentTransfers) {
-				conn.send({ type: 'resp', re: requestId, ok: false, error: 'device busy' });
-				return;
-			}
 			const transfer = new FileTransfer(conn, { requestId, absPath, offset, length }, limits);
 			transfers.set(requestId, transfer);
-			fileTransfers++;
-			void transfer.run().finally(() => {
-				transfers.delete(requestId);
-				fileTransfers--;
-			});
+			void transfer.run().finally(() => transfers.delete(requestId));
 		};
 
 		const connection = new GatewayConnection({
@@ -338,8 +326,7 @@ program
 						const controller = new AbortController();
 						let earlyCredit = 0;
 						// Placeholder while we wait for the sheet, so a hub `cancel` stops the
-						// wait and credits that arrive early aren't lost. Not counted against
-						// maxConcurrentTransfers: a hover must never make segment fetches busy.
+						// wait and credits that arrive early aren't lost.
 						transfers.set(message.id, {
 							addCredit: (bytes) => {
 								earlyCredit += bytes;
@@ -376,11 +363,7 @@ program
 							conn.send({ type: 'resp', re: message.id, ok: false, error: 'ffmpeg unavailable' });
 							break;
 						}
-						const limits = conn.limits ?? DEFAULT_LIMITS;
-						if (sessions.size >= limits.maxTranscodeSessions) {
-							conn.send({ type: 'resp', re: message.id, ok: false, error: 'device busy' });
-							break;
-						}
+						// No cap on concurrent transcodes: every viewer gets one.
 						const abs = resolveInRoot(message.rootPath, message.relPath);
 						if (!abs) {
 							conn.send({

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20
+
+**No limit on simultaneous viewers** (no schema change; `HubLimits.maxTranscodeSessions` and `maxConcurrentTransfers` removed).
+
+- A device used to refuse a third transcode at the same time, and more than four file or segment transfers at once ("Can't play this right now · device busy"). That covers direct play, remux and transcoded segments alike. Now every viewer is served. A device asked for more transcodes than its CPU or GPU can keep up with slows down every one of them, so how many viewers a device can serve smoothly depends on its hardware.
+
 ## 2026-10-19
 
 **Storage gateway: GPU transcoding** (migration `0033_hardware_acceleration`; additive `hwEncoder`/`hwDecoder` capability fields and `session.start.hwaccel`, `PROTOCOL_VERSION` stays 1).
