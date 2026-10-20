@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
+import { wuchale } from 'wuchale/vite';
 
 /** WebSocket endpoints (path prefix → handler module), mirrored by server/index.js. */
 const WS_ENDPOINTS: [prefix: string, module: string][] = [
@@ -40,6 +41,7 @@ function websocketsDev(): Plugin {
 
 export default defineConfig({
 	plugins: [
+		wuchale(),
 		tailwindcss(),
 		websocketsDev(),
 		sveltekit({
