@@ -43,6 +43,7 @@ msgstr "Just added"
 #: src/lib/components/media/library-toolbar.svelte
 #: src/lib/components/site-header.svelte
 #: src/lib/components/stats/bucket-chart.svelte
+#: src/lib/data/device-events.ts
 #: src/routes/+page.server.ts
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/devices/+page.svelte
@@ -61,6 +62,7 @@ msgstr "Movies"
 #: src/lib/components/media/poster-card.svelte
 #: src/lib/components/search-box.svelte
 #: src/lib/components/site-header.svelte
+#: src/lib/data/device-events.ts
 #: src/routes/+page.server.ts
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/devices/+page.svelte
@@ -75,21 +77,17 @@ msgstr "Series"
 msgid "Mysteries & thrillers"
 msgstr "Mysteries & thrillers"
 
-#: src/routes/+page.server.ts
+#: src/lib/data/genres.ts
 msgid "Mystery"
 msgstr "Mystery"
 
-#: src/routes/+page.server.ts
+#: src/lib/data/genres.ts
 msgid "Thriller"
 msgstr "Thriller"
 
 #: src/routes/admin/+layout.server.ts
 msgid "This area is for administrators only."
 msgstr "This area is for administrators only."
-
-#: src/routes/login/+page.server.ts
-msgid "Sign in failed"
-msgstr "Sign in failed"
 
 #: src/routes/admin/users/+page.server.ts
 #: src/routes/login/+page.server.ts
@@ -118,10 +116,6 @@ msgstr "Email is required"
 msgid "Password must be at least {0} characters"
 msgstr "Password must be at least {0} characters"
 
-#: src/routes/register/+page.server.ts
-msgid "Sign up failed"
-msgstr "Sign up failed"
-
 #: src/routes/admin/devices/+page.server.ts
 msgid "New device"
 msgstr "New device"
@@ -147,6 +141,8 @@ msgstr "Library not found"
 
 #: src/lib/components/devices/library-row.svelte
 #: src/lib/components/devices/library-row.svelte
+#: src/lib/components/devices/types.ts
+#: src/lib/components/devices/types.ts
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
@@ -269,7 +265,6 @@ msgid "Add a TMDB API key first"
 msgstr "Add a TMDB API key first"
 
 #: src/routes/admin/users/+page.server.ts
-#: src/routes/settings/account/+page.server.ts
 #: src/routes/settings/devices/+page.server.ts
 msgid "Request failed"
 msgstr "Request failed"
@@ -312,7 +307,7 @@ msgstr "Missing user"
 msgid "Change your own password in Settings"
 msgstr "Change your own password in Settings"
 
-#: src/routes/admin/statistics/+page.server.ts
+#: src/lib/playback-client.ts
 msgid "Playback was stopped by an administrator."
 msgstr "Playback was stopped by an administrator."
 
@@ -387,6 +382,7 @@ msgstr "Category not found"
 msgid "No such user."
 msgstr "No such user."
 
+#: src/routes/api/together/+server.ts
 #: src/routes/series/[id]/watch/[episode]/+page.server.ts
 msgid "Episode not found"
 msgstr "Episode not found"
@@ -573,35 +569,8 @@ msgid "Saved"
 msgstr "Saved"
 
 #: src/lib/components/search-box.svelte
-msgid "AbortError"
-msgstr "AbortError"
-
-#: src/lib/components/search-box.svelte
 msgid "Search failed"
 msgstr "Search failed"
-
-#: src/lib/components/search-box.svelte
-#: src/lib/components/search-box.svelte
-msgid "ArrowDown"
-msgstr "ArrowDown"
-
-#: src/lib/components/search-box.svelte
-msgid "ArrowUp"
-msgstr "ArrowUp"
-
-#: src/lib/components/search-box.svelte
-msgid "Enter"
-msgstr "Enter"
-
-#: src/lib/components/media/watch-player.svelte
-#: src/lib/components/media/watch-player.svelte
-#: src/lib/components/search-box.svelte
-msgid "Escape"
-msgstr "Escape"
-
-#: src/lib/components/search-box.svelte
-msgid "Tab"
-msgstr "Tab"
 
 #: src/lib/components/search-box.svelte
 msgid "Search…"
@@ -630,10 +599,6 @@ msgstr "Movie"
 #: src/lib/components/search-box.svelte
 msgid "See all results for “{0}”"
 msgstr "See all results for “{0}”"
-
-#: src/lib/components/session-device-icon.svelte
-msgid "Windows"
-msgstr "Windows"
 
 #: src/lib/components/signup-form.svelte
 msgid "Registration is closed"
@@ -750,21 +715,19 @@ msgstr "Manage profiles"
 msgid "Sign out"
 msgstr "Sign out"
 
-#: src/lib/together/session.svelte.ts
+#: src/lib/together/notices.ts
 msgid "This watch party is full."
 msgstr "This watch party is full."
 
-#: src/lib/together/session.svelte.ts
+#: src/lib/together/notices.ts
+#: src/lib/together/notices.ts
+#: src/routes/api/together/[code]/ticket/+server.ts
 msgid "This watch party has ended."
 msgstr "This watch party has ended."
 
 #: src/lib/together/session.svelte.ts
 msgid "Lost the connection to the watch party."
 msgstr "Lost the connection to the watch party."
-
-#: src/lib/together/session.svelte.ts
-msgid "NotAllowedError"
-msgstr "NotAllowedError"
 
 #: src/routes/admin/+page.svelte
 msgid "Watching now"
@@ -911,10 +874,11 @@ msgstr "Pair a device"
 
 #: src/lib/components/devices/device-card.svelte
 #: src/routes/admin/+page.svelte
+#: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Online"
 msgstr "Online"
 
-#. 0: device.lastSeenAt ? formatRelative(device.lastSeenAt) \\: 'never'
+#. 0: formatRelative(device.lastSeenAt)
 #: src/routes/admin/+page.svelte
 msgid "Last seen {0}"
 msgstr "Last seen {0}"
@@ -923,6 +887,7 @@ msgstr "Last seen {0}"
 msgid "Graphs <0/>"
 msgstr "Graphs <0/>"
 
+#: src/lib/server/stats/queries.ts
 #: src/routes/admin/+page.svelte
 msgid "Last 7 days"
 msgstr "Last 7 days"
@@ -940,11 +905,6 @@ msgstr "Recently added"
 #: src/routes/admin/+page.svelte
 msgid "Nothing scanned yet."
 msgstr "Nothing scanned yet."
-
-#. 0: file.newEpisodes
-#: src/routes/admin/+page.svelte
-msgid "{0} new episodes ·"
-msgstr "{0} new episodes ·"
 
 #: src/routes/categories/+page.svelte
 msgid "Genres"
@@ -974,20 +934,6 @@ msgstr "Categories appear once your libraries are scanned and titles have metada
 #: src/routes/profiles/+page.svelte
 msgid "Who's watching?"
 msgstr "Who's watching?"
-
-#: src/routes/profiles/+page.svelte
-msgid "Several people"
-msgstr "Several people"
-
-#. 0: data.maxProfiles
-#: src/routes/profiles/+page.svelte
-msgid "Up to {0} people"
-msgstr "Up to {0} people"
-
-#. 0: data.maxProfiles === null ? 'Several people' \\: `Up to ${data.maxProfiles} people`
-#: src/routes/profiles/+page.svelte
-msgid "Choose a profile to rename it or change its look. {0} can share this account, each with their own progress, watchlist and settings."
-msgstr "Choose a profile to rename it or change its look. {0} can share this account, each with their own progress, watchlist and settings."
 
 #. 0: profile.name
 #: src/routes/profiles/+page.svelte
@@ -1096,11 +1042,6 @@ msgstr "The profile's watch progress, Continue watching, watchlist and settings 
 #: src/routes/search/+page.svelte
 msgid "Search"
 msgstr "Search"
-
-#. 0: count; 1: count === 1 ? '' \\: 's'; 2: data.q
-#: src/routes/search/+page.svelte
-msgid "{0} result{1} for “{2}”"
-msgstr "{0} result{1} for “{2}”"
 
 #: src/routes/search/+page.svelte
 msgid "Type in the search bar above — results appear as you type, even with a typo or two."
@@ -1464,6 +1405,7 @@ msgid "Detecting intros & credits"
 msgstr "Detecting intros & credits"
 
 #: src/lib/components/devices/marker-job-card.svelte
+#: src/lib/data/device-events.ts
 msgid "Intro & credits detection finished"
 msgstr "Intro & credits detection finished"
 
@@ -1519,6 +1461,7 @@ msgid "Generating thumbnails"
 msgstr "Generating thumbnails"
 
 #: src/lib/components/devices/thumbnail-job-card.svelte
+#: src/lib/data/device-events.ts
 msgid "Thumbnails finished"
 msgstr "Thumbnails finished"
 
@@ -1650,21 +1593,9 @@ msgstr "Season {0}"
 msgid "Season {0} episodes"
 msgstr "Season {0} episodes"
 
-#. 0: season.year; 1: season.episodes.length
-#. 0: season.year; 1: season.episodes.length
-#: src/lib/components/media/episodes-panel.svelte
-#: src/routes/series/[id]/+page.svelte
-msgid "{0} · {1} episodes"
-msgstr "{0} · {1} episodes"
-
 #: src/lib/components/media/hero-banner.svelte
 msgid "<0/> More info"
 msgstr "<0/> More info"
-
-#. 0: item.kind === 'movie' ? 'movie' \\: 'series'
-#: src/lib/components/media/hero-banner.svelte
-msgid "Featured {0}"
-msgstr "Featured {0}"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 #: src/lib/components/media/find-subtitles-panel.svelte
@@ -1683,16 +1614,19 @@ msgid "Close"
 msgstr "Close"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
+#: src/routes/admin/settings/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
+#: src/routes/settings/preferences/+page.svelte
+#: src/routes/settings/preferences/+page.svelte
 msgid "Language"
 msgstr "Language"
 
-#. 0: languageName(language) ?? language
+#. 0: languageLabel(language) ?? language
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "<0/> Searching {0} subtitles…"
 msgstr "<0/> Searching {0} subtitles…"
 
-#. 0: languageName(language) ?? language
+#. 0: languageLabel(language) ?? language
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "Nothing found in {0}. Try another language."
 msgstr "Nothing found in {0}. Try another language."
@@ -1710,6 +1644,7 @@ msgid "SDH"
 msgstr "SDH"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
+#: src/lib/server/streaming/subtitles.ts
 msgid "forced"
 msgstr "forced"
 
@@ -1724,11 +1659,6 @@ msgstr "AI translated"
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "machine translated"
 msgstr "machine translated"
-
-#. 0: result.downloads.toLocaleString()
-#: src/lib/components/media/find-subtitles-panel.svelte
-msgid "{0} downloads"
-msgstr "{0} downloads"
 
 #. 0: result.uploader
 #: src/lib/components/media/find-subtitles-panel.svelte
@@ -1763,11 +1693,6 @@ msgstr "Sort by"
 #: src/lib/components/media/library-toolbar.svelte
 msgid "Sort"
 msgstr "Sort"
-
-#. 0: filtered.length; 1: items.length
-#: src/lib/components/media/library-page.svelte
-msgid "{0} of {1} titles"
-msgstr "{0} of {1} titles"
 
 #: src/lib/components/media/library-page.svelte
 msgid "No results"
@@ -1813,11 +1738,6 @@ msgstr "Audio"
 msgid "File"
 msgstr "File"
 
-#. 0: item.seasons.length; 1: item.seasons.length === 1 ? '' \\: 's'
-#: src/lib/components/media/meta-pills.svelte
-msgid "{0} season{1}"
-msgstr "{0} season{1}"
-
 #: src/lib/components/media/poster-card.svelte
 msgid "Just Added"
 msgstr "Just Added"
@@ -1854,12 +1774,17 @@ msgid "Trailer playing from YouTube."
 msgstr "Trailer playing from YouTube."
 
 #: src/lib/components/stats/active-stream-card.svelte
+#: src/lib/data/media-format.ts
+#: src/lib/data/stats.ts
+#: src/lib/server/stats/queries.ts
+#: src/lib/server/stats/queries.ts
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Unknown"
 msgstr "Unknown"
 
 #: src/lib/components/stats/active-stream-card.svelte
 #: src/lib/components/stats/history-table.svelte
+#: src/lib/data/stats.ts
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "Direct play"
 msgstr "Direct play"
@@ -1874,7 +1799,8 @@ msgid "Transcode → {0} H.264{1}"
 msgstr "Transcode → {0} H.264{1}"
 
 #: src/lib/components/stats/active-stream-card.svelte
-#: src/routes/settings/playback/+page.svelte
+#: src/lib/data/media-format.ts
+#: src/lib/data/playback-settings.ts
 msgid "Stereo"
 msgstr "Stereo"
 
@@ -1889,6 +1815,8 @@ msgstr "Position"
 
 #: src/lib/components/media/watch-player.svelte
 #: src/lib/components/stats/active-stream-card.svelte
+#: src/lib/data/library-scanning.ts
+#: src/lib/data/markers.ts
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/settings/subtitles/+page.svelte
 #: src/routes/settings/subtitles/+page.svelte
@@ -1984,18 +1912,6 @@ msgstr "Watch credits"
 #: src/lib/components/media/watch-player.svelte
 msgid "Skip credits"
 msgstr "Skip credits"
-
-#: src/lib/components/media/watch-player.svelte
-msgid "Space"
-msgstr "Space"
-
-#: src/lib/components/media/watch-player.svelte
-msgid "ArrowLeft"
-msgstr "ArrowLeft"
-
-#: src/lib/components/media/watch-player.svelte
-msgid "ArrowRight"
-msgstr "ArrowRight"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Back"
@@ -2151,6 +2067,7 @@ msgid "Transcode{0}"
 msgstr "Transcode{0}"
 
 #: src/lib/components/stats/history-table.svelte
+#: src/lib/data/stats.ts
 msgid "Remux"
 msgstr "Remux"
 
@@ -2190,6 +2107,8 @@ msgid "Guest"
 msgstr "Guest"
 
 #: src/lib/components/stats/title-link.svelte
+#: src/lib/data/stats.ts
+#: src/lib/server/stats/queries.ts
 msgid "Unknown series"
 msgstr "Unknown series"
 
@@ -2426,24 +2345,6 @@ msgid "Reset"
 msgstr "Reset"
 
 #: src/routes/admin/devices/+page.svelte
-msgid "device"
-msgstr "device"
-
-#. 0: online
-#: src/routes/admin/devices/+page.svelte
-msgid "{0} online"
-msgstr "{0} online"
-
-#. 0: libraries
-#: src/routes/admin/devices/+page.svelte
-msgid "{0} libraries"
-msgstr "{0} libraries"
-
-#: src/routes/admin/devices/+page.svelte
-msgid "file"
-msgstr "file"
-
-#: src/routes/admin/devices/+page.svelte
 msgid "Computers and NAS boxes that stream your media to this server."
 msgstr "Computers and NAS boxes that stream your media to this server."
 
@@ -2520,11 +2421,6 @@ msgstr "Revoke device"
 msgid "Remove {0}?"
 msgstr "Remove {0}?"
 
-#. 0: removeLibrary.target.files.toLocaleString(); 1: removeLibrary.target.files === 1 ? 'file leaves' \\: 'files leave'
-#: src/routes/admin/devices/+page.svelte
-msgid "Its {0} {1} the catalog. Nothing is deleted from the device, and you can add the folder again later."
-msgstr "Its {0} {1} the catalog. Nothing is deleted from the device, and you can add the folder again later."
-
 #: src/routes/admin/devices/+page.svelte
 msgid "Remove library"
 msgstr "Remove library"
@@ -2578,11 +2474,6 @@ msgstr "They were signed out everywhere."
 msgid "Changed the password for {0}."
 msgstr "Changed the password for {0}."
 
-#. 0: banned
-#: src/routes/admin/users/+page.svelte
-msgid "· {0} banned"
-msgstr "· {0} banned"
-
 #: src/routes/admin/users/+page.svelte
 msgid "Accounts"
 msgstr "Accounts"
@@ -2600,6 +2491,7 @@ msgstr "Status"
 msgid "Joined"
 msgstr "Joined"
 
+#: src/lib/data/genres.ts
 #: src/routes/admin/users/+page.svelte
 msgid "Action"
 msgstr "Action"
@@ -2975,11 +2867,6 @@ msgstr "Start download"
 msgid "Recent activity"
 msgstr "Recent activity"
 
-#. 0: data.totals.downloaded.toLocaleString(); 1: data.totals.notFound.toLocaleString()
-#: src/routes/admin/subtitles/+page.svelte
-msgid "{0} subtitles downloaded so far · {1} searches without a result"
-msgstr "{0} subtitles downloaded so far · {1} searches without a result"
-
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Nothing downloaded yet."
 msgstr "Nothing downloaded yet."
@@ -2999,11 +2886,6 @@ msgstr "Source"
 #: src/routes/admin/settings/+page.svelte
 msgid "Hub-wide options and catalog housekeeping."
 msgstr "Hub-wide options and catalog housekeeping."
-
-#. 0: form.pruned.movies; 1: form.pruned.movies === 1 ? 'movie' \\: 'movies'; 2: form.pruned.series; 3: form.pruned .episodes; 4: form.pruned.episodes === 1 ? 'episode' \\: 'episodes'
-#: src/routes/admin/settings/+page.svelte
-msgid "Removed {0} {1} and {2} series ({3} {4})."
-msgstr "Removed {0} {1} and {2} series ({3} {4})."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Refreshing every title in the background."
@@ -3178,11 +3060,6 @@ msgstr "Devices decode and encode transcodes on their GPU (NVIDIA, AMD, Intel, A
 msgid "Every title in the catalog is backed by a media file."
 msgstr "Every title in the catalog is backed by a media file."
 
-#. 0: data.orphans.movies; 1: data.orphans.movies === 1 ? 'movie' \\: 'movies'; 2: data.orphans.series
-#: src/routes/admin/settings/+page.svelte
-msgid "{0} {1} and {2} series have no media files (placeholder titles, or files from a removed library). Titles are also pruned automatically when a scan finishes."
-msgstr "{0} {1} and {2} series have no media files (placeholder titles, or files from a removed library). Titles are also pruned automatically when a scan finishes."
-
 #: src/routes/admin/settings/+page.svelte
 msgid "Catalog"
 msgstr "Catalog"
@@ -3194,16 +3071,6 @@ msgstr "Remove titles without files"
 #: src/routes/admin/settings/+page.svelte
 msgid "Add a TMDB API key to fetch posters, synopses, genres, cast and ratings for scanned titles automatically."
 msgstr "Add a TMDB API key to fetch posters, synopses, genres, cast and ratings for scanned titles automatically."
-
-#. 0: data.metadata.pending.movies; 1: data.metadata.pending.series; 2: data.metadata.pending.episodes
-#: src/routes/admin/settings/+page.svelte
-msgid "Fetching metadata from TMDB… ({0} movies, {1} series, {2} episodes pending)"
-msgstr "Fetching metadata from TMDB… ({0} movies, {1} series, {2} episodes pending)"
-
-#. 0: data.metadata.pending.movies; 1: data.metadata.pending.series; 2: data.metadata.pending.episodes
-#: src/routes/admin/settings/+page.svelte
-msgid "TMDB configured · {0} movies, {1} series and {2} episodes are waiting for metadata (fetched after the next scan, or refresh now)."
-msgstr "TMDB configured · {0} movies, {1} series and {2} episodes are waiting for metadata (fetched after the next scan, or refresh now)."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "TMDB configured · every title has been looked up."
@@ -3266,19 +3133,9 @@ msgstr "Metadata and artwork provided by <0>TMDB</0>. This product uses the TMDB
 msgid "Remove titles without files?"
 msgstr "Remove titles without files?"
 
-#. 0: data.orphans.movies; 1: data.orphans.movies === 1 ? 'movie' \\: 'movies'; 2: data.orphans.series
-#: src/routes/admin/settings/+page.svelte
-msgid "{0} {1} and {2} series have no media file on any device. They leave the catalog, and their watch progress and watchlist entries go with them. Nothing is deleted from your devices."
-msgstr "{0} {1} and {2} series have no media file on any device. They leave the catalog, and their watch progress and watchlist entries go with them. Nothing is deleted from your devices."
-
 #: src/routes/admin/settings/+page.svelte
 msgid "Remove titles"
 msgstr "Remove titles"
-
-#. 0: streams.length; 1: streams.length === 1 ? 'stream' \\: 'streams'; 2: transcoding; 3: formatBitrate( bandwidth )
-#: src/routes/admin/statistics/+page.svelte
-msgid "{0} {1} · {2} transcoding · {3}"
-msgstr "{0} {1} · {2} transcoding · {3}"
 
 #: src/routes/admin/statistics/+page.svelte
 msgid "Watch statistics"
@@ -3306,11 +3163,6 @@ msgstr "Most used platforms"
 msgid "Devices · Settings"
 msgstr "Devices · Settings"
 
-#. 0: data.sessionLimit; 1: data.sessionLimit === 1 ? 'device' \\: 'devices'
-#: src/routes/settings/devices/+page.svelte
-msgid "Up to {0} {1} can be signed in at once; signing in on another signs out the one used longest ago."
-msgstr "Up to {0} {1} can be signed in at once; signing in on another signs out the one used longest ago."
-
 #: src/routes/settings/devices/+page.svelte
 msgid "Where your account is signed in. A device you sign out has to sign in again. <0/>"
 msgstr "Where your account is signed in. A device you sign out has to sign in again. <0/>"
@@ -3337,22 +3189,8 @@ msgid "Sign out all other devices"
 msgstr "Sign out all other devices"
 
 #: src/routes/settings/devices/+page.svelte
-msgid "One other device"
-msgstr "One other device"
-
-#. 0: others
-#: src/routes/settings/devices/+page.svelte
-msgid "{0} other devices"
-msgstr "{0} other devices"
-
-#: src/routes/settings/devices/+page.svelte
 msgid "Sign out all other devices?"
 msgstr "Sign out all other devices?"
-
-#. 0: others === 1 ? 'One other device' \\: `${others} other devices`
-#: src/routes/settings/devices/+page.svelte
-msgid "{0} will have to sign in again. This device stays signed in."
-msgstr "{0} will have to sign in again. This device stays signed in."
 
 #: src/routes/settings/devices/+page.svelte
 msgid "Sign out others"
@@ -3568,15 +3406,10 @@ msgstr "Screensaver settings saved."
 msgid "Save screensaver settings"
 msgstr "Save screensaver settings"
 
-#. 0: labels.slice(0, -1).join(', '); 1: labels[labels.length - 1]
-#: src/routes/settings/account/+page.svelte
+#. 0: names[0]; 1: names[1]
+#: src/lib/data/together.ts
 msgid "{0} and {1}"
 msgstr "{0} and {1}"
-
-#. 0: list; 1: labels.length === 1 ? 'was' \\: 'were'
-#: src/routes/settings/account/+page.svelte
-msgid "Your {0} {1} updated."
-msgstr "Your {0} {1} updated."
 
 #: src/routes/settings/account/+page.svelte
 msgid "Account · Settings"
@@ -3618,10 +3451,6 @@ msgstr "Needed to change your email address or password."
 #: src/routes/settings/account/+page.svelte
 msgid "Current password"
 msgstr "Current password"
-
-#: src/routes/settings/subtitles/+page.svelte
-msgid "English"
-msgstr "English"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Subtitles · Settings"
@@ -3693,11 +3522,6 @@ msgid "Statistics · Settings"
 msgstr "Statistics · Settings"
 
 #: src/routes/settings/statistics/+page.svelte
-#: src/routes/settings/statistics/+page.svelte
-msgid "play"
-msgstr "play"
-
-#: src/routes/settings/statistics/+page.svelte
 msgid "Nothing watched yet"
 msgstr "Nothing watched yet"
 
@@ -3705,15 +3529,7 @@ msgstr "Nothing watched yet"
 msgid "Your watch time, most watched titles and viewing habits show up here once you've watched something on this profile."
 msgstr "Your watch time, most watched titles and viewing habits show up here once you've watched something on this profile."
 
-#: src/routes/settings/statistics/+page.svelte
-msgid "movie"
-msgstr "movie"
-
-#: src/routes/settings/statistics/+page.svelte
-msgid "episode"
-msgstr "episode"
-
-#. 0: plural(data.finished.movies, 'movie', 'movies'); 1: plural( data.finished.episodes, 'episode', 'episodes' )
+#. 0: plural(data.finished.movies, ['# movie', '# movies']); 1: plural( data.finished.episodes, ['# episode', '# episodes'] )
 #: src/routes/settings/statistics/+page.svelte
 msgid "Finished {0} and {1}."
 msgstr "Finished {0} and {1}."
@@ -3833,11 +3649,6 @@ msgstr "Total size"
 msgid "Total runtime"
 msgstr "Total runtime"
 
-#. 0: data.libraries.total.toLocaleString(); 1: data.libraries.total === 1 ? 'library' \\: 'libraries'
-#: src/routes/admin/statistics/libraries/+page.svelte
-msgid "Active files per library; a title on several devices counts in each · {0} {1}"
-msgstr "Active files per library; a title on several devices counts in each · {0} {1}"
-
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Titles"
 msgstr "Titles"
@@ -3891,6 +3702,7 @@ msgstr "Nothing added yet."
 msgid "All users"
 msgstr "All users"
 
+#: src/lib/server/stats/queries.ts
 #: src/routes/admin/statistics/history/+page.svelte
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "Guests"
@@ -3913,14 +3725,10 @@ msgstr "Watch history"
 msgid "Type"
 msgstr "Type"
 
+#: src/lib/server/stats/queries.ts
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "All time"
 msgstr "All time"
-
-#. 0: first; 1: last; 2: data.history.total.toLocaleString()
-#: src/routes/admin/statistics/history/+page.svelte
-msgid "{0}–{1} of {2} plays"
-msgstr "{0}–{1} of {2} plays"
 
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "No plays match these filters."
@@ -3954,11 +3762,6 @@ msgstr "Top users"
 #: src/routes/admin/statistics/users/+page.svelte
 msgid "User statistics"
 msgstr "User statistics"
-
-#. 0: data.total.toLocaleString(); 1: data.total === 1 ? 'account' \\: 'accounts'
-#: src/routes/admin/statistics/users/+page.svelte
-msgid "Every account's activity and watch totals, all time · {0} {1}"
-msgstr "Every account's activity and watch totals, all time · {0} {1}"
 
 #: src/routes/admin/statistics/users/+page.svelte
 #: src/routes/admin/statistics/users/[id]/+page.svelte
@@ -4001,11 +3804,6 @@ msgstr "Platforms"
 msgid "No plays yet."
 msgstr "No plays yet."
 
-#. 0: first; 1: last; 2: data.recent.total.toLocaleString()
-#: src/routes/admin/statistics/users/[id]/+page.svelte
-msgid "{0}–{1} of {2} plays · <0>View in history</0>"
-msgstr "{0}–{1} of {2} plays · <0>View in history</0>"
-
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "Recent history"
 msgstr "Recent history"
@@ -4029,3 +3827,1106 @@ msgstr "Preparing playback…"
 #: src/routes/series/[id]/watch/[episode]/+page.svelte
 msgid "Watch {0} {1}"
 msgstr "Watch {0} {1}"
+
+#: src/routes/settings/preferences/+page.svelte
+msgid "Save language"
+msgstr "Save language"
+
+#: src/routes/admin/statistics/history/+page.svelte
+#: src/routes/admin/statistics/users/[id]/+page.svelte
+#: src/routes/admin/statistics/users/[id]/+page.svelte
+#: src/routes/settings/statistics/+page.svelte
+#: src/routes/settings/statistics/+page.svelte
+msgid "# play"
+msgid_plural "# plays"
+msgstr[0] "# play"
+msgstr[1] "# plays"
+
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/settings/statistics/+page.svelte
+msgid "# movie"
+msgid_plural "# movies"
+msgstr[0] "# movie"
+msgstr[1] "# movies"
+
+#: src/lib/components/media/episodes-panel.svelte
+#: src/lib/data/playback-settings.ts
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/series/[id]/+page.svelte
+#: src/routes/settings/statistics/+page.svelte
+msgid "# episode"
+msgid_plural "# episodes"
+msgstr[0] "# episode"
+msgstr[1] "# episodes"
+
+#: src/routes/admin/devices/+page.svelte
+msgid "# device"
+msgid_plural "# devices"
+msgstr[0] "# device"
+msgstr[1] "# devices"
+
+#: src/routes/admin/devices/+page.svelte
+msgid "# online"
+msgid_plural "# online"
+msgstr[0] "# online"
+msgstr[1] "# online"
+
+#: src/routes/admin/+page.svelte
+#: src/routes/admin/+page.svelte
+#: src/routes/admin/devices/+page.svelte
+#: src/routes/admin/statistics/libraries/+page.svelte
+msgid "# library"
+msgid_plural "# libraries"
+msgstr[0] "# library"
+msgstr[1] "# libraries"
+
+#: src/lib/components/devices/library-row.svelte
+#: src/routes/admin/+page.svelte
+#: src/routes/admin/devices/+page.svelte
+msgid "# file"
+msgid_plural "# files"
+msgstr[0] "# file"
+msgstr[1] "# files"
+
+#: src/lib/data/account-sessions.ts
+#: src/lib/data/stats.ts
+#: src/lib/server/stats/activity.ts
+msgid "Unknown device"
+msgstr "Unknown device"
+
+#: src/lib/data/account-sessions.ts
+msgid "Unknown browser"
+msgstr "Unknown browser"
+
+#. 0: s.browser ?? 'Unknown browser'; 1: s.os
+#: src/lib/data/account-sessions.ts
+msgid "{0} on {1}"
+msgstr "{0} on {1}"
+
+#: src/lib/data/device-events.ts
+msgid "First scan of a new library"
+msgstr "First scan of a new library"
+
+#: src/lib/data/device-events.ts
+msgid "Full rescan: every file re-read"
+msgstr "Full rescan: every file re-read"
+
+#: src/lib/data/device-events.ts
+#: src/lib/data/device-events.ts
+msgid "Stopped early"
+msgstr "Stopped early"
+
+#: src/lib/data/library-scanning.ts
+msgid "Every day"
+msgstr "Every day"
+
+#: src/lib/data/media-format.ts
+#: src/lib/data/playback-settings.ts
+msgid "Mono"
+msgstr "Mono"
+
+#. 0: channels
+#: src/lib/data/media-format.ts
+msgid "{0} ch"
+msgstr "{0} ch"
+
+#. 0: decimal(bitsPerSecond / 1_000_000, 1)
+#: src/lib/data/media-format.ts
+msgid "{0} Mb/s"
+msgstr "{0} Mb/s"
+
+#. 0: decimal(bitsPerSecond / 1000, 0)
+#: src/lib/data/media-format.ts
+msgid "{0} kb/s"
+msgstr "{0} kb/s"
+
+#. 0: index + 1
+#. 0: index + 1
+#. 0: index + 1
+#: src/lib/data/media-format.ts
+#: src/lib/server/streaming/audio.ts
+#: src/lib/server/streaming/subtitles.ts
+msgid "Track {0}"
+msgstr "Track {0}"
+
+#: src/lib/data/media-format.ts
+#: src/lib/server/streaming/audio.ts
+msgid "Commentary"
+msgstr "Commentary"
+
+#: src/lib/data/media-format.ts
+#: src/lib/server/streaming/audio.ts
+msgid "Audio description"
+msgstr "Audio description"
+
+#: src/lib/data/genres.ts
+msgid "Drama"
+msgstr "Drama"
+
+#: src/lib/data/genres.ts
+msgid "Comedy"
+msgstr "Comedy"
+
+#: src/lib/data/genres.ts
+msgid "Horror"
+msgstr "Horror"
+
+#: src/lib/data/genres.ts
+msgid "Fantasy"
+msgstr "Fantasy"
+
+#: src/lib/data/genres.ts
+msgid "Romance"
+msgstr "Romance"
+
+#: src/lib/data/genres.ts
+msgid "Documentary"
+msgstr "Documentary"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Bottom edge"
+msgstr "Bottom edge"
+
+#. 0: names[0]; 1: names[1]; 2: names[2]
+#: src/lib/data/together.ts
+msgid "{0}, {1} and {2}"
+msgstr "{0}, {1} and {2}"
+
+#: src/lib/components/devices/types.ts
+#: src/lib/components/devices/types.ts
+msgid "Turned off in Site settings"
+msgstr "Turned off in Site settings"
+
+#: src/lib/components/devices/types.ts
+#: src/lib/components/devices/types.ts
+msgid "Update the gateway on this device first"
+msgstr "Update the gateway on this device first"
+
+#: src/lib/components/devices/types.ts
+msgid "A detection run is in progress"
+msgstr "A detection run is in progress"
+
+#: src/routes/admin/settings/+page.server.ts
+#: src/routes/settings/preferences/+page.server.ts
+msgid "Pick a language from the list"
+msgstr "Pick a language from the list"
+
+#: src/routes/admin/settings/+page.svelte
+msgid "The language of menus, buttons and messages for guests and for profiles that haven't picked their own (Settings → Preferences)."
+msgstr "The language of menus, buttons and messages for guests and for profiles that haven't picked their own (Settings → Preferences)."
+
+#: src/routes/admin/settings/+page.svelte
+msgid "Default language"
+msgstr "Default language"
+
+#: src/lib/data/genres.ts
+msgid "Sci-Fi"
+msgstr "Sci-Fi"
+
+#: src/lib/components/media/meta-pills.svelte
+#: src/lib/components/media/poster-card.svelte
+msgid "# season"
+msgid_plural "# seasons"
+msgstr[0] "# season"
+msgstr[1] "# seasons"
+
+#: src/lib/components/media/category-tile.svelte
+#: src/lib/components/media/library-page.svelte
+msgid "# title"
+msgid_plural "# titles"
+msgstr[0] "# title"
+msgstr[1] "# titles"
+
+#. 0: filtered.length; 1: plural(items.length, ['# title', '# titles'])
+#: src/lib/components/media/library-page.svelte
+msgid "{0} of {1}"
+msgstr "{0} of {1}"
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your name, email address and password were updated."
+msgstr "Your name, email address and password were updated."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your name and email address were updated."
+msgstr "Your name and email address were updated."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your name and password were updated."
+msgstr "Your name and password were updated."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your email address and password were updated."
+msgstr "Your email address and password were updated."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your name was updated."
+msgstr "Your name was updated."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your email address was updated."
+msgstr "Your email address was updated."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your password was updated."
+msgstr "Your password was updated."
+
+#: src/routes/settings/devices/+page.svelte
+msgid "Up to # device can be signed in at once; signing in on another signs out the one used longest ago."
+msgid_plural "Up to # devices can be signed in at once; signing in on another signs out the one used longest ago."
+msgstr[0] "Up to # device can be signed in at once; signing in on another signs out the one used longest ago."
+msgstr[1] "Up to # devices can be signed in at once; signing in on another signs out the one used longest ago."
+
+#: src/routes/settings/devices/+page.svelte
+msgid "One other device will have to sign in again. This device stays signed in."
+msgid_plural "# other devices will have to sign in again. This device stays signed in."
+msgstr[0] "One other device will have to sign in again. This device stays signed in."
+msgstr[1] "# other devices will have to sign in again. This device stays signed in."
+
+#: src/routes/admin/devices/+page.svelte
+msgid "Its # file leaves the catalog. Nothing is deleted from the device, and you can add the folder again later."
+msgid_plural "Its # files leave the catalog. Nothing is deleted from the device, and you can add the folder again later."
+msgstr[0] "Its # file leaves the catalog. Nothing is deleted from the device, and you can add the folder again later."
+msgstr[1] "Its # files leave the catalog. Nothing is deleted from the device, and you can add the folder again later."
+
+#: src/lib/server/stats/activity.ts
+#: src/lib/server/stats/queries.ts
+#: src/lib/server/stats/queries.ts
+msgid "Deleted user"
+msgstr "Deleted user"
+
+#: src/lib/server/stats/queries.ts
+msgid "Last 24 hours"
+msgstr "Last 24 hours"
+
+#: src/lib/server/stats/queries.ts
+msgid "Last 30 days"
+msgstr "Last 30 days"
+
+#: src/lib/data/stats.ts
+msgid "Transcoding"
+msgstr "Transcoding"
+
+#: src/lib/data/stats.ts
+#: src/lib/data/stats.ts
+#: src/lib/data/stats.ts
+msgid "# day"
+msgid_plural "# days"
+msgstr[0] "# day"
+msgstr[1] "# days"
+
+#: src/lib/data/stats.ts
+msgid "# year"
+msgid_plural "# years"
+msgstr[0] "# year"
+msgstr[1] "# years"
+
+#: src/lib/data/stats.ts
+msgid "Desktop"
+msgstr "Desktop"
+
+#: src/lib/data/stats.ts
+msgid "Phone"
+msgstr "Phone"
+
+#: src/lib/data/stats.ts
+msgid "Tablet"
+msgstr "Tablet"
+
+#: src/lib/data/stats.ts
+msgid "TV"
+msgstr "TV"
+
+#: src/routes/admin/+page.svelte
+msgid "Never seen"
+msgstr "Never seen"
+
+#: src/routes/admin/+page.svelte
+msgid "# new episode"
+msgid_plural "# new episodes"
+msgstr[0] "# new episode"
+msgstr[1] "# new episodes"
+
+#: src/routes/search/+page.svelte
+msgid "# result"
+msgid_plural "# results"
+msgstr[0] "# result"
+msgstr[1] "# results"
+
+#. 0: plural(count, ['# result', '# results']); 1: data.q
+#: src/routes/search/+page.svelte
+msgid "{0} for “{1}”"
+msgstr "{0} for “{1}”"
+
+#: src/lib/components/media/category-tile.svelte
+msgid "# film"
+msgid_plural "# films"
+msgstr[0] "# film"
+msgstr[1] "# films"
+
+#: src/lib/data/time.ts
+msgid "just now"
+msgstr "just now"
+
+#. 0: plural(data.libraries.total, ['# library', '# libraries'])
+#: src/routes/admin/statistics/libraries/+page.svelte
+msgid "Active files per library; a title on several devices counts in each · {0}"
+msgstr "Active files per library; a title on several devices counts in each · {0}"
+
+#: src/lib/components/media/find-subtitles-panel.svelte
+msgid "# download"
+msgid_plural "# downloads"
+msgstr[0] "# download"
+msgstr[1] "# downloads"
+
+#: src/lib/components/media/watch-player.svelte
+msgid "direct play"
+msgstr "direct play"
+
+#: src/lib/components/media/watch-player.svelte
+msgid "remuxed"
+msgstr "remuxed"
+
+#: src/lib/components/media/watch-player.svelte
+msgid "transcoded"
+msgstr "transcoded"
+
+#: src/routes/admin/statistics/libraries/+page.svelte
+msgid "Offline"
+msgstr "Offline"
+
+#: src/lib/components/media/hero-banner.svelte
+msgid "Featured movie"
+msgstr "Featured movie"
+
+#: src/lib/components/media/hero-banner.svelte
+msgid "Featured series"
+msgstr "Featured series"
+
+#: src/routes/profiles/+page.svelte
+msgid "Several people can share this account, each with their own progress, watchlist and settings."
+msgstr "Several people can share this account, each with their own progress, watchlist and settings."
+
+#: src/routes/profiles/+page.svelte
+msgid "Up to # person can share this account, with their own progress, watchlist and settings."
+msgid_plural "Up to # people can share this account, each with their own progress, watchlist and settings."
+msgstr[0] "Up to # person can share this account, with their own progress, watchlist and settings."
+msgstr[1] "Up to # people can share this account, each with their own progress, watchlist and settings."
+
+#. 0: data.maxProfiles === null ? 'Several people can share this account, each with their own progress, watchlist and settings.' \\: plural(data.maxProfiles, [ 'Up to # person can share this account, with their own progress, watchlist and settings.', 'Up to # people can share this account, each with their own progress, watchlist and settings.' ])
+#: src/routes/profiles/+page.svelte
+msgid "Choose a profile to rename it or change its look. {0}"
+msgstr "Choose a profile to rename it or change its look. {0}"
+
+#: src/routes/admin/statistics/libraries/+page.svelte
+msgid "all time"
+msgstr "all time"
+
+#: src/lib/together/notices.ts
+msgid "Someone"
+msgstr "Someone"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} joined"
+msgstr "{0} joined"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} left"
+msgstr "{0} left"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} pressed play"
+msgstr "{0} pressed play"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} paused"
+msgstr "{0} paused"
+
+#. 0: name; 1: formatDurationUnits(event.position)
+#: src/lib/together/notices.ts
+msgid "{0} jumped to {1}"
+msgstr "{0} jumped to {1}"
+
+#. 0: name; 1: event.label
+#: src/lib/together/notices.ts
+msgid "{0} started {1}"
+msgstr "{0} started {1}"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} changed the episode"
+msgstr "{0} changed the episode"
+
+#. 0: event.target
+#: src/lib/together/notices.ts
+msgid "{0} was removed"
+msgstr "{0} was removed"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} is now the host"
+msgstr "{0} is now the host"
+
+#. 0: end.by
+#: src/lib/together/notices.ts
+msgid "{0} ended the watch party."
+msgstr "{0} ended the watch party."
+
+#. 0: end.by
+#: src/lib/together/notices.ts
+msgid "{0} removed you from the watch party."
+msgstr "{0} removed you from the watch party."
+
+#: src/lib/together/notices.ts
+msgid "You were removed from this watch party."
+msgstr "You were removed from this watch party."
+
+#: src/lib/together/notices.ts
+msgid "Opened in another window."
+msgstr "Opened in another window."
+
+#: src/lib/together/notices.ts
+msgid "Slow down a little."
+msgstr "Slow down a little."
+
+#: src/lib/data/preferences.ts
+msgid "Movie & series artwork"
+msgstr "Movie & series artwork"
+
+#: src/lib/data/preferences.ts
+msgid "Logo"
+msgstr "Logo"
+
+#: src/lib/data/preferences.ts
+msgid "# second"
+msgid_plural "# seconds"
+msgstr[0] "# second"
+msgstr[1] "# seconds"
+
+#: src/lib/data/preferences.ts
+msgid "# minute"
+msgid_plural "# minutes"
+msgstr[0] "# minute"
+msgstr[1] "# minutes"
+
+#: src/lib/data/playback-settings.ts
+msgid "# hour"
+msgid_plural "# hours"
+msgstr[0] "# hour"
+msgstr[1] "# hours"
+
+#: src/lib/data/playback-settings.ts
+msgid "Auto"
+msgstr "Auto"
+
+#: src/lib/data/playback-settings.ts
+msgid "5.1 surround"
+msgstr "5.1 surround"
+
+#: src/lib/data/device-events.ts
+msgid "Files changed on the device"
+msgstr "Files changed on the device"
+
+#: src/lib/data/device-events.ts
+msgid "Scheduled rescan"
+msgstr "Scheduled rescan"
+
+#: src/lib/data/device-events.ts
+msgid "Device reconnected"
+msgstr "Device reconnected"
+
+#: src/lib/data/device-events.ts
+msgid "Device paired"
+msgstr "Device paired"
+
+#: src/lib/data/device-events.ts
+msgid "Device renamed"
+msgstr "Device renamed"
+
+#: src/lib/data/device-events.ts
+msgid "Device revoked"
+msgstr "Device revoked"
+
+#: src/lib/data/device-events.ts
+msgid "Library added"
+msgstr "Library added"
+
+#: src/lib/data/device-events.ts
+msgid "Library removed"
+msgstr "Library removed"
+
+#: src/lib/data/device-events.ts
+msgid "Scan started"
+msgstr "Scan started"
+
+#: src/lib/data/device-events.ts
+msgid "Scan finished"
+msgstr "Scan finished"
+
+#: src/lib/data/device-events.ts
+msgid "Thumbnails started"
+msgstr "Thumbnails started"
+
+#: src/lib/data/device-events.ts
+msgid "Intro & credits detection started"
+msgstr "Intro & credits detection started"
+
+#. 0: formatElapsed(ms)
+#: src/lib/data/device-events.ts
+msgid "took {0}"
+msgstr "took {0}"
+
+#: src/lib/data/device-events.ts
+msgid "# file left the catalog"
+msgid_plural "# files left the catalog"
+msgstr[0] "# file left the catalog"
+msgstr[1] "# files left the catalog"
+
+#: src/lib/data/device-events.ts
+msgid "# new or changed"
+msgid_plural "# new or changed"
+msgstr[0] "# new or changed"
+msgstr[1] "# new or changed"
+
+#: src/lib/data/device-events.ts
+msgid "# missing"
+msgid_plural "# missing"
+msgstr[0] "# missing"
+msgstr[1] "# missing"
+
+#: src/lib/data/device-events.ts
+msgid "# file found"
+msgid_plural "# files found"
+msgstr[0] "# file found"
+msgstr[1] "# files found"
+
+#: src/lib/data/device-events.ts
+msgid "some folders couldn’t be read"
+msgstr "some folders couldn’t be read"
+
+#: src/lib/data/device-events.ts
+msgid "# error"
+msgid_plural "# errors"
+msgstr[0] "# error"
+msgstr[1] "# errors"
+
+#: src/lib/data/device-events.ts
+msgid "# generated"
+msgid_plural "# generated"
+msgstr[0] "# generated"
+msgstr[1] "# generated"
+
+#: src/lib/data/device-events.ts
+msgid "# already had them"
+msgid_plural "# already had them"
+msgstr[0] "# already had them"
+msgstr[1] "# already had them"
+
+#: src/lib/data/device-events.ts
+#: src/lib/data/device-events.ts
+msgid "# failed"
+msgid_plural "# failed"
+msgstr[0] "# failed"
+msgstr[1] "# failed"
+
+#: src/lib/data/device-events.ts
+msgid "# file analysed"
+msgid_plural "# files analysed"
+msgstr[0] "# file analysed"
+msgstr[1] "# files analysed"
+
+#: src/lib/data/device-events.ts
+msgid "# intro"
+msgid_plural "# intros"
+msgstr[0] "# intro"
+msgstr[1] "# intros"
+
+#: src/lib/data/device-events.ts
+msgid "# with credits"
+msgid_plural "# with credits"
+msgstr[0] "# with credits"
+msgstr[1] "# with credits"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Teal"
+msgstr "Teal"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Blue"
+msgstr "Blue"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Indigo"
+msgstr "Indigo"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Violet"
+msgstr "Violet"
+
+#: src/lib/data/branding.ts
+msgid "Rose"
+msgstr "Rose"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Orange"
+msgstr "Orange"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Amber"
+msgstr "Amber"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+#: src/lib/data/subtitle-settings.ts
+msgid "Green"
+msgstr "Green"
+
+#: src/lib/data/library-scanning.ts
+msgid "Every hour"
+msgid_plural "Every # hours"
+msgstr[0] "Every hour"
+msgstr[1] "Every # hours"
+
+#: src/lib/data/markers.ts
+msgid "Show a skip button"
+msgstr "Show a skip button"
+
+#: src/lib/data/markers.ts
+msgid "Skip automatically"
+msgstr "Skip automatically"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Small"
+msgstr "Small"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Medium"
+msgstr "Medium"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Large"
+msgstr "Large"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Extra large"
+msgstr "Extra large"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "White"
+msgstr "White"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Yellow"
+msgstr "Yellow"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Cyan"
+msgstr "Cyan"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Magenta"
+msgstr "Magenta"
+
+#: src/lib/data/profiles.ts
+#: src/lib/data/subtitle-settings.ts
+msgid "Red"
+msgstr "Red"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Black"
+msgstr "Black"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Sans-serif"
+msgstr "Sans-serif"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Serif"
+msgstr "Serif"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Monospace"
+msgstr "Monospace"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Casual"
+msgstr "Casual"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "# line up"
+msgid_plural "# lines up"
+msgstr[0] "# line up"
+msgstr[1] "# lines up"
+
+#: src/lib/data/profiles.ts
+msgid "Sky"
+msgstr "Sky"
+
+#: src/lib/data/profiles.ts
+msgid "Pink"
+msgstr "Pink"
+
+#: src/lib/data/profiles.ts
+msgid "Lime"
+msgstr "Lime"
+
+#: src/lib/data/profiles.ts
+msgid "Slate"
+msgstr "Slate"
+
+#: src/lib/data/profiles.ts
+msgid "Smile"
+msgstr "Smile"
+
+#: src/lib/data/profiles.ts
+msgid "Star"
+msgstr "Star"
+
+#: src/lib/data/profiles.ts
+msgid "Heart"
+msgstr "Heart"
+
+#: src/lib/data/profiles.ts
+msgid "Crown"
+msgstr "Crown"
+
+#: src/lib/data/profiles.ts
+msgid "Rocket"
+msgstr "Rocket"
+
+#: src/lib/data/profiles.ts
+msgid "Ghost"
+msgstr "Ghost"
+
+#: src/lib/data/profiles.ts
+msgid "Cat"
+msgstr "Cat"
+
+#: src/lib/data/profiles.ts
+msgid "Alien"
+msgstr "Alien"
+
+#: src/lib/data/profiles.ts
+msgid "Robot"
+msgstr "Robot"
+
+#: src/lib/data/profiles.ts
+msgid "Game controller"
+msgstr "Game controller"
+
+#: src/lib/data/profiles.ts
+msgid "Popcorn"
+msgstr "Popcorn"
+
+#: src/lib/data/profiles.ts
+msgid "Music"
+msgstr "Music"
+
+#: src/lib/data/profiles.ts
+msgid "Panda"
+msgstr "Panda"
+
+#: src/lib/data/profiles.ts
+msgid "Rabbit"
+msgstr "Rabbit"
+
+#: src/lib/data/profiles.ts
+msgid "Pizza"
+msgstr "Pizza"
+
+#: src/lib/data/profiles.ts
+msgid "Ice cream"
+msgstr "Ice cream"
+
+#: src/lib/data/profiles.ts
+msgid "Football"
+msgstr "Football"
+
+#: src/lib/data/profiles.ts
+msgid "Guitar"
+msgstr "Guitar"
+
+#: src/lib/data/profiles.ts
+msgid "Rainbow"
+msgstr "Rainbow"
+
+#: src/lib/data/profiles.ts
+msgid "Flower"
+msgstr "Flower"
+
+#: src/lib/playback-quality.ts
+msgid "Original"
+msgstr "Original"
+
+#. 0: names[0]; 1: names[1]; 0: names[0]; 1: names[1]
+#: src/lib/data/together.ts
+msgid "{0}, {1} and # other"
+msgid_plural "{0}, {1} and # others"
+msgstr[0] "{0}, {1} and # other"
+msgstr[1] "{0}, {1} and # others"
+
+#: src/lib/server/profiles.ts
+msgid "Enter a name."
+msgstr "Enter a name."
+
+#. 0: PROFILE_NAME_MAX + 1
+#: src/lib/server/profiles.ts
+msgid "Keep the name under {0} characters."
+msgstr "Keep the name under {0} characters."
+
+#: src/lib/server/profiles.ts
+msgid "Pick a color."
+msgstr "Pick a color."
+
+#: src/lib/server/profiles.ts
+msgid "Pick an icon."
+msgstr "Pick an icon."
+
+#: src/lib/server/profiles.ts
+msgid "Another profile on this account already has that name."
+msgstr "Another profile on this account already has that name."
+
+#: src/lib/server/profiles.ts
+#: src/lib/server/together/identity.ts
+msgid "Sign in to continue."
+msgstr "Sign in to continue."
+
+#: src/lib/server/profiles.ts
+msgid "Choose a profile first."
+msgstr "Choose a profile first."
+
+#: src/routes/api/progress/dismiss/+server.ts
+#: src/routes/api/progress/watched/+server.ts
+#: src/routes/api/together/+server.ts
+#: src/routes/api/together/+server.ts
+#: src/routes/api/watchlist/+server.ts
+msgid "Title not found"
+msgstr "Title not found"
+
+#: src/routes/api/watchlist/+server.ts
+msgid "Sign in to use your watchlist."
+msgstr "Sign in to use your watchlist."
+
+#: src/routes/api/progress/dismiss/+server.ts
+msgid "Sign in to manage Continue watching."
+msgstr "Sign in to manage Continue watching."
+
+#: src/routes/api/progress/watched/+server.ts
+msgid "Sign in to mark titles as watched."
+msgstr "Sign in to mark titles as watched."
+
+#: src/routes/api/playback/start/+server.ts
+msgid "Sign in to watch."
+msgstr "Sign in to watch."
+
+#: src/routes/api/playback/start/+server.ts
+msgid "The device holding this title is offline right now."
+msgstr "The device holding this title is offline right now."
+
+#: src/routes/api/playback/start/+server.ts
+msgid "No media file is linked to this title. Add it to a library on a device and rescan."
+msgstr "No media file is linked to this title. Add it to a library on a device and rescan."
+
+#: src/routes/api/subtitles/download/+server.ts
+msgid "Sign in to download subtitles."
+msgstr "Sign in to download subtitles."
+
+#. 0: THROTTLE_MAX
+#: src/routes/api/subtitles/download/+server.ts
+msgid "You've downloaded {0} subtitles in the last 10 minutes; please wait a little."
+msgstr "You've downloaded {0} subtitles in the last 10 minutes; please wait a little."
+
+#: src/routes/api/subtitles/download/+server.ts
+#: src/routes/api/subtitles/search/+server.ts
+msgid "This title is missing from the catalog."
+msgstr "This title is missing from the catalog."
+
+#: src/routes/api/subtitles/search/+server.ts
+msgid "Sign in to search for subtitles."
+msgstr "Sign in to search for subtitles."
+
+#: src/routes/api/subtitles/search/+server.ts
+msgid "No media file is linked to this title."
+msgstr "No media file is linked to this title."
+
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+msgid "# series"
+msgid_plural "# series"
+msgstr[0] "# series"
+msgstr[1] "# series"
+
+#. 0: plural(form.pruned.movies, ['# movie', '# movies']); 1: plural( form.pruned.series, ['# series', '# series'] ); 2: plural(form.pruned.episodes, ['# episode', '# episodes'])
+#: src/routes/admin/settings/+page.svelte
+msgid "Removed {0} and {1} ({2})."
+msgstr "Removed {0} and {1} ({2})."
+
+#. 0: orphanMovies; 1: orphanSeries
+#: src/routes/admin/settings/+page.svelte
+msgid "{0} and {1} have no media files (placeholder titles, or files from a removed library). Titles are also pruned automatically when a scan finishes."
+msgstr "{0} and {1} have no media files (placeholder titles, or files from a removed library). Titles are also pruned automatically when a scan finishes."
+
+#. 0: pendingMovies; 1: pendingSeries; 2: pendingEpisodes
+#: src/routes/admin/settings/+page.svelte
+msgid "Fetching metadata from TMDB… ({0}, {1}, {2} pending)"
+msgstr "Fetching metadata from TMDB… ({0}, {1}, {2} pending)"
+
+#. 0: pendingMovies; 1: pendingSeries; 2: pendingEpisodes
+#: src/routes/admin/settings/+page.svelte
+msgid "TMDB configured · {0}, {1} and {2} are waiting for metadata (fetched after the next scan, or refresh now)."
+msgstr "TMDB configured · {0}, {1} and {2} are waiting for metadata (fetched after the next scan, or refresh now)."
+
+#. 0: orphanMovies; 1: orphanSeries
+#: src/routes/admin/settings/+page.svelte
+msgid "{0} and {1} have no media file on any device. They leave the catalog, and their watch progress and watchlist entries go with them. Nothing is deleted from your devices."
+msgstr "{0} and {1} have no media file on any device. They leave the catalog, and their watch progress and watchlist entries go with them. Nothing is deleted from your devices."
+
+#: src/routes/admin/subtitles/+page.svelte
+msgid "# subtitle downloaded so far"
+msgid_plural "# subtitles downloaded so far"
+msgstr[0] "# subtitle downloaded so far"
+msgstr[1] "# subtitles downloaded so far"
+
+#: src/routes/admin/subtitles/+page.svelte
+msgid "# search without a result"
+msgid_plural "# searches without a result"
+msgstr[0] "# search without a result"
+msgstr[1] "# searches without a result"
+
+#: src/routes/admin/statistics/users/+page.svelte
+#: src/routes/admin/users/+page.svelte
+msgid "# account"
+msgid_plural "# accounts"
+msgstr[0] "# account"
+msgstr[1] "# accounts"
+
+#: src/routes/admin/users/+page.svelte
+msgid "# administrator"
+msgid_plural "# administrators"
+msgstr[0] "# administrator"
+msgstr[1] "# administrators"
+
+#: src/routes/admin/users/+page.svelte
+msgid "# banned"
+msgid_plural "# banned"
+msgstr[0] "# banned"
+msgstr[1] "# banned"
+
+#: src/routes/admin/users/+page.svelte
+msgid "# profile"
+msgid_plural "# profiles"
+msgstr[0] "# profile"
+msgstr[1] "# profiles"
+
+#: src/routes/admin/statistics/+page.svelte
+msgid "of plays"
+msgstr "of plays"
+
+#: src/routes/admin/statistics/+page.svelte
+msgid "# stream"
+msgid_plural "# streams"
+msgstr[0] "# stream"
+msgstr[1] "# streams"
+
+#. 0: plural(streams.length, ['# stream', '# streams']); 1: transcoding; 2: formatBitrate( bandwidth )
+#: src/routes/admin/statistics/+page.svelte
+msgid "{0} · {1} transcoding · {2}"
+msgstr "{0} · {1} transcoding · {2}"
+
+#: src/routes/admin/statistics/+page.svelte
+msgid "# viewer"
+msgid_plural "# viewers"
+msgstr[0] "# viewer"
+msgstr[1] "# viewers"
+
+#. 0: first; 1: last; 2: plural(data.history.total, ['# play', '# plays'])
+#: src/routes/admin/statistics/history/+page.svelte
+msgid "{0}–{1} of {2}"
+msgstr "{0}–{1} of {2}"
+
+#. 0: plural(data.total, [ '# account', '# accounts' ])
+#: src/routes/admin/statistics/users/+page.svelte
+msgid "Every account's activity and watch totals, all time · {0}"
+msgstr "Every account's activity and watch totals, all time · {0}"
+
+#. 0: first; 1: last; 2: plural(data.recent.total, ['# play', '# plays'])
+#: src/routes/admin/statistics/users/[id]/+page.svelte
+msgid "{0}–{1} of {2} · <0>View in history</0>"
+msgstr "{0}–{1} of {2} · <0>View in history</0>"
+
+#. 0: hours
+#: src/lib/data/time.ts
+msgid "{0}h"
+msgstr "{0}h"
+
+#. 0: minutes
+#: src/lib/data/time.ts
+msgid "{0}m"
+msgstr "{0}m"
+
+#. 0: seconds
+#: src/lib/data/time.ts
+msgid "{0}s"
+msgstr "{0}s"
+
+#. 0: branding().appName
+#: src/routes/settings/preferences/+page.svelte
+msgid "Changes the language of {0} for this profile. Movie and series titles and descriptions stay in English."
+msgstr "Changes the language of {0} for this profile. Movie and series titles and descriptions stay in English."
+
+#: src/lib/auth-messages.ts
+msgid "Wrong email or password."
+msgstr "Wrong email or password."
+
+#: src/lib/auth-messages.ts
+msgid "Enter a valid email address."
+msgstr "Enter a valid email address."
+
+#: src/lib/auth-messages.ts
+msgid "This account has been suspended. Ask an administrator for help."
+msgstr "This account has been suspended. Ask an administrator for help."
+
+#: src/lib/auth-messages.ts
+msgid "That password is too short."
+msgstr "That password is too short."
+
+#: src/lib/auth-messages.ts
+msgid "That password is too long."
+msgstr "That password is too long."
+
+#: src/lib/auth-messages.ts
+msgid "An account with that email already exists."
+msgstr "An account with that email already exists."
+
+#: src/lib/auth-messages.ts
+msgid "Registration is closed on this server."
+msgstr "Registration is closed on this server."
+
+#: src/lib/auth-messages.ts
+msgid "Sign in failed. Try again."
+msgstr "Sign in failed. Try again."
+
+#: src/lib/auth-messages.ts
+msgid "Sign up failed. Try again."
+msgstr "Sign up failed. Try again."
+
+#: src/lib/auth-messages.ts
+msgid "That password is wrong."
+msgstr "That password is wrong."
+
+#: src/lib/auth-messages.ts
+msgid "Your changes weren’t saved. Try again."
+msgstr "Your changes weren’t saved. Try again."

@@ -5,15 +5,21 @@ describe('preferences', () => {
 	it('keeps valid values', () => {
 		expect(
 			normalizePreferences({
+				language: 'es',
 				theme: 'light',
 				screensaver: { enabled: true, kind: 'logo', seconds: 30 }
 			})
-		).toEqual({ theme: 'light', screensaver: { enabled: true, kind: 'logo', seconds: 30 } });
+		).toEqual({
+			language: 'es',
+			theme: 'light',
+			screensaver: { enabled: true, kind: 'logo', seconds: 30 }
+		});
 	});
 
 	it('falls back to the defaults for unknown values', () => {
 		expect(
 			normalizePreferences({
+				language: 'klingon',
 				theme: 'sepia',
 				screensaver: { enabled: 'yes', kind: 'clock', seconds: 45 }
 			})

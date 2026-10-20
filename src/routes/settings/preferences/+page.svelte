@@ -18,17 +18,22 @@
 		type Theme
 	} from '$lib/data/preferences';
 	import { getScreensaver } from '$lib/screensaver.svelte';
+	import { LOCALES, localeName } from '$lib/data/locale';
 
 	let { data, form } = $props();
 
 	// Every control saves itself as it changes; `form` only reports a no-JS post.
-	// Both re-run the loads after saving: the root layout applies the theme and
-	// runs the screensaver from its own copy of these preferences.
+	// All re-run the loads after saving: the root layout loads the language's
+	// catalogs, applies the theme and runs the screensaver from its own copy of
+	// these preferences.
+	const languageSaver = new SettingsSaver('?/updateLanguage', { invalidate: true });
 	const appearance = new SettingsSaver('?/updateAppearance', { invalidate: true });
 	const screensaverSaver = new SettingsSaver('?/updateScreensaver', { invalidate: true });
 
 	const screensaver = getScreensaver();
 
+	// A profile that never picked one shows (and follows) the hub's default language.
+	let language = $derived(data.preferences.language ?? data.siteLocale);
 	let theme = $derived(data.preferences.theme);
 	let enabled = $derived(data.preferences.screensaver.enabled);
 	let kind = $derived(data.preferences.screensaver.kind);
@@ -68,6 +73,45 @@
 </script>
 
 <PageTitle title="Preferences · Settings" />
+
+<Card.Root>
+	<Card.Header>
+		<Card.Title>Language</Card.Title>
+		<Card.Description>
+			Changes the language of {branding().appName} for this profile. Movie and series titles and descriptions
+			stay in English.
+		</Card.Description>
+		<Card.Action><SaveStatus saver={languageSaver} /></Card.Action>
+	</Card.Header>
+	<Card.Content>
+		<form method="POST" action="?/updateLanguage" autocomplete="off">
+			<Field.Group>
+				<Field.Field class="sm:max-w-xs">
+					<Field.Label for="language">Language</Field.Label>
+					<Select.Root
+						type="single"
+						name="language"
+						bind:value={language}
+						onValueChange={(language) => languageSaver.save({ language })}
+					>
+						<Select.Trigger id="language" class="w-full">{localeName(language)}</Select.Trigger>
+						<Select.Content>
+							{#each LOCALES as locale (locale)}
+								<Select.Item value={locale} label={localeName(locale)} lang={locale} />
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</Field.Field>
+				{#if message('language')}
+					<Field.Error>{message('language')}</Field.Error>
+				{/if}
+				<noscript>
+					<Button type="submit" variant="secondary" class="w-fit">Save language</Button>
+				</noscript>
+			</Field.Group>
+		</form>
+	</Card.Content>
+</Card.Root>
 
 <Card.Root>
 	<Card.Header>

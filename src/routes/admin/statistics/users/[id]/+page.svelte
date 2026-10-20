@@ -14,6 +14,7 @@
 	import TitleLink from '$lib/components/stats/title-link.svelte';
 	import TopList from '$lib/components/stats/top-list.svelte';
 	import { formatRelative, formatWatchTime } from '$lib/data/time';
+	import plural from '$lib/plural';
 	import type { TopEntry } from '$lib/data/stats';
 
 	let { data } = $props();
@@ -92,7 +93,7 @@
 			<StatTile
 				label={window.label}
 				value={formatWatchTime(window.playedSeconds)}
-				hint="{window.plays.toLocaleString()} {window.plays === 1 ? 'play' : 'plays'}"
+				hint={plural(window.plays, ['# play', '# plays'])}
 			/>
 		{/each}
 	</div>
@@ -120,7 +121,7 @@
 			<Card.Title>Recent history</Card.Title>
 			<Card.Description>
 				{#if data.recent.total}
-					{first}–{last} of {data.recent.total.toLocaleString()} plays ·
+					{first}–{last} of {plural(data.recent.total, ['# play', '# plays'])} ·
 					<a
 						href="{resolve('/admin/statistics/history')}?user={encodeURIComponent(row.user.id)}"
 						class="underline-offset-4 hover:underline"

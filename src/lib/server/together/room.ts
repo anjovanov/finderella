@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { formatDurationUnits } from '$lib/data/time';
 import {
 	CHAT_MAX_LENGTH,
 	MAX_PARTICIPANTS,
@@ -8,12 +7,16 @@ import {
 	type TogetherChatEntry,
 	type TogetherClientMessage,
 	type TogetherEndReason,
+	type TogetherEvent,
 	type TogetherMedia,
 	type TogetherParticipant,
 	type TogetherServerMessage,
 	type TogetherState
 } from '$lib/data/together';
 import type { ProfileColor, ProfileIcon } from '$lib/data/profiles';
+
+/** Omit over each member of a union (plain Omit merges them). */
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
 /**
  * One watch party: the shared timeline, who's in it, and the chat. Pure apart
@@ -136,7 +139,7 @@ export class Room {
 		const resumed = resumeId ? this.#participants.get(resumeId) : undefined;
 		if (resumed && resumed.profileId === identity.profileId) {
 			// A second tab taking over the seat closes the first.
-			resumed.connection?.close(TOGETHER_CLOSE.ended, 'Opened in another window.');
+			resumed.connection?.close(TOGETHER_CLOSE.ended, 'replaced');
 			resumed.connection = connection;
 			resumed.disconnectedAt = null;
 			resumed.name = identity.name;
@@ -164,7 +167,7 @@ export class Room {
 		this.lastOccupiedAt = now;
 		this.#welcome(participant);
 		this.#broadcastParticipants();
-		this.#event(`${participant.name} joined`, participant);
+		this.#event({ type: 'joined' }, participant);
 		return { ok: true, participantId: participant.id };
 	}
 
@@ -215,7 +218,7 @@ export class Room {
 			case 'kick':
 				return this.#kick(p, message.participantId);
 			case 'end':
-				if (p.id === this.#hostId) this.end('ended', `${p.name} ended the watch party.`);
+				if (p.id === this.#hostId) this.end('ended', p.name);
 				return;
 			case 'ping':
 				return p.connection.send({ type: 'pong', t0: message.t0, serverTime: this.#now() });
@@ -243,13 +246,13 @@ export class Room {
 		}
 	}
 
-	/** End the party for everyone (host action, or the manager reaping it). */
-	end(reason: TogetherEndReason, message: string): void {
+	/** End the party for everyone (host action `by` name, or the manager reaping it). */
+	end(reason: TogetherEndReason, by?: string): void {
 		if (this.#ended) return;
 		this.#ended = true;
 		for (const p of this.#participants.values()) {
-			p.connection?.send({ type: 'ended', reason, message });
-			p.connection?.close(TOGETHER_CLOSE[reason], message);
+			p.connection?.send({ type: 'ended', reason, by });
+			p.connection?.close(TOGETHER_CLOSE[reason], reason);
 			p.connection = null;
 		}
 	}
@@ -260,7 +263,7 @@ export class Room {
 		// Already running (or about to): a stale or echoed play.
 		if (this.#state.playing) return;
 		this.#beginWait(position, null);
-		this.#event(`${p.name} pressed play`, p);
+		this.#event({ type: 'played' }, p);
 	}
 
 	#pause(p: Participant, position: number): void {
@@ -271,7 +274,7 @@ export class Room {
 			position: clampPosition(position),
 			waitingFor: []
 		});
-		this.#event(`${p.name} paused`, p);
+		this.#event({ type: 'paused' }, p);
 	}
 
 	#seek(p: Participant, position: number): void {
@@ -281,7 +284,7 @@ export class Room {
 		} else {
 			this.#update({ position: target, anchorAt: this.#now() });
 		}
-		this.#event(`${p.name} jumped to ${formatDurationUnits(target)}`, p);
+		this.#event({ type: 'seeked', position: target }, p);
 	}
 
 	#ready(p: Participant, seq: number): void {
@@ -304,15 +307,14 @@ export class Room {
 		if (sameMedia(media, current)) return;
 		this.#state = { ...this.#state, media };
 		this.#beginWait(0, null);
-		const what = label.trim().slice(0, LABEL_MAX_LENGTH);
-		this.#event(what ? `${p.name} started ${what}` : `${p.name} changed the episode`, p);
+		this.#event({ type: 'media', label: label.trim().slice(0, LABEL_MAX_LENGTH) }, p);
 	}
 
 	#chatMessage(p: Participant, raw: string): void {
 		const text = raw.trim().slice(0, CHAT_MAX_LENGTH);
 		if (!text) return;
 		if (!this.#allow(p.chatTimes, CHAT_RATE)) {
-			p.connection?.send({ type: 'error', message: 'Slow down a little.' });
+			p.connection?.send({ type: 'error', code: 'slow-down' });
 			return;
 		}
 		this.#pushChat({ kind: 'message', text, participantId: p.id, name: p.name });
@@ -324,11 +326,10 @@ export class Room {
 		if (!target) return;
 		this.#kickedProfiles.add(target.profileId);
 		this.#participants.delete(target.id);
-		const message = `${p.name} removed you from the watch party.`;
-		target.connection?.send({ type: 'ended', reason: 'kicked', message });
-		target.connection?.close(TOGETHER_CLOSE.kicked, message);
+		target.connection?.send({ type: 'ended', reason: 'kicked', by: p.name });
+		target.connection?.close(TOGETHER_CLOSE.kicked, 'kicked');
 		this.#broadcastParticipants();
-		this.#event(`${target.name} was removed`, p);
+		this.#event({ type: 'removed', target: target.name }, p);
 		if (this.#state.waiting) this.#maybeStart();
 	}
 
@@ -389,10 +390,10 @@ export class Room {
 		this.#participants.delete(p.id);
 		p.connection = null;
 		if (this.#participants.size === 0) {
-			this.end('gone', 'This watch party has ended.');
+			this.end('gone');
 			return;
 		}
-		this.#event(`${p.name} left`, p);
+		this.#event({ type: 'left' }, p);
 		if (p.id === this.#hostId) this.#handOffHost();
 		this.#broadcastParticipants();
 		if (this.#state.waiting) this.#maybeStart();
@@ -404,7 +405,7 @@ export class Room {
 			.sort((a, b) => a.joinedAt - b.joinedAt)[0];
 		this.#hostId = next?.id ?? [...this.#participants.keys()][0] ?? null;
 		const host = this.#hostId ? this.#participants.get(this.#hostId) : undefined;
-		if (host) this.#event(`${host.name} is now the host`, host);
+		if (host) this.#event({ type: 'host' }, host);
 	}
 
 	#welcome(p: Participant): void {
@@ -433,11 +434,11 @@ export class Room {
 		this.#broadcast({ type: 'participants', participants: this.#publicParticipants() });
 	}
 
-	#event(text: string, actor?: Participant): void {
-		this.#pushChat({ kind: 'event', text, participantId: actor?.id, name: actor?.name });
+	#event(event: TogetherEvent, actor: Participant): void {
+		this.#pushChat({ kind: 'event', event, participantId: actor.id, name: actor.name });
 	}
 
-	#pushChat(entry: Omit<TogetherChatEntry, 'id' | 'at'>): void {
+	#pushChat(entry: DistributiveOmit<TogetherChatEntry, 'id' | 'at'>): void {
 		const full: TogetherChatEntry = { ...entry, id: randomUUID(), at: this.#now() };
 		this.#chat.push(full);
 		if (this.#chat.length > CHAT_HISTORY) this.#chat.splice(0, this.#chat.length - CHAT_HISTORY);

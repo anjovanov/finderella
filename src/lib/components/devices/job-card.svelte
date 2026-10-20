@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Progress } from '$lib/components/ui/progress';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatRelative } from '$lib/data/time';
 	import type { JobSnapshot } from './types';
 
@@ -36,7 +37,7 @@
 			{#if job.running && job.current}
 				· <span class="font-mono text-xs" title={job.current}>{job.current}</span>
 			{:else if job.finishedAt}
-				· <span title={new Date(job.finishedAt).toLocaleString()}
+				· <span title={new Date(job.finishedAt).toLocaleString(currentLocale())}
 					>{formatRelative(job.finishedAt)}</span
 				>
 			{/if}
@@ -82,7 +83,9 @@
 								? 'text-amber-600 dark:text-amber-500'
 								: ''}
 					>
-						<span class="text-muted-foreground">{new Date(line.at).toLocaleTimeString()}</span>
+						<span class="text-muted-foreground"
+							>{new Date(line.at).toLocaleTimeString(currentLocale())}</span
+						>
 						{line.message}
 					</div>
 				{/each}

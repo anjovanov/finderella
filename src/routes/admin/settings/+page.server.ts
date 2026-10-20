@@ -10,6 +10,7 @@ import { runScheduledScans } from '$lib/server/gateways/scan-schedule';
 import { syncAllWatchedLibraries } from '$lib/server/gateways/watch';
 import { queueTrickplayGeneration } from '$lib/server/trickplay/bulk';
 import { SCAN_INTERVAL_HOURS } from '$lib/data/library-scanning';
+import { isLocale, pickLocale } from '$lib/data/locale';
 import { log } from '$lib/server/log';
 import { getSiteSettings, updateSiteSettings } from '$lib/server/site-settings';
 import type { Actions, PageServerLoad } from './$types';
@@ -32,7 +33,8 @@ export const load: PageServerLoad = async () => {
 			remuxEnabled: settings.remuxEnabled,
 			hardwareAcceleration: settings.hardwareAcceleration,
 			maxSessionsPerAccount: settings.maxSessionsPerAccount,
-			maxProfilesPerAccount: settings.maxProfilesPerAccount
+			maxProfilesPerAccount: settings.maxProfilesPerAccount,
+			defaultLanguage: pickLocale(settings.defaultLanguage)
 		},
 		orphans,
 		metadata
@@ -76,6 +78,13 @@ export const actions: Actions = {
 			maxProfilesPerAccount: profiles.value
 		});
 		return { limitsSaved: true };
+	},
+
+	updateLanguage: async (event) => {
+		const defaultLanguage = (await event.request.formData()).get('defaultLanguage');
+		if (!isLocale(defaultLanguage)) return fail(400, { message: 'Pick a language from the list' });
+		await updateSiteSettings({ defaultLanguage });
+		return { saved: true };
 	},
 
 	updateSettings: async (event) => {

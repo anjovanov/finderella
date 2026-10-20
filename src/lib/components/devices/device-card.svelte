@@ -12,6 +12,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatRelative } from '$lib/data/time';
 	import LibraryRow from './library-row.svelte';
 	import { markersBlocker, thumbnailBlocker, type Device, type DeviceLibrary } from './types';
@@ -52,7 +53,7 @@
 				: 'Transcodes on the CPU'
 	);
 	const pairedLabel = $derived(
-		new Date(device.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })
+		new Date(device.createdAt).toLocaleDateString(currentLocale(), { dateStyle: 'medium' })
 	);
 </script>
 
@@ -80,7 +81,9 @@
 					<span class="font-medium text-emerald-600 dark:text-emerald-400">Online</span>
 				{:else}
 					<span
-						title={device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString() : undefined}
+						title={device.lastSeenAt
+							? new Date(device.lastSeenAt).toLocaleString(currentLocale())
+							: undefined}
 					>
 						Offline · last seen {device.lastSeenAt ? formatRelative(device.lastSeenAt) : 'never'}
 					</span>

@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { languageName } from '@finderella/protocol';
+import { languageLabel } from '$lib/data/languages';
 import { db } from '$lib/server/db';
 import { mediaSubtitle } from '$lib/server/db/schema';
 import type { SubtitleTrack } from '$lib/data/types';
@@ -7,18 +8,21 @@ import type { SubtitleTrack } from '$lib/data/types';
 type SubtitleRow = typeof mediaSubtitle.$inferSelect;
 
 function baseLabel(row: SubtitleRow, index: number): string {
-	const name = languageName(row.language);
+	const english = languageName(row.language);
+	const name = languageLabel(row.language);
 	const title = row.title?.trim();
-	if (!name) return title || `Track ${index + 1}`;
-	// A title that just repeats the language ("English (SDH)") adds nothing.
-	if (title && !title.toLowerCase().includes(name.toLowerCase())) return `${name} (${title})`;
+	if (!name) return title || /* @wc-include */ `Track ${index + 1}`;
+	// A title that just repeats the language ("English (SDH)", in the file's
+	// English or in the UI language) adds nothing.
+	const repeats = [english, name].some((n) => n && title?.toLowerCase().includes(n.toLowerCase()));
+	if (title && !repeats) return `${name} (${title})`;
 	return name;
 }
 
 /** Player-facing label: language, an informative title, and forced/SDH markers. */
 export function subtitleLabel(row: SubtitleRow, index: number): string {
 	let label = baseLabel(row, index);
-	if (row.forced) label += ' (forced)';
+	if (row.forced) label += ` (${/* @wc-include */ 'forced'})`;
 	if (row.hearingImpaired) label += ' (SDH)';
 	return label;
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PageTitle from '$lib/components/page-title.svelte';
 	import PosterCard from '$lib/components/media/poster-card.svelte';
+	import plural from '$lib/plural';
 
 	let { data } = $props();
 	const count = $derived(data.items.length);
@@ -13,7 +14,7 @@
 		<h1 class="text-3xl font-bold tracking-tight">Search</h1>
 		{#if data.q}
 			<p class="text-sm text-muted-foreground">
-				{count} result{count === 1 ? '' : 's'} for “{data.q}”
+				{plural(count, ['# result', '# results'])} for “{data.q}”
 			</p>
 		{/if}
 	</div>

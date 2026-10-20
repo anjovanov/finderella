@@ -31,8 +31,10 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import * as Table from '$lib/components/ui/table';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatRelative } from '$lib/data/time';
 	import { DialogForm } from '$lib/dialog-form.svelte';
+	import plural from '$lib/plural';
 
 	let { data, form } = $props();
 
@@ -127,10 +129,9 @@
 	<Card.Header>
 		<Card.Title>Accounts</Card.Title>
 		<Card.Description>
-			{data.users.length}
-			{data.users.length === 1 ? 'account' : 'accounts'} · {admins}
-			{admins === 1 ? 'administrator' : 'administrators'}
-			{#if banned > 0}· {banned} banned{/if}
+			{plural(data.users.length, ['# account', '# accounts'])} ·
+			{plural(admins, ['# administrator', '# administrators'])}
+			{#if banned > 0}· {plural(banned, ['# banned', '# banned'])}{/if}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="overflow-x-auto">
@@ -163,8 +164,7 @@
 											>{/if}
 									</span>
 									<span class="truncate text-xs text-muted-foreground">
-										{u.email} · {u.profiles}
-										{u.profiles === 1 ? 'profile' : 'profiles'}
+										{u.email} · {plural(u.profiles, ['# profile', '# profiles'])}
 									</span>
 								</div>
 							</div>
@@ -185,7 +185,7 @@
 							{/if}
 						</Table.Cell>
 						<Table.Cell class="text-muted-foreground">
-							<span title={new Date(u.createdAt).toLocaleString()}>
+							<span title={new Date(u.createdAt).toLocaleString(currentLocale())}>
 								{formatRelative(u.createdAt)}
 							</span>
 						</Table.Cell>

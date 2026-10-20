@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { chatEventText, endedText } from '$lib/together/notices';
 import type { TogetherServerMessage, TogetherState } from '$lib/data/together';
 import {
 	CHAT_RATE,
@@ -39,10 +40,11 @@ class FakeConnection implements Connection {
 	lastState(): TogetherState | undefined {
 		return this.of('state').at(-1)?.state;
 	}
+	/** Feed lines as a viewer reads them (English outside a request). */
 	events(): string[] {
-		return this.of('chat')
-			.filter((m) => m.entry.kind === 'event')
-			.map((m) => m.entry.text);
+		return this.of('chat').flatMap((m) =>
+			m.entry.kind === 'event' ? [chatEventText(m.entry)] : []
+		);
 	}
 }
 
@@ -272,7 +274,7 @@ describe('Room people', () => {
 		expect(room.ended).toBe(false);
 		room.handle(ids[0], { type: 'end' });
 		expect(room.ended).toBe(true);
-		expect(conns[1].of('ended')[0].message).toBe('Ana ended the watch party.');
+		expect(endedText(conns[1].of('ended')[0])).toBe('Ana ended the watch party.');
 	});
 
 	it('is full at MAX_PARTICIPANTS', () => {
@@ -289,12 +291,12 @@ describe('Room chat', () => {
 			room.handle(ids[0], { type: 'chat', text: ` hi ${i} ` });
 		const lines = conns[1].of('chat').filter((m) => m.entry.kind === 'message');
 		expect(lines).toHaveLength(CHAT_RATE);
-		expect(lines[0].entry.text).toBe('hi 0');
+		expect(lines[0].entry).toMatchObject({ text: 'hi 0' });
 		expect(conns[0].of('error')).toHaveLength(2);
 
 		clock.advance(5_001);
 		room.handle(ids[0], { type: 'chat', text: 'again' });
-		expect(conns[1].of('chat').at(-1)!.entry.text).toBe('again');
+		expect(conns[1].of('chat').at(-1)!.entry).toMatchObject({ text: 'again' });
 	});
 
 	it('replays the history to newcomers', () => {
@@ -302,7 +304,7 @@ describe('Room chat', () => {
 		room.handle(ids[0], { type: 'chat', text: 'before you came' });
 		const late = new FakeConnection();
 		room.join(identity('Cy'), late);
-		const history = late.of('welcome')[0].chat.map((c) => c.text);
+		const history = late.of('welcome')[0].chat.map((c) => c.kind === 'message' && c.text);
 		expect(history).toContain('before you came');
 	});
 

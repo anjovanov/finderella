@@ -7,42 +7,49 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3\n"
 "X-Plurals-Order: one, many, other\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
 
 #. 0: seed.title
 #: src/routes/+page.server.ts
 msgid "Because you watched {0}"
-msgstr ""
+msgstr "Porque viste {0}"
 
 #: src/lib/components/media/watch-player.svelte
 #: src/routes/+page.server.ts
 #: src/routes/admin/branding/+page.svelte
 msgid "Continue watching"
-msgstr ""
+msgstr "Seguir viendo"
 
 #: src/routes/+page.server.ts
 msgid "Top picks for you"
-msgstr ""
+msgstr "Recomendados para ti"
 
 #: src/routes/+page.server.ts
 msgid "Popular picks"
-msgstr ""
+msgstr "Populares"
 
 #: src/routes/+page.server.ts
 msgid "Trending now"
-msgstr ""
+msgstr "Tendencias"
 
 #: src/routes/+page.server.ts
 msgid "New releases"
-msgstr ""
+msgstr "Estrenos"
 
 #: src/routes/+page.server.ts
 msgid "Just added"
-msgstr ""
+msgstr "Añadidos recientemente"
 
 #: src/lib/components/devices/library-row.svelte
 #: src/lib/components/media/library-toolbar.svelte
 #: src/lib/components/site-header.svelte
 #: src/lib/components/stats/bucket-chart.svelte
+#: src/lib/data/device-events.ts
 #: src/routes/+page.server.ts
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/devices/+page.svelte
@@ -54,13 +61,14 @@ msgstr ""
 #: src/routes/movies/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "Movies"
-msgstr ""
+msgstr "Películas"
 
 #: src/lib/components/devices/library-row.svelte
 #: src/lib/components/media/library-toolbar.svelte
 #: src/lib/components/media/poster-card.svelte
 #: src/lib/components/search-box.svelte
 #: src/lib/components/site-header.svelte
+#: src/lib/data/device-events.ts
 #: src/routes/+page.server.ts
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/devices/+page.svelte
@@ -69,27 +77,23 @@ msgstr ""
 #: src/routes/series/+page.svelte
 #: src/routes/settings/playback/+page.svelte
 msgid "Series"
-msgstr ""
+msgstr "Series"
 
 #: src/routes/+page.server.ts
 msgid "Mysteries & thrillers"
-msgstr ""
+msgstr "Misterio y suspense"
 
-#: src/routes/+page.server.ts
+#: src/lib/data/genres.ts
 msgid "Mystery"
-msgstr ""
+msgstr "Misterio"
 
-#: src/routes/+page.server.ts
+#: src/lib/data/genres.ts
 msgid "Thriller"
-msgstr ""
+msgstr "Suspense"
 
 #: src/routes/admin/+layout.server.ts
 msgid "This area is for administrators only."
-msgstr ""
-
-#: src/routes/login/+page.server.ts
-msgid "Sign in failed"
-msgstr ""
+msgstr "Esta sección es solo para administradores."
 
 #: src/routes/admin/users/+page.server.ts
 #: src/routes/login/+page.server.ts
@@ -97,270 +101,267 @@ msgstr ""
 #: src/routes/settings/account/+page.server.ts
 #: src/routes/settings/devices/+page.server.ts
 msgid "Unexpected error"
-msgstr ""
+msgstr "Error inesperado"
 
 #: src/routes/profiles/+page.server.ts
 msgid "Check the form and try again."
-msgstr ""
+msgstr "Revisa el formulario y vuelve a intentarlo."
 
 #: src/routes/profiles/+page.server.ts
 #: src/routes/profiles/+page.server.ts
 #: src/routes/profiles/+page.server.ts
 msgid "That profile no longer exists."
-msgstr ""
+msgstr "Ese perfil ya no existe."
 
 #: src/routes/register/+page.server.ts
 msgid "Email is required"
-msgstr ""
+msgstr "El correo electrónico es obligatorio"
 
 #. 0: MIN_PASSWORD_LENGTH
 #: src/routes/register/+page.server.ts
 msgid "Password must be at least {0} characters"
-msgstr ""
-
-#: src/routes/register/+page.server.ts
-msgid "Sign up failed"
-msgstr ""
+msgstr "La contraseña debe tener al menos {0} caracteres"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "New device"
-msgstr ""
+msgstr "Nuevo dispositivo"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "Gateway, folder path, and kind are required"
-msgstr ""
+msgstr "La pasarela, la ruta de la carpeta y el tipo son obligatorios"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "Use the full folder path, e.g. /mnt/media/Movies or D:\\Movies"
-msgstr ""
+msgstr "Usa la ruta completa de la carpeta, p. ej., /mnt/media/Movies o D:\\Movies"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "That folder is already a library on this device"
-msgstr ""
+msgstr "Esa carpeta ya es una biblioteca en este dispositivo"
 
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
 msgid "Library not found"
-msgstr ""
+msgstr "No se encontró la biblioteca"
 
 #: src/lib/components/devices/library-row.svelte
 #: src/lib/components/devices/library-row.svelte
+#: src/lib/components/devices/types.ts
+#: src/lib/components/devices/types.ts
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
 msgid "Device is offline"
-msgstr ""
+msgstr "El dispositivo está sin conexión"
 
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
 msgid "Missing library"
-msgstr ""
+msgstr "Falta la biblioteca"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "Thumbnails are turned off in Site settings"
-msgstr ""
+msgstr "Las miniaturas están desactivadas en los Ajustes del sitio"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "Update the gateway on this device to generate thumbnails"
-msgstr ""
+msgstr "Actualiza la pasarela de este dispositivo para generar miniaturas"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "Intro & credits detection is already running"
-msgstr ""
+msgstr "La detección de intros y créditos ya está en curso"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "Skip intro & credits is turned off in Site settings"
-msgstr ""
+msgstr "Saltar intro y créditos está desactivado en los Ajustes del sitio"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "Update the gateway on this device to detect intros & credits"
-msgstr ""
+msgstr "Actualiza la pasarela de este dispositivo para detectar intros y créditos"
 
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/settings/account/+page.server.ts
 msgid "Name is required"
-msgstr ""
+msgstr "El nombre es obligatorio"
 
 #: src/routes/admin/devices/+page.server.ts
 #: src/routes/admin/devices/+page.server.ts
 msgid "Device not found"
-msgstr ""
+msgstr "No se encontró el dispositivo"
 
 #: src/routes/admin/devices/+page.server.ts
 msgid "Missing gateway"
-msgstr ""
+msgstr "Falta la pasarela"
 
 #: src/routes/admin/branding/+page.server.ts
 msgid "Check the form."
-msgstr ""
+msgstr "Revisa el formulario."
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 #: src/routes/admin/subtitles/+page.server.ts
 #: src/routes/admin/subtitles/+page.server.ts
 msgid "OpenSubtitles"
-msgstr ""
+msgstr "OpenSubtitles"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 #: src/routes/admin/subtitles/+page.server.ts
 #: src/routes/admin/subtitles/+page.server.ts
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Subdl"
-msgstr ""
+msgstr "Subdl"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 #: src/routes/admin/subtitles/+page.server.ts
 #: src/routes/admin/subtitles/+page.server.ts
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Gestdown"
-msgstr ""
+msgstr "Gestdown"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 #: src/routes/admin/subtitles/+page.server.ts
 #: src/routes/admin/subtitles/+page.server.ts
 msgid "Titlovi"
-msgstr ""
+msgstr "Titlovi"
 
 #: src/routes/admin/subtitles/+page.server.ts
 msgid "Enable a provider first"
-msgstr ""
+msgstr "Activa primero un proveedor"
 
 #: src/routes/admin/subtitles/+page.server.ts
 msgid "Pick at least one language"
-msgstr ""
+msgstr "Elige al menos un idioma"
 
 #: src/routes/admin/subtitles/+page.server.ts
 msgid "Configure a provider first"
-msgstr ""
+msgstr "Configura primero un proveedor"
 
 #: src/routes/admin/subtitles/+page.server.ts
 msgid "A download run is already in progress"
-msgstr ""
+msgstr "Ya hay una descarga en curso"
 
 #. 0: label; 1: LIMIT_MIN; 2: LIMIT_MAX
 #: src/routes/admin/settings/+page.server.ts
 msgid "{0} must be a whole number from {1} to {2}."
-msgstr ""
+msgstr "{0} debe ser un número entero entre {1} y {2}."
 
 #: src/routes/admin/settings/+page.server.ts
 msgid "Signed-in devices"
-msgstr ""
+msgstr "Dispositivos con sesión iniciada"
 
 #: src/routes/admin/settings/+page.server.ts
 msgid "Profiles"
-msgstr ""
+msgstr "Perfiles"
 
 #: src/routes/admin/settings/+page.server.ts
 msgid "Pick one of the offered intervals"
-msgstr ""
+msgstr "Elige uno de los intervalos disponibles"
 
 #: src/routes/admin/settings/+page.server.ts
 msgid "Enter an API key to save."
-msgstr ""
+msgstr "Introduce una clave de API para guardar."
 
 #: src/routes/admin/settings/+page.server.ts
 msgid "Add a TMDB API key first."
-msgstr ""
+msgstr "Añade primero una clave de API de TMDB."
 
 #: src/routes/admin/settings/+page.server.ts
 msgid "Add a TMDB API key first"
-msgstr ""
+msgstr "Añade primero una clave de API de TMDB"
 
 #: src/routes/admin/users/+page.server.ts
-#: src/routes/settings/account/+page.server.ts
 #: src/routes/settings/devices/+page.server.ts
 msgid "Request failed"
-msgstr ""
+msgstr "Error en la solicitud"
 
 #: src/routes/admin/users/+page.server.ts
 msgid "Name, email and password are required"
-msgstr ""
+msgstr "El nombre, el correo electrónico y la contraseña son obligatorios"
 
 #: src/routes/admin/users/+page.server.ts
 #: src/routes/admin/users/+page.server.ts
 msgid "Password must be at least 8 characters"
-msgstr ""
+msgstr "La contraseña debe tener al menos 8 caracteres"
 
 #: src/routes/admin/users/+page.server.ts
 msgid "Unknown role"
-msgstr ""
+msgstr "Rol desconocido"
 
 #: src/routes/admin/users/+page.server.ts
 msgid "User and role are required"
-msgstr ""
+msgstr "El usuario y el rol son obligatorios"
 
 #: src/routes/admin/users/+page.server.ts
 msgid "You cannot change your own role"
-msgstr ""
+msgstr "No puedes cambiar tu propio rol"
 
 #: src/routes/admin/users/+page.server.ts
 #: src/routes/admin/users/+page.server.ts
 #: src/routes/admin/users/+page.server.ts
 msgid "That user is the last administrator"
-msgstr ""
+msgstr "Ese usuario es el último administrador"
 
 #: src/routes/admin/users/+page.server.ts
 #: src/routes/admin/users/+page.server.ts
 #: src/routes/admin/users/+page.server.ts
 #: src/routes/admin/users/+page.server.ts
 msgid "Missing user"
-msgstr ""
+msgstr "Falta el usuario"
 
 #: src/routes/admin/users/+page.server.ts
 msgid "Change your own password in Settings"
-msgstr ""
+msgstr "Cambia tu propia contraseña en Ajustes"
 
-#: src/routes/admin/statistics/+page.server.ts
+#: src/lib/playback-client.ts
 msgid "Playback was stopped by an administrator."
-msgstr ""
+msgstr "Un administrador detuvo la reproducción."
 
 #: src/routes/admin/statistics/+page.server.ts
 msgid "That stream has already ended."
-msgstr ""
+msgstr "Esa transmisión ya terminó."
 
 #: src/routes/movies/[id]/+page.server.ts
 #: src/routes/movies/[id]/watch/+page.server.ts
 msgid "Movie not found"
-msgstr ""
+msgstr "No se encontró la película"
 
 #: src/routes/settings/devices/+page.server.ts
 msgid "No device given"
-msgstr ""
+msgstr "No se indicó ningún dispositivo"
 
 #: src/routes/settings/devices/+page.server.ts
 msgid "Use Sign out to leave this device"
-msgstr ""
+msgstr "Usa Cerrar sesión para salir en este dispositivo"
 
 #: src/routes/settings/account/+page.server.ts
 msgid "Enter a valid email address"
-msgstr ""
+msgstr "Introduce un correo electrónico válido"
 
 #: src/routes/settings/account/+page.server.ts
 msgid "That email address is already in use"
-msgstr ""
+msgstr "Ese correo electrónico ya está en uso"
 
 #. 0: MIN_PASSWORD_LENGTH
 #: src/routes/settings/account/+page.server.ts
 msgid "New password must be at least {0} characters"
-msgstr ""
+msgstr "La nueva contraseña debe tener al menos {0} caracteres"
 
 #: src/routes/settings/account/+page.server.ts
 msgid "Nothing changed."
-msgstr ""
+msgstr "No ha cambiado nada."
 
 #: src/routes/settings/account/+page.server.ts
 msgid "Enter your current password to change your email or password"
-msgstr ""
+msgstr "Introduce tu contraseña actual para cambiar tu correo electrónico o contraseña"
 
 #: src/routes/settings/account/+page.server.ts
 msgid "That password is wrong"
-msgstr ""
+msgstr "Esa contraseña es incorrecta"
 
 #: src/routes/settings/preferences/+page.server.ts
 msgid "Pick a theme"
-msgstr ""
+msgstr "Elige un tema"
 
 #: src/routes/settings/playback/+page.server.ts
 #: src/routes/settings/playback/+page.server.ts
@@ -368,76 +369,77 @@ msgstr ""
 #: src/routes/settings/preferences/+page.server.ts
 #: src/routes/settings/subtitles/+page.server.ts
 msgid "Pick a value from each list"
-msgstr ""
+msgstr "Elige un valor de cada lista"
 
 #: src/routes/settings/playback/+page.server.ts
 msgid "Invalid value"
-msgstr ""
+msgstr "Valor no válido"
 
 #: src/routes/series/[id]/+page.server.ts
 #: src/routes/series/[id]/watch/[episode]/+page.server.ts
 msgid "Series not found"
-msgstr ""
+msgstr "No se encontró la serie"
 
 #: src/routes/categories/[type=category]/[slug]/+page.server.ts
 msgid "Category not found"
-msgstr ""
+msgstr "No se encontró la categoría"
 
 #: src/routes/admin/statistics/users/[id]/+page.server.ts
 msgid "No such user."
-msgstr ""
+msgstr "No existe ese usuario."
 
+#: src/routes/api/together/+server.ts
 #: src/routes/series/[id]/watch/[episode]/+page.server.ts
 msgid "Episode not found"
-msgstr ""
+msgstr "No se encontró el episodio"
 
 #: src/lib/dialog-form.svelte.ts
 msgid "That didn’t work. Try again."
-msgstr ""
+msgstr "No funcionó. Vuelve a intentarlo."
 
 #: src/lib/dialog-form.svelte.ts
 msgid "The server couldn’t complete that. Try again."
-msgstr ""
+msgstr "El servidor no pudo completarlo. Vuelve a intentarlo."
 
 #: src/routes/+error.svelte
 msgid "Something went wrong."
-msgstr ""
+msgstr "Algo salió mal."
 
 #: src/routes/+error.svelte
 #: src/routes/together/[code]/+page.svelte
 msgid "Back to home"
-msgstr ""
+msgstr "Volver al inicio"
 
 #: src/lib/settings-saver.svelte.ts
 msgid "That didn’t save."
-msgstr ""
+msgstr "No se guardó."
 
 #: src/lib/settings-saver.svelte.ts
 msgid "The server couldn’t save that. Try again."
-msgstr ""
+msgstr "El servidor no pudo guardarlo. Vuelve a intentarlo."
 
 #: src/lib/settings-saver.svelte.ts
 msgid "Couldn’t reach the server. Try again."
-msgstr ""
+msgstr "No se pudo conectar con el servidor. Vuelve a intentarlo."
 
 #: src/lib/components/site-header.svelte
 #: src/routes/+page.svelte
 msgid "Home"
-msgstr ""
+msgstr "Inicio"
 
 #: src/routes/+page.svelte
 msgid "Your library is empty. Pair a device and add a media folder in <0>Admin → Devices</0>."
-msgstr ""
+msgstr "Tu biblioteca está vacía. Vincula un dispositivo y añade una carpeta multimedia en <0>Administración → Dispositivos</0>."
 
 #: src/routes/+page.svelte
 msgid "Nothing to watch yet. Ask an administrator to pair a device and add a media folder."
-msgstr ""
+msgstr "Todavía no hay nada que ver. Pide a un administrador que vincule un dispositivo y añada una carpeta multimedia."
 
 #: src/lib/components/admin-sidebar.svelte
 #: src/routes/admin/+layout.svelte
 #: src/routes/admin/+page.svelte
 msgid "Overview"
-msgstr ""
+msgstr "Resumen"
 
 #: src/lib/components/admin-sidebar.svelte
 #: src/routes/admin/+layout.svelte
@@ -446,12 +448,12 @@ msgstr ""
 #: src/routes/admin/statistics/+page.svelte
 #: src/routes/settings/+layout.svelte
 msgid "Statistics"
-msgstr ""
+msgstr "Estadísticas"
 
 #: src/lib/components/admin-sidebar.svelte
 #: src/routes/admin/+layout.svelte
 msgid "Devices & Libraries"
-msgstr ""
+msgstr "Dispositivos y bibliotecas"
 
 #: src/lib/components/admin-sidebar.svelte
 #: src/routes/admin/+layout.svelte
@@ -461,7 +463,7 @@ msgstr ""
 #: src/routes/admin/users/+page.svelte
 #: src/routes/admin/users/+page.svelte
 msgid "Users"
-msgstr ""
+msgstr "Usuarios"
 
 #: src/lib/components/admin-sidebar.svelte
 #: src/lib/components/media/watch-player.svelte
@@ -473,29 +475,29 @@ msgstr ""
 #: src/routes/settings/+layout.svelte
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Subtitles"
-msgstr ""
+msgstr "Subtítulos"
 
 #: src/lib/components/admin-sidebar.svelte
 #: src/routes/admin/+layout.svelte
 #: src/routes/admin/branding/+page.svelte
 #: src/routes/admin/branding/+page.svelte
 msgid "Branding"
-msgstr ""
+msgstr "Marca"
 
 #: src/lib/components/admin-sidebar.svelte
 #: src/routes/admin/+layout.svelte
 #: src/routes/admin/settings/+page.svelte
 #: src/routes/admin/settings/+page.svelte
 msgid "Site settings"
-msgstr ""
+msgstr "Ajustes del sitio"
 
 #: src/lib/components/admin-sidebar.svelte
 msgid "Administration"
-msgstr ""
+msgstr "Administración"
 
 #: src/lib/components/admin-sidebar.svelte
 msgid "Manage"
-msgstr ""
+msgstr "Gestionar"
 
 #. 0: branding().appName
 #. 0: branding().appName
@@ -506,29 +508,29 @@ msgstr ""
 #: src/routes/movies/[id]/watch/+page.svelte
 #: src/routes/series/[id]/watch/[episode]/+page.svelte
 msgid "Back to {0}"
-msgstr ""
+msgstr "Volver a {0}"
 
 #: src/lib/components/password-input.svelte
 msgid "Hide password"
-msgstr ""
+msgstr "Ocultar contraseña"
 
 #: src/lib/components/password-input.svelte
 msgid "Show password"
-msgstr ""
+msgstr "Mostrar contraseña"
 
 #: src/lib/components/login-form.svelte
 msgid "Welcome back"
-msgstr ""
+msgstr "Hola de nuevo"
 
 #: src/lib/components/login-form.svelte
 msgid "Sign in to keep watching."
-msgstr ""
+msgstr "Inicia sesión para seguir viendo."
 
 #: src/lib/components/login-form.svelte
 #: src/lib/components/signup-form.svelte
 #: src/routes/admin/users/+page.svelte
 msgid "Email"
-msgstr ""
+msgstr "Correo electrónico"
 
 #: src/lib/components/login-form.svelte
 #: src/lib/components/signup-form.svelte
@@ -536,158 +538,127 @@ msgstr ""
 #: src/routes/admin/users/+page.svelte
 #: src/routes/settings/account/+page.svelte
 msgid "Password"
-msgstr ""
+msgstr "Contraseña"
 
 #: src/lib/components/login-form.svelte
 msgid "Signing in…"
-msgstr ""
+msgstr "Iniciando sesión…"
 
 #: src/lib/components/login-form.svelte
 #: src/lib/components/site-header.svelte
 #: src/lib/components/site-header.svelte
 #: src/routes/login/+page.svelte
 msgid "Sign in"
-msgstr ""
+msgstr "Iniciar sesión"
 
 #: src/lib/components/login-form.svelte
 msgid "New here? <0>Create an account</0>"
-msgstr ""
+msgstr "¿Eres nuevo? <0>Crea una cuenta</0>"
 
 #: src/lib/components/copy-button.svelte
 msgid "Copy"
-msgstr ""
+msgstr "Copiar"
 
 #: src/lib/components/copy-button.svelte
 #: src/lib/components/copy-button.svelte
 msgid "Copied"
-msgstr ""
+msgstr "Copiado"
 
 #: src/lib/components/save-status.svelte
 #: src/routes/admin/users/+page.svelte
 #: src/routes/profiles/+page.svelte
 msgid "Saving…"
-msgstr ""
+msgstr "Guardando…"
 
 #: src/lib/components/save-status.svelte
 msgid "Saved"
-msgstr ""
-
-#: src/lib/components/search-box.svelte
-msgid "AbortError"
-msgstr ""
+msgstr "Guardado"
 
 #: src/lib/components/search-box.svelte
 msgid "Search failed"
-msgstr ""
-
-#: src/lib/components/search-box.svelte
-#: src/lib/components/search-box.svelte
-msgid "ArrowDown"
-msgstr ""
-
-#: src/lib/components/search-box.svelte
-msgid "ArrowUp"
-msgstr ""
-
-#: src/lib/components/search-box.svelte
-msgid "Enter"
-msgstr ""
-
-#: src/lib/components/media/watch-player.svelte
-#: src/lib/components/media/watch-player.svelte
-#: src/lib/components/search-box.svelte
-msgid "Escape"
-msgstr ""
-
-#: src/lib/components/search-box.svelte
-msgid "Tab"
-msgstr ""
+msgstr "Error en la búsqueda"
 
 #: src/lib/components/search-box.svelte
 msgid "Search…"
-msgstr ""
+msgstr "Buscar…"
 
 #: src/lib/components/search-box.svelte
 #: src/routes/search/+page.svelte
 msgid "Search movies and series"
-msgstr ""
+msgstr "Buscar películas y series"
 
 #: src/lib/components/search-box.svelte
 msgid "Search results"
-msgstr ""
+msgstr "Resultados de búsqueda"
 
 #. 0: trimmed
 #: src/lib/components/search-box.svelte
 msgid "No titles match “{0}”."
-msgstr ""
+msgstr "Ningún título coincide con “{0}”."
 
 #: src/lib/components/media/poster-card.svelte
 #: src/lib/components/search-box.svelte
 msgid "Movie"
-msgstr ""
+msgstr "Película"
 
 #. 0: trimmed
 #: src/lib/components/search-box.svelte
 msgid "See all results for “{0}”"
-msgstr ""
-
-#: src/lib/components/session-device-icon.svelte
-msgid "Windows"
-msgstr ""
+msgstr "Ver todos los resultados de “{0}”"
 
 #: src/lib/components/signup-form.svelte
 msgid "Registration is closed"
-msgstr ""
+msgstr "El registro está cerrado"
 
 #. 0: branding().appName
 #: src/lib/components/signup-form.svelte
 msgid "This {0} server isn't accepting new accounts. Ask an administrator to create one for you."
-msgstr ""
+msgstr "Este servidor de {0} no acepta cuentas nuevas. Pide a un administrador que te cree una."
 
 #: src/lib/components/signup-form.svelte
 msgid "Back to sign in"
-msgstr ""
+msgstr "Volver a iniciar sesión"
 
 #: src/lib/components/signup-form.svelte
 msgid "Create the admin account"
-msgstr ""
+msgstr "Crear la cuenta de administrador"
 
 #: src/lib/components/signup-form.svelte
 #: src/routes/admin/users/+page.svelte
 msgid "Create an account"
-msgstr ""
+msgstr "Crear una cuenta"
 
 #: src/lib/components/signup-form.svelte
 msgid "This is the first account on this server, so it becomes the administrator."
-msgstr ""
+msgstr "Esta es la primera cuenta de este servidor, así que será la de administrador."
 
 #: src/lib/components/signup-form.svelte
 msgid "Enter your details below to start watching."
-msgstr ""
+msgstr "Introduce tus datos para empezar a ver."
 
 #: src/lib/components/signup-form.svelte
 msgid "Must be at least 8 characters long."
-msgstr ""
+msgstr "Debe tener al menos 8 caracteres."
 
 #: src/lib/components/signup-form.svelte
 msgid "Creating account…"
-msgstr ""
+msgstr "Creando cuenta…"
 
 #: src/lib/components/signup-form.svelte
 #: src/routes/admin/users/+page.svelte
 #: src/routes/register/+page.svelte
 msgid "Create account"
-msgstr ""
+msgstr "Crear cuenta"
 
 #: src/lib/components/signup-form.svelte
 msgid "Already have an account? <0>Sign in</0>"
-msgstr ""
+msgstr "¿Ya tienes una cuenta? <0>Inicia sesión</0>"
 
 #: src/lib/components/site-header.svelte
 #: src/routes/categories/+page.svelte
 #: src/routes/categories/+page.svelte
 msgid "Categories"
-msgstr ""
+msgstr "Categorías"
 
 #: src/lib/components/site-header.svelte
 #: src/lib/components/site-header.svelte
@@ -695,110 +666,108 @@ msgstr ""
 #: src/routes/watchlist/+page.svelte
 #: src/routes/watchlist/+page.svelte
 msgid "Watchlist"
-msgstr ""
+msgstr "Mi lista"
 
 #: src/lib/components/site-header.svelte
 msgid "Account menu"
-msgstr ""
+msgstr "Menú de la cuenta"
 
 #: src/lib/components/site-header.svelte
 msgid "<0/> Manage profiles"
-msgstr ""
+msgstr "<0/> Gestionar perfiles"
 
 #: src/lib/components/site-header.svelte
 msgid "<0/> Settings"
-msgstr ""
+msgstr "<0/> Ajustes"
 
 #: src/lib/components/site-header.svelte
 msgid "<0/> Admin dashboard"
-msgstr ""
+msgstr "<0/> Panel de administración"
 
 #: src/lib/components/site-header.svelte
 msgid "<0/> Sign out"
-msgstr ""
+msgstr "<0/> Cerrar sesión"
 
 #: src/lib/components/site-header.svelte
 msgid "Open menu"
-msgstr ""
+msgstr "Abrir menú"
 
 #: src/lib/components/site-header.svelte
 msgid "Browsing as a guest"
-msgstr ""
+msgstr "Navegando como invitado"
 
 #: src/lib/components/site-header.svelte
 msgid "Switch profile"
-msgstr ""
+msgstr "Cambiar de perfil"
 
 #: src/lib/components/site-header.svelte
 msgid "Admin dashboard"
-msgstr ""
+msgstr "Panel de administración"
 
 #: src/lib/components/site-header.svelte
 #: src/routes/settings/+layout.svelte
 #: src/routes/settings/+layout.svelte
 msgid "Settings"
-msgstr ""
+msgstr "Ajustes"
 
 #: src/lib/components/site-header.svelte
 #: src/routes/profiles/+page.svelte
 #: src/routes/profiles/+page.svelte
 msgid "Manage profiles"
-msgstr ""
+msgstr "Gestionar perfiles"
 
 #: src/lib/components/site-header.svelte
 #: src/routes/settings/devices/+page.svelte
 msgid "Sign out"
-msgstr ""
+msgstr "Cerrar sesión"
 
-#: src/lib/together/session.svelte.ts
+#: src/lib/together/notices.ts
 msgid "This watch party is full."
-msgstr ""
+msgstr "Esta sala de Ver juntos está llena."
 
-#: src/lib/together/session.svelte.ts
+#: src/lib/together/notices.ts
+#: src/lib/together/notices.ts
+#: src/routes/api/together/[code]/ticket/+server.ts
 msgid "This watch party has ended."
-msgstr ""
+msgstr "Esta sala de Ver juntos ha terminado."
 
 #: src/lib/together/session.svelte.ts
 msgid "Lost the connection to the watch party."
-msgstr ""
-
-#: src/lib/together/session.svelte.ts
-msgid "NotAllowedError"
-msgstr ""
+msgstr "Se perdió la conexión con la sala de Ver juntos."
 
 #: src/routes/admin/+page.svelte
 msgid "Watching now"
-msgstr ""
+msgstr "Viendo ahora"
 
 #. 0: transcoding
 #: src/routes/admin/+page.svelte
 msgid "{0} transcoding"
-msgstr ""
+msgstr "{0} transcodificando"
 
 #: src/routes/admin/+page.svelte
 msgid "Nothing playing"
-msgstr ""
+msgstr "Nada en reproducción"
 
 #: src/routes/admin/+page.svelte
 msgid "Devices online"
-msgstr ""
+msgstr "Dispositivos en línea"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/+page.svelte
 msgid "In the catalog"
-msgstr ""
+msgstr "En el catálogo"
 
 #: src/routes/admin/+page.svelte
 msgid "Media files"
-msgstr ""
+msgstr "Archivos multimedia"
 
 #: src/routes/admin/+page.svelte
 msgid "Across every library"
-msgstr ""
+msgstr "En todas las bibliotecas"
 
 #: src/routes/admin/+page.svelte
 msgid "Accounts on this server"
-msgstr ""
+msgstr "Cuentas en este servidor"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/+page.svelte
@@ -810,7 +779,7 @@ msgstr ""
 #: src/routes/settings/statistics/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "Plays"
-msgstr ""
+msgstr "Reproducciones"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/+page.svelte
@@ -820,17 +789,17 @@ msgstr ""
 #: src/routes/settings/statistics/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "Watch time"
-msgstr ""
+msgstr "Tiempo de visionado"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/+page.svelte
 msgid "Viewers"
-msgstr ""
+msgstr "Espectadores"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/+page.svelte
 msgid "Transcoded"
-msgstr ""
+msgstr "Transcodificado"
 
 #: src/routes/admin/+layout.svelte
 #: src/routes/admin/+layout.svelte
@@ -840,57 +809,57 @@ msgstr ""
 #: src/routes/admin/users/+page.svelte
 #: src/routes/admin/users/+page.svelte
 msgid "Admin"
-msgstr ""
+msgstr "Administración"
 
 #. 0: branding().appName
 #: src/routes/admin/+page.svelte
 msgid "What this {0} server is serving right now."
-msgstr ""
+msgstr "Lo que este servidor de {0} está sirviendo ahora mismo."
 
 #: src/routes/admin/+page.svelte
 msgid "Activity <0/>"
-msgstr ""
+msgstr "Actividad <0/>"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/+page.svelte
 msgid "Now playing"
-msgstr ""
+msgstr "En reproducción"
 
 #: src/routes/admin/+page.svelte
 msgid "Streams from every device, refreshed every few seconds."
-msgstr ""
+msgstr "Transmisiones de todos los dispositivos, actualizadas cada pocos segundos."
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/+page.svelte
 msgid "Nothing is playing"
-msgstr ""
+msgstr "No se está reproduciendo nada"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/+page.svelte
 msgid "Streams show up here as soon as someone presses play."
-msgstr ""
+msgstr "Las transmisiones aparecen aquí en cuanto alguien pulsa reproducir."
 
 #: src/routes/admin/+page.svelte
 msgid "Watch position"
-msgstr ""
+msgstr "Posición de reproducción"
 
 #: src/routes/admin/+page.svelte
 msgid "History <0/>"
-msgstr ""
+msgstr "Historial <0/>"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/+page.svelte
 msgid "Recently watched"
-msgstr ""
+msgstr "Vistos recientemente"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/+page.svelte
 msgid "No plays recorded yet."
-msgstr ""
+msgstr "Todavía no hay reproducciones registradas."
 
 #: src/routes/admin/+page.svelte
 msgid "Manage <0/>"
-msgstr ""
+msgstr "Gestionar <0/>"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/devices/+page.svelte
@@ -898,135 +867,118 @@ msgstr ""
 #: src/routes/settings/+layout.svelte
 #: src/routes/settings/devices/+page.svelte
 msgid "Devices"
-msgstr ""
+msgstr "Dispositivos"
 
 #: src/routes/admin/+page.svelte
 msgid "No devices yet. Pair the computer or NAS that holds your media to start streaming."
-msgstr ""
+msgstr "Todavía no hay dispositivos. Vincula el equipo o NAS que guarda tu contenido para empezar a transmitir."
 
 #: src/lib/components/devices/pairing-dialog.svelte
 #: src/routes/admin/+page.svelte
 msgid "Pair a device"
-msgstr ""
+msgstr "Vincular un dispositivo"
 
 #: src/lib/components/devices/device-card.svelte
 #: src/routes/admin/+page.svelte
+#: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Online"
-msgstr ""
+msgstr "En línea"
 
-#. 0: device.lastSeenAt ? formatRelative(device.lastSeenAt) \\: 'never'
+#. 0: formatRelative(device.lastSeenAt)
 #: src/routes/admin/+page.svelte
 msgid "Last seen {0}"
-msgstr ""
+msgstr "Visto por última vez {0}"
 
 #: src/routes/admin/+page.svelte
 msgid "Graphs <0/>"
-msgstr ""
+msgstr "Gráficos <0/>"
 
+#: src/lib/server/stats/queries.ts
 #: src/routes/admin/+page.svelte
 msgid "Last 7 days"
-msgstr ""
+msgstr "Últimos 7 días"
 
 #: src/routes/admin/+page.svelte
 msgid "Libraries <0/>"
-msgstr ""
+msgstr "Bibliotecas <0/>"
 
 #: src/routes/admin/+page.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 #: src/routes/watchlist/+page.svelte
 msgid "Recently added"
-msgstr ""
+msgstr "Añadidos recientemente"
 
 #: src/routes/admin/+page.svelte
 msgid "Nothing scanned yet."
-msgstr ""
-
-#. 0: file.newEpisodes
-#: src/routes/admin/+page.svelte
-msgid "{0} new episodes ·"
-msgstr ""
+msgstr "Todavía no se ha escaneado nada."
 
 #: src/routes/categories/+page.svelte
 msgid "Genres"
-msgstr ""
+msgstr "Géneros"
 
 #: src/routes/categories/+page.svelte
 msgid "Collections"
-msgstr ""
+msgstr "Colecciones"
 
 #: src/routes/categories/+page.svelte
 msgid "Networks & Studios"
-msgstr ""
+msgstr "Cadenas y estudios"
 
 #: src/routes/categories/+page.svelte
 msgid "Browse by genre, collection, or the network and studio behind it."
-msgstr ""
+msgstr "Explora por género, colección o la cadena y el estudio que hay detrás."
 
 #: src/routes/categories/+page.svelte
 msgid "Nothing to browse yet"
-msgstr ""
+msgstr "Todavía no hay nada que explorar"
 
 #: src/routes/categories/+page.svelte
 msgid "Categories appear once your libraries are scanned and titles have metadata."
-msgstr ""
+msgstr "Las categorías aparecen cuando se escanean tus bibliotecas y los títulos tienen metadatos."
 
 #: src/routes/profiles/+page.svelte
 #: src/routes/profiles/+page.svelte
 msgid "Who's watching?"
-msgstr ""
-
-#: src/routes/profiles/+page.svelte
-msgid "Several people"
-msgstr ""
-
-#. 0: data.maxProfiles
-#: src/routes/profiles/+page.svelte
-msgid "Up to {0} people"
-msgstr ""
-
-#. 0: data.maxProfiles === null ? 'Several people' \\: `Up to ${data.maxProfiles} people`
-#: src/routes/profiles/+page.svelte
-msgid "Choose a profile to rename it or change its look. {0} can share this account, each with their own progress, watchlist and settings."
-msgstr ""
+msgstr "¿Quién está viendo?"
 
 #. 0: profile.name
 #: src/routes/profiles/+page.svelte
 msgid "Edit {0}"
-msgstr ""
+msgstr "Editar {0}"
 
 #: src/routes/profiles/+page.svelte
 #: src/routes/profiles/+page.svelte
 msgid "Add profile"
-msgstr ""
+msgstr "Añadir perfil"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 #: src/routes/profiles/+page.svelte
 msgid "Done"
-msgstr ""
+msgstr "Listo"
 
 #: src/routes/profiles/+page.svelte
 msgid "Edit"
-msgstr ""
+msgstr "Editar"
 
 #: src/routes/profiles/+page.svelte
 msgid "Edit profile"
-msgstr ""
+msgstr "Editar perfil"
 
 #: src/routes/profiles/+page.svelte
 msgid "Add a profile"
-msgstr ""
+msgstr "Añadir un perfil"
 
 #: src/routes/profiles/+page.svelte
 msgid "Someone else watching on this account? Give them their own profile."
-msgstr ""
+msgstr "¿Alguien más ve contenido con esta cuenta? Dale su propio perfil."
 
 #: src/routes/profiles/+page.svelte
 msgid "The account's main profile. It can be renamed but not deleted."
-msgstr ""
+msgstr "El perfil principal de la cuenta. Se puede cambiar de nombre, pero no eliminar."
 
 #: src/routes/profiles/+page.svelte
 msgid "Change how this profile looks in the profile picker."
-msgstr ""
+msgstr "Cambia cómo se ve este perfil en el selector de perfiles."
 
 #: src/routes/admin/branding/+page.svelte
 #: src/routes/admin/devices/+page.svelte
@@ -1034,36 +986,36 @@ msgstr ""
 #: src/routes/admin/users/+page.svelte
 #: src/routes/profiles/+page.svelte
 msgid "Name"
-msgstr ""
+msgstr "Nombre"
 
 #: src/routes/profiles/+page.svelte
 msgid "Color"
-msgstr ""
+msgstr "Color"
 
 #: src/routes/profiles/+page.svelte
 #: src/routes/profiles/+page.svelte
 msgid "Initial"
-msgstr ""
+msgstr "Inicial"
 
 #: src/routes/profiles/+page.svelte
 msgid "Icon"
-msgstr ""
+msgstr "Icono"
 
 #: src/routes/profiles/+page.svelte
 #: src/routes/profiles/+page.svelte
 msgid "Delete profile"
-msgstr ""
+msgstr "Eliminar perfil"
 
 #: src/routes/admin/devices/+page.svelte
 #: src/routes/profiles/+page.svelte
 #: src/routes/settings/account/+page.svelte
 msgid "Save"
-msgstr ""
+msgstr "Guardar"
 
 #: src/routes/admin/devices/+page.svelte
 #: src/routes/profiles/+page.svelte
 msgid "Adding…"
-msgstr ""
+msgstr "Añadiendo…"
 
 #: src/lib/components/together/together-bar.svelte
 #: src/routes/admin/branding/+page.svelte
@@ -1081,371 +1033,366 @@ msgstr ""
 #: src/routes/settings/account/+page.svelte
 #: src/routes/settings/devices/+page.svelte
 msgid "Cancel"
-msgstr ""
+msgstr "Cancelar"
 
 #. 0: remove.target.name
 #: src/routes/profiles/+page.svelte
 msgid "Delete {0}?"
-msgstr ""
+msgstr "¿Eliminar {0}?"
 
 #: src/routes/profiles/+page.svelte
 msgid "The profile's watch progress, Continue watching, watchlist and settings are deleted with it. Plays stay in the server's statistics. This can't be undone."
-msgstr ""
+msgstr "El progreso de visionado, Seguir viendo, Mi lista y los ajustes del perfil se eliminan con él. Las reproducciones se conservan en las estadísticas del servidor. Esta acción no se puede deshacer."
 
 #: src/routes/search/+page.svelte
 #: src/routes/search/+page.svelte
 msgid "Search"
-msgstr ""
-
-#. 0: count; 1: count === 1 ? '' \\: 's'; 2: data.q
-#: src/routes/search/+page.svelte
-msgid "{0} result{1} for “{2}”"
-msgstr ""
+msgstr "Buscar"
 
 #: src/routes/search/+page.svelte
 msgid "Type in the search bar above — results appear as you type, even with a typo or two."
-msgstr ""
+msgstr "Escribe en la barra de búsqueda de arriba: los resultados aparecen mientras escribes, incluso con alguna errata."
 
 #. 0: data.q
 #: src/routes/search/+page.svelte
 msgid "No titles match “{0}”"
-msgstr ""
+msgstr "Ningún título coincide con “{0}”"
 
 #: src/routes/search/+page.svelte
 msgid "Check the spelling or try a shorter query — titles, years, cast and crew all count."
-msgstr ""
+msgstr "Revisa la ortografía o prueba una búsqueda más corta: cuentan títulos, años, reparto y equipo."
 
 #: src/lib/components/devices/activity-log.svelte
 msgid "Activity log"
-msgstr ""
+msgstr "Registro de actividad"
 
 #: src/lib/components/devices/activity-log.svelte
 msgid "Pairings, libraries, scans, thumbnail and intro & credits runs on every device, newest first."
-msgstr ""
+msgstr "Vinculaciones, bibliotecas, escaneos, generación de miniaturas y detección de intros y créditos en todos los dispositivos, de más reciente a más antiguo."
 
 #: src/lib/components/devices/activity-log.svelte
 msgid "Nothing logged yet. Pairing a device, adding a library or running a scan shows up here."
-msgstr ""
+msgstr "Todavía no hay nada registrado. Aquí aparecerá cuando vincules un dispositivo, añadas una biblioteca o hagas un escaneo."
 
 #: src/lib/components/devices/activity-log.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "When"
-msgstr ""
+msgstr "Cuándo"
 
 #: src/lib/components/devices/activity-log.svelte
 msgid "Event"
-msgstr ""
+msgstr "Evento"
 
 #: src/lib/components/devices/activity-log.svelte
 #: src/lib/components/stats/active-stream-card.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Device"
-msgstr ""
+msgstr "Dispositivo"
 
 #: src/lib/components/devices/activity-log.svelte
 #: src/lib/components/devices/thumbnail-job-card.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Library"
-msgstr ""
+msgstr "Biblioteca"
 
 #: src/lib/components/devices/activity-log.svelte
 msgid "Details"
-msgstr ""
+msgstr "Detalles"
 
 #: src/lib/components/devices/activity-log.svelte
 msgid "By"
-msgstr ""
+msgstr "Por"
 
 #: src/lib/components/devices/activity-log.svelte
 msgid "Automatic"
-msgstr ""
+msgstr "Automático"
 
 #: src/routes/settings/+layout.svelte
 #: src/routes/settings/+layout.svelte
 #: src/routes/settings/account/+page.svelte
 msgid "Account"
-msgstr ""
+msgstr "Cuenta"
 
 #: src/routes/settings/+layout.svelte
 msgid "Preferences"
-msgstr ""
+msgstr "Preferencias"
 
 #: src/routes/settings/+layout.svelte
 msgid "Playback"
-msgstr ""
+msgstr "Reproducción"
 
 #: src/routes/settings/+layout.svelte
 msgid "Profile:"
-msgstr ""
+msgstr "Perfil:"
 
 #. 0: branding().appName
 #: src/routes/settings/+layout.svelte
 msgid "Your account on this {0} server, and the settings of the profile you are watching as."
-msgstr ""
+msgstr "Tu cuenta en este servidor de {0} y los ajustes del perfil con el que estás viendo."
 
 #: src/lib/components/media/library-toolbar.svelte
 #: src/routes/categories/[type=category]/[slug]/+page.svelte
 #: src/routes/watchlist/+page.svelte
 msgid "Title A–Z"
-msgstr ""
+msgstr "Título A–Z"
 
 #: src/lib/components/media/library-toolbar.svelte
 #: src/routes/categories/[type=category]/[slug]/+page.svelte
 #: src/routes/watchlist/+page.svelte
 msgid "Newest first"
-msgstr ""
+msgstr "Más recientes primero"
 
 #: src/lib/components/media/library-toolbar.svelte
 #: src/routes/categories/[type=category]/[slug]/+page.svelte
 #: src/routes/watchlist/+page.svelte
 msgid "Top rated"
-msgstr ""
+msgstr "Mejor valorados"
 
 #: src/routes/watchlist/+page.svelte
 msgid "Your watchlist is empty"
-msgstr ""
+msgstr "Tu lista está vacía"
 
 #: src/routes/watchlist/+page.svelte
 msgid "Use the ⋮ menu on any title, or the Watchlist button on its page, to save it here for later."
-msgstr ""
+msgstr "Usa el menú ⋮ de cualquier título, o el botón Mi lista de su página, para guardarlo aquí para más tarde."
 
 #: src/lib/components/devices/job-card.svelte
 #: src/lib/components/stats/active-stream-card.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Stopping…"
-msgstr ""
+msgstr "Deteniendo…"
 
 #: src/lib/components/devices/job-card.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Stop"
-msgstr ""
+msgstr "Detener"
 
 #. 0: gpu
 #: src/lib/components/devices/device-card.svelte
 msgid "Transcodes on the GPU: {0}"
-msgstr ""
+msgstr "Transcodifica en la GPU: {0}"
 
 #. 0: device.hwEncoder
 #: src/lib/components/devices/device-card.svelte
 msgid "GPU available ({0}); hardware acceleration is off in Site settings"
-msgstr ""
+msgstr "GPU disponible ({0}); la aceleración por hardware está desactivada en los Ajustes del sitio"
 
 #: src/lib/components/devices/device-card.svelte
 msgid "Transcodes on the CPU"
-msgstr ""
+msgstr "Transcodifica en la CPU"
 
 #. 0: device.lastSeenAt ? formatRelative(device.lastSeenAt) \\: 'never'
 #: src/lib/components/devices/device-card.svelte
 msgid "Offline · last seen {0}"
-msgstr ""
+msgstr "Sin conexión · visto por última vez {0}"
 
 #. 0: device.gatewayVersion
 #: src/lib/components/devices/device-card.svelte
 msgid "v{0}"
-msgstr ""
+msgstr "v{0}"
 
 #: src/lib/components/devices/device-card.svelte
 msgid "<0/> CPU transcoding"
-msgstr ""
+msgstr "<0/> Transcodificación en CPU"
 
 #. 0: pairedLabel
 #: src/lib/components/devices/device-card.svelte
 msgid "paired {0}"
-msgstr ""
+msgstr "vinculado el {0}"
 
 #. 0: device.name
 #. 0: u.name
 #: src/lib/components/devices/device-card.svelte
 #: src/routes/admin/users/+page.svelte
 msgid "Manage {0}"
-msgstr ""
+msgstr "Gestionar {0}"
 
 #: src/lib/components/devices/device-card.svelte
 msgid "<0/> Rename…"
-msgstr ""
+msgstr "<0/> Cambiar nombre…"
 
 #: src/lib/components/devices/device-card.svelte
 msgid "<0/> Add library…"
-msgstr ""
+msgstr "<0/> Añadir biblioteca…"
 
 #: src/lib/components/devices/device-card.svelte
 msgid "<0/> Revoke device…"
-msgstr ""
+msgstr "<0/> Revocar dispositivo…"
 
 #: src/lib/components/devices/device-card.svelte
 msgid "No libraries yet. Add a folder from this device to put its videos in the catalog."
-msgstr ""
+msgstr "Todavía no hay bibliotecas. Añade una carpeta de este dispositivo para incluir sus videos en el catálogo."
 
 #: src/lib/components/devices/device-card.svelte
 msgid "Bring the device online to add a folder from it"
-msgstr ""
+msgstr "Conecta el dispositivo para añadir una carpeta desde él"
 
 #: src/lib/components/devices/device-card.svelte
 msgid "<0/> Add library"
-msgstr ""
+msgstr "<0/> Añadir biblioteca"
 
 #. 0: Math.ceil(s / 60)
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "{0} min"
-msgstr ""
+msgstr "{0} min"
 
 #. 0: s
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "{0} s"
-msgstr ""
+msgstr "{0} s"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Any computer or NAS that holds your media can serve it. Name it, then run the one-time code on that device."
-msgstr ""
+msgstr "Cualquier equipo o NAS que guarde tu contenido puede servirlo. Ponle un nombre y luego ejecuta el código de un solo uso en ese dispositivo."
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Living-room NAS"
-msgstr ""
+msgstr "NAS del salón"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Device name"
-msgstr ""
+msgstr "Nombre del dispositivo"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Shown in this list. You can rename it later."
-msgstr ""
+msgstr "Se muestra en esta lista. Puedes cambiarle el nombre más tarde."
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Generating…"
-msgstr ""
+msgstr "Generando…"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Generate code"
-msgstr ""
+msgstr "Generar código"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Paired. Start the gateway on the device to bring it online."
-msgstr ""
+msgstr "Vinculado. Inicia la pasarela en el dispositivo para conectarlo."
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Run this on the device. The code works once."
-msgstr ""
+msgstr "Ejecuta esto en el dispositivo. El código solo funciona una vez."
 
 #. 0: issued.name
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Pair “{0}”"
-msgstr ""
+msgstr "Vincular “{0}”"
 
 #. 0: issued.code.split('').join(' ')
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Pairing code {0}"
-msgstr ""
+msgstr "Código de vinculación {0}"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Copy code"
-msgstr ""
+msgstr "Copiar código"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "<0/> Code used"
-msgstr ""
+msgstr "<0/> Código usado"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "This code has expired."
-msgstr ""
+msgstr "Este código ha caducado."
 
 #. 0: remainingLabel
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Expires in {0}"
-msgstr ""
+msgstr "Caduca en {0}"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Copy pair command"
-msgstr ""
+msgstr "Copiar comando de vinculación"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "1. Pair"
-msgstr ""
+msgstr "1. Vincular"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "Copy connect command"
-msgstr ""
+msgstr "Copiar comando de conexión"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "2. Connect, and leave it running"
-msgstr ""
+msgstr "2. Conéctalo y déjalo en marcha"
 
 #: src/lib/components/devices/pairing-dialog.svelte
 msgid "New code"
-msgstr ""
+msgstr "Nuevo código"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Queued"
-msgstr ""
+msgstr "En cola"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Scanning…"
-msgstr ""
+msgstr "Escaneando…"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Rescan"
-msgstr ""
+msgstr "Volver a escanear"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Waits for another scan on this device to finish"
-msgstr ""
+msgstr "Espera a que termine otro escaneo en este dispositivo"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Look for new, changed and removed files"
-msgstr ""
+msgstr "Busca archivos nuevos, modificados y eliminados"
 
 #. 0: formatRelative(library.lastScanAt)
 #: src/lib/components/devices/library-row.svelte
 msgid "Scanned {0}"
-msgstr ""
+msgstr "Escaneada {0}"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Not scanned yet"
-msgstr ""
+msgstr "Aún sin escanear"
 
 #. 0: library.name
 #: src/lib/components/devices/library-row.svelte
 msgid "More for {0}"
-msgstr ""
+msgstr "Más opciones para {0}"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Re-read every file’s tracks and chapters"
-msgstr ""
+msgstr "Vuelve a leer las pistas y los capítulos de cada archivo"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Full rescan"
-msgstr ""
+msgstr "Escaneo completo"
 
 #: src/lib/components/devices/library-row.svelte
 #: src/lib/components/devices/library-row.svelte
 msgid "Normally automatic. Re-checks every file in this library."
-msgstr ""
+msgstr "Normalmente es automático. Vuelve a comprobar todos los archivos de esta biblioteca."
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Regenerate trickplay thumbnails"
-msgstr ""
+msgstr "Regenerar miniaturas de la barra de progreso"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "Re-detect intros & credits"
-msgstr ""
+msgstr "Volver a detectar intros y créditos"
 
 #: src/lib/components/devices/library-row.svelte
 msgid "<0/> Remove library…"
-msgstr ""
+msgstr "<0/> Quitar biblioteca…"
 
 #: src/lib/components/devices/marker-job-card.svelte
 #: src/lib/components/devices/thumbnail-job-card.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Processed"
-msgstr ""
+msgstr "Procesados"
 
 #: src/lib/components/devices/marker-job-card.svelte
 msgid "Intros found"
-msgstr ""
+msgstr "Intros encontradas"
 
 #: src/lib/components/devices/marker-job-card.svelte
 msgid "Credits found"
-msgstr ""
+msgstr "Créditos encontrados"
 
 #: src/lib/components/devices/marker-job-card.svelte
 #: src/lib/components/devices/thumbnail-job-card.svelte
@@ -1453,175 +1400,177 @@ msgstr ""
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Failed"
-msgstr ""
+msgstr "Fallidos"
 
 #: src/lib/components/devices/marker-job-card.svelte
 msgid "Waiting for device"
-msgstr ""
+msgstr "Esperando al dispositivo"
 
 #: src/lib/components/devices/marker-job-card.svelte
 msgid "Detecting intros & credits"
-msgstr ""
+msgstr "Detectando intros y créditos"
 
 #: src/lib/components/devices/marker-job-card.svelte
+#: src/lib/data/device-events.ts
 msgid "Intro & credits detection finished"
-msgstr ""
+msgstr "Detección de intros y créditos finalizada"
 
 #: src/lib/components/devices/marker-job-card.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "All libraries"
-msgstr ""
+msgstr "Todas las bibliotecas"
 
 #: src/lib/components/devices/marker-job-card.svelte
 msgid "Intro and credits detection progress"
-msgstr ""
+msgstr "Progreso de la detección de intros y créditos"
 
 #: src/lib/components/media/card-menu.svelte
 msgid "Remove Show from Watchlist"
-msgstr ""
+msgstr "Quitar serie de Mi lista"
 
 #: src/lib/components/media/card-menu.svelte
 msgid "Add Show to Watchlist"
-msgstr ""
+msgstr "Añadir serie a Mi lista"
 
 #: src/lib/components/media/card-menu.svelte
 msgid "Remove from Watchlist"
-msgstr ""
+msgstr "Quitar de Mi lista"
 
 #: src/lib/components/media/card-menu.svelte
 msgid "Add to Watchlist"
-msgstr ""
+msgstr "Añadir a Mi lista"
 
 #. 0: item.title
 #: src/lib/components/media/card-menu.svelte
 msgid "More options for {0}"
-msgstr ""
+msgstr "Más opciones para {0}"
 
 #: src/lib/components/media/card-menu.svelte
 msgid "<0/> Remove from Continue watching"
-msgstr ""
+msgstr "<0/> Quitar de Seguir viendo"
 
 #: src/lib/components/devices/thumbnail-job-card.svelte
 msgid "Generated"
-msgstr ""
+msgstr "Generados"
 
 #: src/lib/components/devices/thumbnail-job-card.svelte
 msgid "Already had"
-msgstr ""
+msgstr "Ya existían"
 
 #: src/lib/components/devices/thumbnail-job-card.svelte
 msgid "No duration"
-msgstr ""
+msgstr "Sin duración"
 
 #: src/lib/components/devices/thumbnail-job-card.svelte
 msgid "Generating thumbnails"
-msgstr ""
+msgstr "Generando miniaturas"
 
 #: src/lib/components/devices/thumbnail-job-card.svelte
+#: src/lib/data/device-events.ts
 msgid "Thumbnails finished"
-msgstr ""
+msgstr "Generación de miniaturas finalizada"
 
 #: src/lib/components/devices/thumbnail-job-card.svelte
 msgid "Thumbnail progress"
-msgstr ""
+msgstr "Progreso de las miniaturas"
 
 #. 0: label
 #: src/lib/components/media/carousel.svelte
 msgid "Scroll {0} left"
-msgstr ""
+msgstr "Desplazar {0} a la izquierda"
 
 #. 0: label
 #: src/lib/components/media/carousel.svelte
 msgid "Scroll {0} right"
-msgstr ""
+msgstr "Desplazar {0} a la derecha"
 
 #. 0: formatDurationUnits(resume.positionSeconds)
 #: src/lib/components/media/detail-hero.svelte
 msgid "Resume at {0}"
-msgstr ""
+msgstr "Reanudar en {0}"
 
 #: src/lib/components/media/detail-hero.svelte
 #: src/lib/components/media/detail-hero.svelte
 #: src/lib/components/media/hero-banner.svelte
 #: src/routes/admin/branding/+page.svelte
 msgid "Play"
-msgstr ""
+msgstr "Reproducir"
 
 #. 0: episodeLabel(target.season, target.episode.number)
 #. 0: episodeLabel(target.season, target.episode.number)
 #: src/lib/components/media/detail-hero.svelte
 #: src/lib/components/media/hero-banner.svelte
 msgid "Resume {0}"
-msgstr ""
+msgstr "Reanudar {0}"
 
 #. 0: item.director
 #: src/lib/components/media/detail-hero.svelte
 msgid "Directed by {0}"
-msgstr ""
+msgstr "Dirigida por {0}"
 
 #. 0: item.creator
 #: src/lib/components/media/detail-hero.svelte
 msgid "Created by {0}"
-msgstr ""
+msgstr "Creada por {0}"
 
 #. 0: budgetLabel
 #: src/lib/components/media/detail-hero.svelte
 msgid "<0/> Budget {0}"
-msgstr ""
+msgstr "<0/> Presupuesto: {0}"
 
 #: src/lib/components/media/detail-hero.svelte
 msgid "<0/> In watchlist"
-msgstr ""
+msgstr "<0/> En Mi lista"
 
 #: src/lib/components/media/detail-hero.svelte
 msgid "<0/> Watchlist"
-msgstr ""
+msgstr "<0/> Mi lista"
 
 #: src/lib/components/media/detail-hero.svelte
 #: src/lib/components/media/episode-menu.svelte
 #: src/lib/components/media/progress-line.svelte
 #: src/lib/components/stats/history-table.svelte
 msgid "Watched"
-msgstr ""
+msgstr "Visto"
 
 #: src/lib/components/media/detail-hero.svelte
 #: src/lib/components/media/episode-menu.svelte
 msgid "Mark as watched"
-msgstr ""
+msgstr "Marcar como visto"
 
 #: src/lib/components/media/detail-hero.svelte
 msgid "<0/> Watch together"
-msgstr ""
+msgstr "<0/> Ver juntos"
 
 #: src/lib/components/media/detail-hero.svelte
 msgid "<0/> Watch trailer"
-msgstr ""
+msgstr "<0/> Ver tráiler"
 
 #: src/lib/components/media/cast-row.svelte
 #: src/lib/components/media/watch-player.svelte
 msgid "Cast"
-msgstr ""
+msgstr "Reparto"
 
 #. 0: episodeLabel(season, episode.number); 1: episode.title
 #: src/lib/components/media/episode-menu.svelte
 msgid "More options for {0} · {1}"
-msgstr ""
+msgstr "Más opciones para {0} · {1}"
 
 #. 0: episode.title
 #: src/lib/components/media/episode-card.svelte
 msgid "Play {0}"
-msgstr ""
+msgstr "Reproducir {0}"
 
 #. 0: label
 #: src/lib/components/media/episode-card.svelte
 msgid "Now playing · {0}"
-msgstr ""
+msgstr "Reproduciendo · {0}"
 
 #. 0: episode.runtimeMinutes
 #: src/lib/components/media/episode-card.svelte
 msgid "<0/> {0}m"
-msgstr ""
+msgstr "<0/> {0} min"
 
 #: src/lib/components/media/episodes-panel.svelte
 #: src/lib/components/stats/bucket-chart.svelte
@@ -1630,176 +1579,158 @@ msgstr ""
 #: src/routes/series/[id]/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "Episodes"
-msgstr ""
+msgstr "Episodios"
 
 #: src/lib/components/media/episodes-panel.svelte
 msgid "Close episodes"
-msgstr ""
+msgstr "Cerrar episodios"
 
 #. 0: s.number
 #. 0: season.number
 #: src/lib/components/media/episodes-panel.svelte
 #: src/routes/series/[id]/+page.svelte
 msgid "Season {0}"
-msgstr ""
+msgstr "Temporada {0}"
 
 #. 0: selectedSeason
 #. 0: season.number
 #: src/lib/components/media/episodes-panel.svelte
 #: src/routes/series/[id]/+page.svelte
 msgid "Season {0} episodes"
-msgstr ""
-
-#. 0: season.year; 1: season.episodes.length
-#. 0: season.year; 1: season.episodes.length
-#: src/lib/components/media/episodes-panel.svelte
-#: src/routes/series/[id]/+page.svelte
-msgid "{0} · {1} episodes"
-msgstr ""
+msgstr "Episodios de la temporada {0}"
 
 #: src/lib/components/media/hero-banner.svelte
 msgid "<0/> More info"
-msgstr ""
-
-#. 0: item.kind === 'movie' ? 'movie' \\: 'series'
-#: src/lib/components/media/hero-banner.svelte
-msgid "Featured {0}"
-msgstr ""
+msgstr "<0/> Más información"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "Find subtitles"
-msgstr ""
+msgstr "Buscar subtítulos"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "Find subtitles online"
-msgstr ""
+msgstr "Buscar subtítulos en línea"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 #: src/lib/components/ui/dialog/dialog-content.svelte
 #: src/lib/components/ui/dialog/dialog-footer.svelte
 #: src/lib/components/ui/sheet/sheet-content.svelte
 msgid "Close"
-msgstr ""
+msgstr "Cerrar"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
+#: src/routes/admin/settings/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
+#: src/routes/settings/preferences/+page.svelte
+#: src/routes/settings/preferences/+page.svelte
 msgid "Language"
-msgstr ""
+msgstr "Idioma"
 
-#. 0: languageName(language) ?? language
+#. 0: languageLabel(language) ?? language
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "<0/> Searching {0} subtitles…"
-msgstr ""
+msgstr "<0/> Buscando subtítulos en {0}…"
 
-#. 0: languageName(language) ?? language
+#. 0: languageLabel(language) ?? language
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "Nothing found in {0}. Try another language."
-msgstr ""
+msgstr "No se encontró nada en {0}. Prueba con otro idioma."
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "exact file match"
-msgstr ""
+msgstr "coincidencia exacta del archivo"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "same release"
-msgstr ""
+msgstr "misma versión"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "SDH"
-msgstr ""
+msgstr "SDH"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
+#: src/lib/server/streaming/subtitles.ts
 msgid "forced"
-msgstr ""
+msgstr "forzados"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "trusted"
-msgstr ""
+msgstr "de confianza"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "AI translated"
-msgstr ""
+msgstr "traducido por IA"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "machine translated"
-msgstr ""
-
-#. 0: result.downloads.toLocaleString()
-#: src/lib/components/media/find-subtitles-panel.svelte
-msgid "{0} downloads"
-msgstr ""
+msgstr "traducción automática"
 
 #. 0: result.uploader
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "by {0}"
-msgstr ""
+msgstr "por {0}"
 
 #: src/lib/components/media/find-subtitles-panel.svelte
 msgid "<0/> Download"
-msgstr ""
+msgstr "<0/> Descargar"
 
 #: src/lib/components/media/library-toolbar.svelte
 msgid "Movies & series"
-msgstr ""
+msgstr "Películas y series"
 
 #: src/lib/components/media/library-toolbar.svelte
 msgid "Filter by type"
-msgstr ""
+msgstr "Filtrar por tipo"
 
 #: src/lib/components/media/library-toolbar.svelte
 msgid "Filter by genre"
-msgstr ""
+msgstr "Filtrar por género"
 
 #: src/lib/components/media/library-toolbar.svelte
 #: src/lib/components/media/library-toolbar.svelte
 msgid "All genres"
-msgstr ""
+msgstr "Todos los géneros"
 
 #: src/lib/components/media/library-toolbar.svelte
 msgid "Sort by"
-msgstr ""
+msgstr "Ordenar por"
 
 #: src/lib/components/media/library-toolbar.svelte
 msgid "Sort"
-msgstr ""
-
-#. 0: filtered.length; 1: items.length
-#: src/lib/components/media/library-page.svelte
-msgid "{0} of {1} titles"
-msgstr ""
+msgstr "Ordenar"
 
 #: src/lib/components/media/library-page.svelte
 msgid "No results"
-msgstr ""
+msgstr "Sin resultados"
 
 #: src/lib/components/media/library-page.svelte
 msgid "Try a different filter."
-msgstr ""
+msgstr "Prueba con otro filtro."
 
 #. 0: label
 #: src/lib/components/media/media-format-tooltip.svelte
 msgid "{0} · file details"
-msgstr ""
+msgstr "{0} · detalles del archivo"
 
 #: src/lib/components/media/media-format-tooltip.svelte
 msgid "File details"
-msgstr ""
+msgstr "Detalles del archivo"
 
 #. 0: format.audio.length - 1
 #: src/lib/components/media/media-format-tooltip.svelte
 msgid "· +{0} more"
-msgstr ""
+msgstr "· +{0} más"
 
 #: src/lib/components/media/media-format-tooltip.svelte
 #: src/lib/components/stats/active-stream-card.svelte
 msgid "None"
-msgstr ""
+msgstr "Ninguno"
 
 #: src/lib/components/media/media-format-tooltip.svelte
 #: src/lib/components/stats/active-stream-card.svelte
 msgid "Video"
-msgstr ""
+msgstr "Video"
 
 #: src/lib/components/media/media-format-tooltip.svelte
 #: src/lib/components/media/watch-player.svelte
@@ -1807,301 +1738,292 @@ msgstr ""
 #: src/lib/components/stats/active-stream-card.svelte
 #: src/routes/settings/playback/+page.svelte
 msgid "Audio"
-msgstr ""
+msgstr "Audio"
 
 #: src/lib/components/media/media-format-tooltip.svelte
 msgid "File"
-msgstr ""
-
-#. 0: item.seasons.length; 1: item.seasons.length === 1 ? '' \\: 's'
-#: src/lib/components/media/meta-pills.svelte
-msgid "{0} season{1}"
-msgstr ""
+msgstr "Archivo"
 
 #: src/lib/components/media/poster-card.svelte
 msgid "Just Added"
-msgstr ""
+msgstr "Recién añadido"
 
 #: src/lib/components/media/similar-panel.svelte
 #: src/lib/components/media/watch-player.svelte
 msgid "More Like This"
-msgstr ""
+msgstr "Más títulos similares"
 
 #: src/lib/components/media/similar-panel.svelte
 msgid "Close more like this"
-msgstr ""
+msgstr "Cerrar títulos similares"
 
 #: src/lib/components/media/similar-panel.svelte
 msgid "Movies like this one"
-msgstr ""
+msgstr "Películas similares a esta"
 
 #: src/lib/components/media/trailer-dialog.svelte
 msgid "Close trailer"
-msgstr ""
+msgstr "Cerrar tráiler"
 
 #. 0: title
 #: src/lib/components/media/trailer-dialog.svelte
 msgid "{0} trailer"
-msgstr ""
+msgstr "Tráiler de {0}"
 
 #. 0: title
 #: src/lib/components/media/trailer-dialog.svelte
 msgid "{0} — trailer"
-msgstr ""
+msgstr "{0} — tráiler"
 
 #: src/lib/components/media/trailer-dialog.svelte
 msgid "Trailer playing from YouTube."
-msgstr ""
+msgstr "El tráiler se reproduce desde YouTube."
 
 #: src/lib/components/stats/active-stream-card.svelte
+#: src/lib/data/media-format.ts
+#: src/lib/data/stats.ts
+#: src/lib/server/stats/queries.ts
+#: src/lib/server/stats/queries.ts
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Unknown"
-msgstr ""
+msgstr "Desconocido"
 
 #: src/lib/components/stats/active-stream-card.svelte
 #: src/lib/components/stats/history-table.svelte
+#: src/lib/data/stats.ts
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "Direct play"
-msgstr ""
+msgstr "Reproducción directa"
 
 #: src/lib/components/stats/active-stream-card.svelte
 msgid "Remux (in browser)"
-msgstr ""
+msgstr "Remux (en el navegador)"
 
 #. 0: output; 1: cap
 #: src/lib/components/stats/active-stream-card.svelte
 msgid "Transcode → {0} H.264{1}"
-msgstr ""
+msgstr "Transcodificación → {0} H.264{1}"
 
 #: src/lib/components/stats/active-stream-card.svelte
-#: src/routes/settings/playback/+page.svelte
+#: src/lib/data/media-format.ts
+#: src/lib/data/playback-settings.ts
 msgid "Stereo"
-msgstr ""
+msgstr "Estéreo"
 
 #. 0: source; 1: channels
 #: src/lib/components/stats/active-stream-card.svelte
 msgid "{0} → {1} (converted in browser)"
-msgstr ""
+msgstr "{0} → {1} (convertido en el navegador)"
 
 #: src/lib/components/stats/active-stream-card.svelte
 msgid "Position"
-msgstr ""
+msgstr "Posición"
 
 #: src/lib/components/media/watch-player.svelte
 #: src/lib/components/stats/active-stream-card.svelte
+#: src/lib/data/library-scanning.ts
+#: src/lib/data/markers.ts
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/settings/subtitles/+page.svelte
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Off"
-msgstr ""
+msgstr "Desactivado"
 
 #: src/lib/components/stats/active-stream-card.svelte
 #: src/lib/components/stats/history-table.svelte
 msgid "Stream"
-msgstr ""
+msgstr "Transmisión"
 
 #: src/lib/components/stats/active-stream-card.svelte
 msgid "Bandwidth"
-msgstr ""
+msgstr "Ancho de banda"
 
 #. 0: formatBitrate(stream.bitrateBps); 1: formatBytes(stream.bytesSent)
 #: src/lib/components/stats/active-stream-card.svelte
 msgid "{0} · {1} sent"
-msgstr ""
+msgstr "{0} · {1} enviados"
 
 #: src/lib/components/stats/active-stream-card.svelte
 #: src/lib/components/stats/history-table.svelte
 msgid "Started"
-msgstr ""
+msgstr "Inicio"
 
 #: src/lib/components/stats/active-stream-card.svelte
 msgid "Stop stream"
-msgstr ""
+msgstr "Detener transmisión"
 
 #: src/lib/components/stats/period-toggle.svelte
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "Time period"
-msgstr ""
+msgstr "Periodo"
 
 #. 0: el.error.message
 #. 0: reason
 #: src/lib/components/media/watch-player.svelte
 #: src/lib/components/media/watch-player.svelte
 msgid "The browser could not play this file ({0})."
-msgstr ""
+msgstr "El navegador no pudo reproducir este archivo ({0})."
 
 #: src/lib/components/media/watch-player.svelte
 msgid "The browser could not play this file."
-msgstr ""
+msgstr "El navegador no pudo reproducir este archivo."
 
 #: src/lib/components/media/watch-player.svelte
 msgid "This browser cannot play HLS streams."
-msgstr ""
+msgstr "Este navegador no puede reproducir transmisiones HLS."
 
 #: src/lib/components/media/watch-player.svelte
 msgid "This browser cannot decode the transcoded stream (unsupported codec profile)."
-msgstr ""
+msgstr "Este navegador no puede decodificar la transmisión transcodificada (perfil de códec no compatible)."
 
 #. 0: httpStatus ? ` (HTTP ${httpStatus})` \\: ''
 #: src/lib/components/media/watch-player.svelte
 msgid "The playlist could not be loaded{0}."
-msgstr ""
+msgstr "No se pudo cargar la lista de reproducción{0}."
 
 #. 0: httpStatus ? ` (HTTP ${httpStatus})` \\: ''
 #: src/lib/components/media/watch-player.svelte
 msgid "The device's transcoder stopped delivering video{0}; check the hub log for the ffmpeg error."
-msgstr ""
+msgstr "El transcodificador del dispositivo dejó de enviar video{0}; revisa el registro del servidor para ver el error de ffmpeg."
 
 #: src/lib/components/media/watch-player.svelte
 msgid "The transcoded segment was malformed; check the hub log for the ffmpeg error."
-msgstr ""
+msgstr "El segmento transcodificado estaba dañado; revisa el registro del servidor para ver el error de ffmpeg."
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Playback stalled and could not resume."
-msgstr ""
+msgstr "La reproducción se detuvo y no se pudo reanudar."
 
 #. 0: details; 1: reason ? ` (${reason})` \\: ''
 #: src/lib/components/media/watch-player.svelte
 msgid "Playback failed: {0}{1}."
-msgstr ""
+msgstr "Error de reproducción: {0}{1}."
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Audio & subtitles"
-msgstr ""
+msgstr "Audio y subtítulos"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Skip intro"
-msgstr ""
+msgstr "Saltar intro"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Next episode"
-msgstr ""
+msgstr "Siguiente episodio"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Watch credits"
-msgstr ""
+msgstr "Ver créditos"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Skip credits"
-msgstr ""
-
-#: src/lib/components/media/watch-player.svelte
-msgid "Space"
-msgstr ""
-
-#: src/lib/components/media/watch-player.svelte
-msgid "ArrowLeft"
-msgstr ""
-
-#: src/lib/components/media/watch-player.svelte
-msgid "ArrowRight"
-msgstr ""
+msgstr "Saltar créditos"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Back"
-msgstr ""
+msgstr "Atrás"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Watch together"
-msgstr ""
+msgstr "Ver juntos"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Next episode <0/>"
-msgstr ""
+msgstr "Siguiente episodio <0/>"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "More episodes"
-msgstr ""
+msgstr "Más episodios"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "More Episodes"
-msgstr ""
+msgstr "Más episodios"
 
 #: src/lib/components/media/watch-player.svelte
 #: src/routes/movies/[id]/+page.svelte
 #: src/routes/series/[id]/+page.svelte
 msgid "More like this"
-msgstr ""
+msgstr "Más títulos similares"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Rewind 10 seconds"
-msgstr ""
+msgstr "Retroceder 10 segundos"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Play or pause"
-msgstr ""
+msgstr "Reproducir o pausar"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Forward 10 seconds"
-msgstr ""
+msgstr "Avanzar 10 segundos"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Autoplay next episode"
-msgstr ""
+msgstr "Reproducir automáticamente el siguiente episodio"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Autoplay"
-msgstr ""
+msgstr "Reproducción automática"
 
 #: src/lib/components/media/watch-player.svelte
 #: src/lib/components/together/reaction-picker.svelte
 msgid "Send a reaction"
-msgstr ""
+msgstr "Enviar una reacción"
 
 #. 0: party.unread
 #: src/lib/components/media/watch-player.svelte
 msgid "Chat, {0} unread"
-msgstr ""
+msgstr "Chat, {0} sin leer"
 
 #: src/lib/components/media/watch-player.svelte
 #: src/lib/components/together/together-chat.svelte
 msgid "Chat"
-msgstr ""
+msgstr "Chat"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Mute or unmute"
-msgstr ""
+msgstr "Silenciar o activar el sonido"
 
 #: src/lib/components/media/watch-player.svelte
 #: src/lib/components/media/watch-player.svelte
 msgid "Video quality"
-msgstr ""
+msgstr "Calidad de video"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Exit fullscreen"
-msgstr ""
+msgstr "Salir de pantalla completa"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Fullscreen"
-msgstr ""
+msgstr "Pantalla completa"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Intro skipped"
-msgstr ""
+msgstr "Intro saltada"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Watch intro"
-msgstr ""
+msgstr "Ver intro"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Next episode starting in <0/>"
-msgstr ""
+msgstr "El siguiente episodio empieza en <0/>"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Find subtitles…"
-msgstr ""
+msgstr "Buscar subtítulos…"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "· unavailable"
-msgstr ""
+msgstr "· no disponible"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Are you still watching?"
-msgstr ""
+msgstr "¿Sigues viendo?"
 
 #: src/lib/components/media/watch-player.svelte
 msgid "Back to browse"
-msgstr ""
+msgstr "Volver a explorar"
 
 #: src/lib/components/stats/history-table.svelte
 #: src/routes/admin/statistics/history/+page.svelte
@@ -2112,1920 +2034,2950 @@ msgstr ""
 #: src/routes/admin/users/+page.svelte
 #: src/routes/settings/account/+page.svelte
 msgid "User"
-msgstr ""
+msgstr "Usuario"
 
 #: src/lib/components/stats/history-table.svelte
 msgid "Date"
-msgstr ""
+msgstr "Fecha"
 
 #: src/lib/components/stats/history-table.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Title"
-msgstr ""
+msgstr "Título"
 
 #: src/lib/components/stats/history-table.svelte
 msgid "Platform"
-msgstr ""
+msgstr "Plataforma"
 
 #: src/lib/components/stats/history-table.svelte
 msgid "Stopped"
-msgstr ""
+msgstr "Detenido"
 
 #: src/lib/components/stats/history-table.svelte
 #: src/lib/components/stats/stream-state-badge.svelte
 msgid "Paused"
-msgstr ""
+msgstr "En pausa"
 
 #: src/lib/components/stats/history-table.svelte
 #: src/lib/components/stats/history-table.svelte
 msgid "Progress"
-msgstr ""
+msgstr "Progreso"
 
 #: src/lib/components/stats/history-table.svelte
 msgid "Data"
-msgstr ""
+msgstr "Datos"
 
 #. 0: entry.quality && entry.quality !== 'original' ? ` · ${entry.quality}` \\: ''
 #: src/lib/components/stats/history-table.svelte
 msgid "Transcode{0}"
-msgstr ""
+msgstr "Transcodificación{0}"
 
 #: src/lib/components/stats/history-table.svelte
+#: src/lib/data/stats.ts
 msgid "Remux"
-msgstr ""
+msgstr "Remux"
 
 #: src/lib/components/stats/history-table.svelte
 msgid "Watching"
-msgstr ""
+msgstr "Viendo"
 
 #: src/lib/components/stats/rank-chart.svelte
 msgid "Value"
-msgstr ""
+msgstr "Valor"
 
 #: src/lib/components/stats/stream-state-badge.svelte
 msgid "Playing"
-msgstr ""
+msgstr "Reproduciendo"
 
 #: src/lib/components/stats/stream-state-badge.svelte
 msgid "Buffering"
-msgstr ""
+msgstr "Cargando"
 
 #: src/lib/components/stats/stream-state-badge.svelte
 msgid "Starting"
-msgstr ""
+msgstr "Iniciando"
 
 #: src/lib/components/stats/stream-state-badge.svelte
 msgid "Stopping"
-msgstr ""
+msgstr "Deteniendo"
 
 #: src/lib/components/stats/top-list.svelte
 #: src/routes/admin/statistics/graphs/+page.svelte
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "Nothing played in this period."
-msgstr ""
+msgstr "No se reprodujo nada en este periodo."
 
 #: src/lib/components/stats/user-cell.svelte
 #: src/lib/components/stats/user-cell.svelte
 msgid "Guest"
-msgstr ""
+msgstr "Invitado"
 
 #: src/lib/components/stats/title-link.svelte
+#: src/lib/data/stats.ts
+#: src/lib/server/stats/queries.ts
 msgid "Unknown series"
-msgstr ""
+msgstr "Serie desconocida"
 
 #: src/lib/components/together/invite-dialog.svelte
 msgid "Invite people to watch together"
-msgstr ""
+msgstr "Invita a otras personas a ver juntos"
 
 #: src/lib/components/together/invite-dialog.svelte
 msgid "Anyone with an account on this server can join with this link. Play, pause and skips are shared by everyone in the party."
-msgstr ""
+msgstr "Cualquiera con una cuenta en este servidor puede unirse con este enlace. Las reproducciones, pausas y saltos se comparten con todos los de la sala."
 
 #: src/lib/components/together/invite-dialog.svelte
 msgid "Invite link"
-msgstr ""
+msgstr "Enlace de invitación"
 
 #: src/lib/components/together/invite-dialog.svelte
 msgid "Copy link"
-msgstr ""
+msgstr "Copiar enlace"
 
 #: src/lib/components/together/together-chat.svelte
 msgid "Watch party chat"
-msgstr ""
+msgstr "Chat de la sala"
 
 #: src/lib/components/together/together-chat.svelte
 msgid "Close chat"
-msgstr ""
+msgstr "Cerrar chat"
 
 #: src/lib/components/together/together-chat.svelte
 msgid "Say hi to everyone watching."
-msgstr ""
+msgstr "Saluda a todos los que están viendo."
 
 #: src/lib/components/together/together-chat.svelte
 msgid "You"
-msgstr ""
+msgstr "Tú"
 
 #: src/lib/components/together/together-chat.svelte
 msgid "Send a message"
-msgstr ""
+msgstr "Enviar un mensaje"
 
 #: src/lib/components/together/together-chat.svelte
 msgid "Message"
-msgstr ""
+msgstr "Mensaje"
 
 #: src/lib/components/together/together-chat.svelte
 msgid "Send"
-msgstr ""
+msgstr "Enviar"
 
 #. 0: party.participants.length
 #: src/lib/components/together/together-bar.svelte
 msgid "Watch party: {0} watching. Invite people"
-msgstr ""
+msgstr "Sala de Ver juntos: {0} viendo. Invitar a otras personas"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "Watch party options"
-msgstr ""
+msgstr "Opciones de la sala"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "<0/> Remove from party"
-msgstr ""
+msgstr "<0/> Quitar de la sala"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "Watching together"
-msgstr ""
+msgstr "Viendo juntos"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "<0/> End party for everyone"
-msgstr ""
+msgstr "<0/> Cerrar la sala para todos"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "<0/> Invite people"
-msgstr ""
+msgstr "<0/> Invitar a otras personas"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "<0/> Leave party"
-msgstr ""
+msgstr "<0/> Salir de la sala"
 
 #: src/lib/components/together/together-bar.svelte
 #: src/routes/admin/users/+page.svelte
 msgid "(you)"
-msgstr ""
+msgstr "(tú)"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "Host"
-msgstr ""
+msgstr "Anfitrión"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "reconnecting"
-msgstr ""
+msgstr "reconectando"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "End the watch party?"
-msgstr ""
+msgstr "¿Cerrar la sala de Ver juntos?"
 
 #: src/lib/components/together/together-bar.svelte
 msgid "Everyone keeps watching on their own, and the invite link stops working."
-msgstr ""
+msgstr "Todos seguirán viendo por su cuenta y el enlace de invitación dejará de funcionar."
 
 #: src/lib/components/together/together-bar.svelte
 msgid "End party"
-msgstr ""
+msgstr "Cerrar sala"
 
 #. 0: emoji
 #: src/lib/components/together/reaction-picker.svelte
 msgid "React {0}"
-msgstr ""
+msgstr "Reaccionar con {0}"
 
 #: src/lib/components/together/together-overlay.svelte
 msgid "Reconnecting to the watch party…"
-msgstr ""
+msgstr "Reconectando con la sala de Ver juntos…"
 
 #: src/lib/components/together/together-overlay.svelte
 #: src/routes/movies/[id]/watch/+page.svelte
 #: src/routes/series/[id]/watch/[episode]/+page.svelte
 msgid "Joining the watch party…"
-msgstr ""
+msgstr "Uniéndote a la sala de Ver juntos…"
 
 #: src/lib/components/together/together-overlay.svelte
 msgid "The party is already watching"
-msgstr ""
+msgstr "La sala ya está viendo el contenido"
 
 #: src/lib/components/together/together-overlay.svelte
 msgid "Your browser needs a click before it starts the video."
-msgstr ""
+msgstr "Tu navegador necesita un clic antes de iniciar el video."
 
 #: src/lib/components/together/together-overlay.svelte
 msgid "<0/> Join playback"
-msgstr ""
+msgstr "<0/> Unirse a la reproducción"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "The name, colours and fonts everyone sees on this server. Viewers still pick light or dark per profile."
-msgstr ""
+msgstr "El nombre, los colores y las fuentes que todos ven en este servidor. Los espectadores siguen eligiendo el tema claro u oscuro en cada perfil."
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Identity"
-msgstr ""
+msgstr "Identidad"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Shown in the navigation, page titles, the screensaver and on the sign-in page."
-msgstr ""
+msgstr "Se muestra en la navegación, los títulos de las páginas, el salvapantallas y la página de inicio de sesión."
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Optional"
-msgstr ""
+msgstr "Opcional"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Tagline"
-msgstr ""
+msgstr "Lema"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "A line under the name on the sign-in and create-account pages."
-msgstr ""
+msgstr "Una línea bajo el nombre en las páginas de inicio de sesión y de creación de cuenta."
 
 #: src/routes/admin/branding/+page.svelte
 #: src/routes/admin/branding/+page.svelte
 msgid "Accent colour"
-msgstr ""
+msgstr "Color de acento"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Buttons, links, highlights and the player's progress bar. Each colour comes in a tuned shade for the light and the dark theme."
-msgstr ""
+msgstr "Botones, enlaces, resaltados y la barra de progreso del reproductor. Cada color tiene un tono ajustado para el tema claro y otro para el oscuro."
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Typography"
-msgstr ""
+msgstr "Tipografía"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Fonts are served by this server. Display fonts are for headings only."
-msgstr ""
+msgstr "Las fuentes las sirve este servidor. Las fuentes decorativas son solo para títulos."
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Body font"
-msgstr ""
+msgstr "Fuente del texto"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Heading font"
-msgstr ""
+msgstr "Fuente de los títulos"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Branding saved."
-msgstr ""
+msgstr "Marca guardada."
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Branding reset to the defaults."
-msgstr ""
+msgstr "Marca restablecida a los valores predeterminados."
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Save branding"
-msgstr ""
+msgstr "Guardar marca"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Reset to defaults"
-msgstr ""
+msgstr "Restablecer valores predeterminados"
 
 #: src/routes/admin/branding/+page.svelte
 #: src/routes/settings/preferences/+page.svelte
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Preview"
-msgstr ""
+msgstr "Vista previa"
 
 #: src/routes/admin/branding/+page.svelte
 #: src/routes/settings/preferences/+page.svelte
 msgid "Light"
-msgstr ""
+msgstr "Claro"
 
 #: src/routes/admin/branding/+page.svelte
 #: src/routes/settings/preferences/+page.svelte
 msgid "Dark"
-msgstr ""
+msgstr "Oscuro"
 
 #. 0: mode === 'light' ? 'Light' \\: 'Dark'
 #: src/routes/admin/branding/+page.svelte
 msgid "{0} theme preview"
-msgstr ""
+msgstr "Vista previa del tema {0}"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Pick up where you left off, on any device. <0>See all</0>"
-msgstr ""
+msgstr "Continúa donde lo dejaste, en cualquier dispositivo. <0>Ver todo</0>"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Focused"
-msgstr ""
+msgstr "Enfocado"
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Reset branding?"
-msgstr ""
+msgstr "¿Restablecer la marca?"
 
 #. 0: DEFAULT_BRANDING.appName
 #: src/routes/admin/branding/+page.svelte
 msgid "The name goes back to {0}, the tagline is removed, and the teal accent and Figtree font return."
-msgstr ""
+msgstr "El nombre vuelve a ser {0}, se quita el lema y vuelven el acento verde azulado y la fuente Figtree."
 
 #: src/routes/admin/branding/+page.svelte
 msgid "Reset"
-msgstr ""
-
-#: src/routes/admin/devices/+page.svelte
-msgid "device"
-msgstr ""
-
-#. 0: online
-#: src/routes/admin/devices/+page.svelte
-msgid "{0} online"
-msgstr ""
-
-#. 0: libraries
-#: src/routes/admin/devices/+page.svelte
-msgid "{0} libraries"
-msgstr ""
-
-#: src/routes/admin/devices/+page.svelte
-msgid "file"
-msgstr ""
+msgstr "Restablecer"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Computers and NAS boxes that stream your media to this server."
-msgstr ""
+msgstr "Equipos y NAS que transmiten tu contenido multimedia a este servidor."
 
 #: src/routes/admin/devices/+page.svelte
 #: src/routes/admin/devices/+page.svelte
 msgid "<0/> Pair a device"
-msgstr ""
+msgstr "<0/> Vincular un dispositivo"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "No devices yet"
-msgstr ""
+msgstr "Aún no hay dispositivos"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Pair the computer or NAS that holds your movies and series. It streams them through this server, so nothing is uploaded."
-msgstr ""
+msgstr "Vincula el equipo o NAS que guarda tus películas y series. Las transmite a través de este servidor, así que no se sube nada."
 
 #. 0: formatRelative(code.expiresAt)
 #: src/routes/admin/devices/+page.svelte
 msgid "expires {0}"
-msgstr ""
+msgstr "caduca {0}"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Unused pairing codes"
-msgstr ""
+msgstr "Códigos de vinculación sin usar"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Rename device"
-msgstr ""
+msgstr "Cambiar nombre del dispositivo"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Add a library"
-msgstr ""
+msgstr "Añadir una biblioteca"
 
 #. 0: addLibrary.target.name
 #: src/routes/admin/devices/+page.svelte
 msgid "Pick a folder on {0}. It's scanned right away and its videos join the catalog."
-msgstr ""
+msgstr "Elige una carpeta en {0}. Se escanea de inmediato y sus videos se añaden al catálogo."
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Folder path"
-msgstr ""
+msgstr "Ruta de la carpeta"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "The full path as the device sees it, e.g. <0/> or <1/>."
-msgstr ""
+msgstr "La ruta completa tal como la ve el dispositivo, p. ej., <0/> o <1/>."
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Folder name"
-msgstr ""
+msgstr "Nombre de la carpeta"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Contains"
-msgstr ""
+msgstr "Contiene"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Add library"
-msgstr ""
+msgstr "Añadir biblioteca"
 
 #. 0: revoke.target.name
 #: src/routes/admin/devices/+page.svelte
 msgid "Revoke {0}?"
-msgstr ""
+msgstr "¿Revocar {0}?"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "It disconnects now and has to be paired again to come back. Its libraries and files are removed from this server; nothing is deleted on the device."
-msgstr ""
+msgstr "Se desconecta ahora y tendrá que volver a vincularse para regresar. Sus bibliotecas y archivos se quitan de este servidor; no se elimina nada en el dispositivo."
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Revoke device"
-msgstr ""
+msgstr "Revocar dispositivo"
 
 #. 0: removeLibrary.target.name
 #: src/routes/admin/devices/+page.svelte
 msgid "Remove {0}?"
-msgstr ""
-
-#. 0: removeLibrary.target.files.toLocaleString(); 1: removeLibrary.target.files === 1 ? 'file leaves' \\: 'files leave'
-#: src/routes/admin/devices/+page.svelte
-msgid "Its {0} {1} the catalog. Nothing is deleted from the device, and you can add the folder again later."
-msgstr ""
+msgstr "¿Quitar {0}?"
 
 #: src/routes/admin/devices/+page.svelte
 msgid "Remove library"
-msgstr ""
+msgstr "Quitar biblioteca"
 
 #: src/routes/admin/statistics/+layout.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "Activity"
-msgstr ""
+msgstr "Actividad"
 
 #: src/routes/admin/statistics/+layout.svelte
 msgid "History"
-msgstr ""
+msgstr "Historial"
 
 #: src/routes/admin/statistics/+layout.svelte
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "Graphs"
-msgstr ""
+msgstr "Gráficos"
 
 #: src/routes/admin/statistics/+layout.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Libraries"
-msgstr ""
+msgstr "Bibliotecas"
 
 #: src/routes/admin/statistics/+layout.svelte
 msgid "What's playing now, watch history and how the libraries are used."
-msgstr ""
+msgstr "Lo que se reproduce ahora, el historial de visionado y el uso de las bibliotecas."
 
 #: src/routes/admin/users/+page.svelte
 msgid "Everyone with an account on this server. Administrators can reach this dashboard; users can only watch."
-msgstr ""
+msgstr "Todas las personas con una cuenta en este servidor. Los administradores pueden acceder a este panel; los usuarios solo pueden ver contenido."
 
 #: src/routes/admin/users/+page.svelte
 msgid "<0/> Create account"
-msgstr ""
+msgstr "<0/> Crear cuenta"
 
 #. 0: form.created
 #: src/routes/admin/users/+page.svelte
 msgid "Created an account for {0}."
-msgstr ""
+msgstr "Se creó una cuenta para {0}."
 
 #: src/routes/admin/users/+page.svelte
 msgid "They can sign in with the password you set."
-msgstr ""
+msgstr "Puede iniciar sesión con la contraseña que estableciste."
 
 #: src/routes/admin/users/+page.svelte
 msgid "They were signed out everywhere."
-msgstr ""
+msgstr "Se cerró su sesión en todos los dispositivos."
 
 #. 0: passwordChangedFor.name
 #: src/routes/admin/users/+page.svelte
 msgid "Changed the password for {0}."
-msgstr ""
-
-#. 0: banned
-#: src/routes/admin/users/+page.svelte
-msgid "· {0} banned"
-msgstr ""
+msgstr "Se cambió la contraseña de {0}."
 
 #: src/routes/admin/users/+page.svelte
 msgid "Accounts"
-msgstr ""
+msgstr "Cuentas"
 
 #: src/routes/admin/users/+page.svelte
 #: src/routes/admin/users/+page.svelte
 msgid "Role"
-msgstr ""
+msgstr "Rol"
 
 #: src/routes/admin/users/+page.svelte
 msgid "Status"
-msgstr ""
+msgstr "Estado"
 
 #: src/routes/admin/users/+page.svelte
 msgid "Joined"
-msgstr ""
+msgstr "Fecha de alta"
 
+#: src/lib/data/genres.ts
 #: src/routes/admin/users/+page.svelte
 msgid "Action"
-msgstr ""
+msgstr "Acción"
 
 #: src/routes/admin/statistics/users/+page.svelte
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 #: src/routes/admin/users/+page.svelte
 msgid "Banned"
-msgstr ""
+msgstr "Bloqueado"
 
 #: src/routes/admin/users/+page.svelte
 msgid "Active"
-msgstr ""
+msgstr "Activo"
 
 #: src/routes/admin/users/+page.svelte
 msgid "<0/> Watch statistics"
-msgstr ""
+msgstr "<0/> Estadísticas de visionado"
 
 #: src/routes/admin/users/+page.svelte
 msgid "You can't change your own account here."
-msgstr ""
+msgstr "No puedes cambiar tu propia cuenta aquí."
 
 #: src/routes/admin/users/+page.svelte
 msgid "<0/> Make user"
-msgstr ""
+msgstr "<0/> Convertir en usuario"
 
 #: src/routes/admin/users/+page.svelte
 msgid "<0/> Make admin"
-msgstr ""
+msgstr "<0/> Convertir en administrador"
 
 #: src/routes/admin/users/+page.svelte
 msgid "<0/> Unban"
-msgstr ""
+msgstr "<0/> Desbloquear"
 
 #: src/routes/admin/users/+page.svelte
 msgid "<0/> Ban…"
-msgstr ""
+msgstr "<0/> Bloquear…"
 
 #: src/routes/admin/users/+page.svelte
 msgid "<0/> Change password…"
-msgstr ""
+msgstr "<0/> Cambiar contraseña…"
 
 #: src/routes/admin/users/+page.svelte
 msgid "<0/> Delete account…"
-msgstr ""
+msgstr "<0/> Eliminar cuenta…"
 
 #: src/routes/admin/users/+page.svelte
 msgid "Add someone directly — useful when public registration is switched off."
-msgstr ""
+msgstr "Añade a alguien directamente: útil cuando el registro público está desactivado."
 
 #: src/routes/admin/users/+page.svelte
 #: src/routes/admin/users/+page.svelte
 msgid "At least 8 characters."
-msgstr ""
+msgstr "Al menos 8 caracteres."
 
 #: src/routes/admin/users/+page.svelte
 msgid "Creating…"
-msgstr ""
+msgstr "Creando…"
 
 #. 0: password.target.name
 #: src/routes/admin/users/+page.svelte
 msgid "Change {0}'s password"
-msgstr ""
+msgstr "Cambiar la contraseña de {0}"
 
 #. 0: password.target.email
 #: src/routes/admin/users/+page.svelte
 msgid "Set a new password for {0}. Let them know what it is."
-msgstr ""
+msgstr "Establece una nueva contraseña para {0}. Recuerda comunicársela."
 
 #: src/routes/admin/users/+page.svelte
 #: src/routes/settings/account/+page.svelte
 msgid "New password"
-msgstr ""
+msgstr "Nueva contraseña"
 
 #: src/routes/admin/users/+page.svelte
 msgid "Sign them out everywhere"
-msgstr ""
+msgstr "Cerrar su sesión en todas partes"
 
 #: src/routes/admin/users/+page.svelte
 msgid "Ends their current sessions, so they have to sign in with the new password."
-msgstr ""
+msgstr "Cierra sus sesiones actuales, así que tendrá que iniciar sesión con la nueva contraseña."
 
 #: src/routes/admin/users/+page.svelte
 msgid "Change password"
-msgstr ""
+msgstr "Cambiar contraseña"
 
 #. 0: ban.target.name
 #: src/routes/admin/users/+page.svelte
 msgid "Ban {0}?"
-msgstr ""
+msgstr "¿Bloquear a {0}?"
 
 #: src/routes/admin/users/+page.svelte
 msgid "They're signed out everywhere and can't sign in until you unban them."
-msgstr ""
+msgstr "Se cerrará su sesión en todas partes y no podrá iniciar sesión hasta que desbloquees la cuenta."
 
 #: src/routes/admin/users/+page.svelte
 msgid "Reason (optional)"
-msgstr ""
+msgstr "Motivo (opcional)"
 
 #: src/routes/admin/users/+page.svelte
 msgid "A note for administrators, shown in this list."
-msgstr ""
+msgstr "Una nota para los administradores, que se muestra en esta lista."
 
 #: src/routes/admin/users/+page.svelte
 msgid "Ban account"
-msgstr ""
+msgstr "Bloquear cuenta"
 
 #. 0: remove.target.name
 #: src/routes/admin/users/+page.svelte
 msgid "Delete {0}'s account?"
-msgstr ""
+msgstr "¿Eliminar la cuenta de {0}?"
 
 #. 0: remove.target.email
 #: src/routes/admin/users/+page.svelte
 msgid "{0} loses access, and their watch history goes with the account. This can't be undone."
-msgstr ""
+msgstr "{0} perderá el acceso, y su historial de visionado se eliminará con la cuenta. Esta acción no se puede deshacer."
 
 #: src/routes/admin/users/+page.svelte
 msgid "Delete account"
-msgstr ""
+msgstr "Eliminar cuenta"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Choose languages"
-msgstr ""
+msgstr "Elegir idiomas"
 
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Downloaded"
-msgstr ""
+msgstr "Descargados"
 
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Not found"
-msgstr ""
+msgstr "No encontrados"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Device offline"
-msgstr ""
+msgstr "Dispositivo sin conexión"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "OpenSubtitles quota"
-msgstr ""
+msgstr "Cuota de OpenSubtitles"
 
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Movies and series"
-msgstr ""
+msgstr "Películas y series"
 
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Movies only"
-msgstr ""
+msgstr "Solo películas"
 
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Series only"
-msgstr ""
+msgstr "Solo series"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "OpenSubtitles.com"
-msgstr ""
+msgstr "OpenSubtitles.com"
 
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Movies and TV"
-msgstr ""
+msgstr "Películas y series"
 
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Configured"
-msgstr ""
+msgstr "Configurado"
 
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Not configured"
-msgstr ""
+msgstr "Sin configurar"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Addic7ed & SuperSubtitles · TV only"
-msgstr ""
+msgstr "Addic7ed y SuperSubtitles · Solo series"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Enabled"
-msgstr ""
+msgstr "Activado"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Titlovi.com"
-msgstr ""
+msgstr "Titlovi.com"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Balkan languages and English"
-msgstr ""
+msgstr "Idiomas balcánicos e inglés"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Subtitles · Admin"
-msgstr ""
+msgstr "Subtítulos · Administración"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Download subtitles for titles that have none, from the providers you set up below."
-msgstr ""
+msgstr "Descarga subtítulos para los títulos que no tienen, desde los proveedores que configures abajo."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Providers"
-msgstr ""
+msgstr "Proveedores"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Keys are stored on this hub and shared by everyone who downloads through it. Leave a field blank to keep the saved value."
-msgstr ""
+msgstr "Las claves se guardan en este servidor y las comparten todos los que descargan a través de él. Deja un campo en blanco para conservar el valor guardado."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "From your consumer at opensubtitles.com/consumers"
-msgstr ""
+msgstr "De tu consumer en opensubtitles.com/consumers"
 
 #: src/routes/admin/subtitles/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "API key"
-msgstr ""
+msgstr "Clave de API"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "One key per application: create a consumer for this hub. Without an account login OpenSubtitles allows 5 downloads per day per IP."
-msgstr ""
+msgstr "Una clave por aplicación: crea un consumer para este servidor. Sin iniciar sesión con una cuenta, OpenSubtitles permite 5 descargas al día por IP."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Username (optional)"
-msgstr ""
+msgstr "Nombre de usuario (opcional)"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Password (optional)"
-msgstr ""
+msgstr "Contraseña (opcional)"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Remove the OpenSubtitles key and account"
-msgstr ""
+msgstr "Eliminar la clave y la cuenta de OpenSubtitles"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Logging in raises the quota to the account's allowance (20 per day for a free account, more for VIP)."
-msgstr ""
+msgstr "Al iniciar sesión, la cuota sube a la que permite la cuenta (20 al día con una cuenta gratuita, más con VIP)."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "From subdl.com/panel/api"
-msgstr ""
+msgstr "De subdl.com/panel/api"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Subdl's terms allow a free key for personal use; a server shared with many users needs their paid plan."
-msgstr ""
+msgstr "Los términos de Subdl permiten una clave gratuita para uso personal; un servidor compartido con muchos usuarios necesita su plan de pago."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Remove the Subdl key"
-msgstr ""
+msgstr "Eliminar la clave de Subdl"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Enable"
-msgstr ""
+msgstr "Activar"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Addic7ed and SuperSubtitles through the Gestdown proxy. No account needed. Keep the translators' credits in the files."
-msgstr ""
+msgstr "Addic7ed y SuperSubtitles a través del proxy de Gestdown. No hace falta cuenta. Conserva los créditos de los traductores en los archivos."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Username"
-msgstr ""
+msgstr "Nombre de usuario"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Remove the Titlovi account"
-msgstr ""
+msgstr "Eliminar la cuenta de Titlovi"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Serbian (Latin and Cyrillic), Croatian, Bosnian, Slovenian, Macedonian and English. A free titlovi.com account with API access."
-msgstr ""
+msgstr "Serbio (latino y cirílico), croata, bosnio, esloveno, macedonio e inglés. Requiere una cuenta gratuita de titlovi.com con acceso a la API."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Provider settings saved."
-msgstr ""
+msgstr "Ajustes de proveedores guardados."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Save providers"
-msgstr ""
+msgstr "Guardar proveedores"
 
 #: src/routes/admin/settings/+page.svelte
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Test connection"
-msgstr ""
+msgstr "Probar conexión"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Subtitles are provided by <0>OpenSubtitles.com</0>, <1>Subdl</1>, <2>Addic7ed</2> (via <3>Gestdown</3>) and <4>Titlovi.com</4>, and belong to their uploaders and translators."
-msgstr ""
+msgstr "Los subtítulos los proporcionan <0>OpenSubtitles.com</0>, <1>Subdl</1>, <2>Addic7ed</2> (a través de <3>Gestdown</3>) y <4>Titlovi.com</4>, y pertenecen a quienes los subieron y tradujeron."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Download settings"
-msgstr ""
+msgstr "Ajustes de descarga"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Which languages bulk and automatic downloads fetch for every title."
-msgstr ""
+msgstr "Qué idiomas obtienen las descargas masivas y automáticas para cada título."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Languages"
-msgstr ""
+msgstr "Idiomas"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Auto-download for new titles"
-msgstr ""
+msgstr "Descarga automática para títulos nuevos"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "After each library scan (and its metadata pass), fetch the languages above for files that appeared since the last run."
-msgstr ""
+msgstr "Tras cada escaneo de la biblioteca (y su pasada de metadatos), obtiene los idiomas de arriba para los archivos que hayan aparecido desde la última ejecución."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Prefer hearing-impaired (SDH) versions"
-msgstr ""
+msgstr "Preferir versiones para personas con discapacidad auditiva (SDH)"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "When both exist, pick the SDH release for automatic downloads."
-msgstr ""
+msgstr "Si existen ambas, elige la versión SDH en las descargas automáticas."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Download settings saved."
-msgstr ""
+msgstr "Ajustes de descarga guardados."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Save download settings"
-msgstr ""
+msgstr "Guardar ajustes de descarga"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Downloading subtitles"
-msgstr ""
+msgstr "Descargando subtítulos"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Bulk download"
-msgstr ""
+msgstr "Descarga masiva"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Add a provider above to download for the library."
-msgstr ""
+msgstr "Añade un proveedor arriba para descargar subtítulos de la biblioteca."
 
 #. 0: formatRelative(job.startedAt!)
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Started {0} <0/>"
-msgstr ""
+msgstr "Empezó {0} <0/>"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Looks up every title that lacks one of the chosen languages and saves the best match next to the video. Titles searched without a result are skipped for a week."
-msgstr ""
+msgstr "Busca cada título al que le falte alguno de los idiomas elegidos y guarda la mejor coincidencia junto al video. Los títulos buscados sin resultado se omiten durante una semana."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Download progress"
-msgstr ""
+msgstr "Progreso de la descarga"
 
 #. 0: formatRelative(job.finishedAt)
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Last run finished {0}."
-msgstr ""
+msgstr "La última ejecución terminó {0}."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Some providers were paused for this run"
-msgstr ""
+msgstr "Algunos proveedores se pausaron durante esta ejecución"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Scope"
-msgstr ""
+msgstr "Alcance"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Retry recent misses"
-msgstr ""
+msgstr "Reintentar fallos recientes"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Start download"
-msgstr ""
+msgstr "Iniciar descarga"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Recent activity"
-msgstr ""
-
-#. 0: data.totals.downloaded.toLocaleString(); 1: data.totals.notFound.toLocaleString()
-#: src/routes/admin/subtitles/+page.svelte
-msgid "{0} subtitles downloaded so far · {1} searches without a result"
-msgstr ""
+msgstr "Actividad reciente"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Nothing downloaded yet."
-msgstr ""
+msgstr "Aún no se ha descargado nada."
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Result"
-msgstr ""
+msgstr "Resultado"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Release"
-msgstr ""
+msgstr "Versión"
 
 #: src/routes/admin/subtitles/+page.svelte
 msgid "Source"
-msgstr ""
+msgstr "Fuente"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Hub-wide options and catalog housekeeping."
-msgstr ""
-
-#. 0: form.pruned.movies; 1: form.pruned.movies === 1 ? 'movie' \\: 'movies'; 2: form.pruned.series; 3: form.pruned .episodes; 4: form.pruned.episodes === 1 ? 'episode' \\: 'episodes'
-#: src/routes/admin/settings/+page.svelte
-msgid "Removed {0} {1} and {2} series ({3} {4})."
-msgstr ""
+msgstr "Opciones de todo el servidor y mantenimiento del catálogo."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Refreshing every title in the background."
-msgstr ""
+msgstr "Actualizando todos los títulos en segundo plano."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Unmatched titles are searched on TMDB again."
-msgstr ""
+msgstr "Los títulos sin coincidencia se vuelven a buscar en TMDB."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Access"
-msgstr ""
+msgstr "Acceso"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Who can use this server, and who can create an account."
-msgstr ""
+msgstr "Quién puede usar este servidor y quién puede crear una cuenta."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Require an account to access"
-msgstr ""
+msgstr "Exigir una cuenta para acceder"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "When on, visitors must sign in before they can see or play anything. When off, anyone who can reach this server can browse and watch as a guest; watch history and resume positions are only kept for signed-in users."
-msgstr ""
+msgstr "Si está activado, los visitantes deben iniciar sesión antes de poder ver o reproducir nada. Si está desactivado, cualquiera que pueda acceder a este servidor puede explorar y ver contenido como invitado; el historial de visionado y las posiciones de reanudación solo se guardan para los usuarios con sesión iniciada."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Allow visitors to register"
-msgstr ""
+msgstr "Permitir que los visitantes se registren"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Anyone who can reach this server may sign up at <0>/register</0>. When off, only administrators can create accounts (from the Users page). Registration is always open while the server has no accounts at all."
-msgstr ""
+msgstr "Cualquiera que pueda acceder a este servidor puede registrarse en <0>/register</0>. Si está desactivado, solo los administradores pueden crear cuentas (desde la página Usuarios). El registro siempre está abierto mientras el servidor no tenga ninguna cuenta."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Account limits"
-msgstr ""
+msgstr "Límites de cuenta"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Apply to every account, administrators included. Lowering a limit never deletes anything."
-msgstr ""
+msgstr "Se aplican a todas las cuentas, incluidas las de administradores. Reducir un límite nunca elimina nada."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Limit signed-in devices per account"
-msgstr ""
+msgstr "Limitar los dispositivos con sesión iniciada por cuenta"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Signing in on one device too many signs out the one used longest ago. An account already over a lower limit is brought down to it at its next sign-in. Off = unlimited."
-msgstr ""
+msgstr "Al iniciar sesión en un dispositivo de más, se cierra la sesión del que lleva más tiempo sin usarse. Una cuenta que ya supere un límite más bajo se ajusta a él en su próximo inicio de sesión. Desactivado = ilimitado."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Devices per account"
-msgstr ""
+msgstr "Dispositivos por cuenta"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Limit profiles per account"
-msgstr ""
+msgstr "Limitar los perfiles por cuenta"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Accounts over a lower limit keep their profiles but can't add more. Off = unlimited."
-msgstr ""
+msgstr "Las cuentas que superen un límite más bajo conservan sus perfiles, pero no pueden añadir más. Desactivado = ilimitado."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Profiles per account"
-msgstr ""
+msgstr "Perfiles por cuenta"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Limits saved."
-msgstr ""
+msgstr "Límites guardados."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Save limits"
-msgstr ""
+msgstr "Guardar límites"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Library scanning"
-msgstr ""
+msgstr "Escaneo de bibliotecas"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "How new, changed and removed files reach the catalog."
-msgstr ""
+msgstr "Cómo llegan al catálogo los archivos nuevos, modificados y eliminados."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Watch library folders"
-msgstr ""
+msgstr "Vigilar las carpetas de las bibliotecas"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Devices notice files being added, moved or deleted and rescan the library about 30 seconds after the last change. Folders on network shares (SMB, NFS) usually don't report changes made from other computers; the periodic rescan covers them. Libraries are also rescanned whenever their device reconnects."
-msgstr ""
+msgstr "Los dispositivos detectan cuándo se añaden, mueven o eliminan archivos y vuelven a escanear la biblioteca unos 30 segundos después del último cambio. Las carpetas en recursos compartidos de red (SMB, NFS) no suelen notificar los cambios hechos desde otros equipos; el escaneo periódico se encarga de ellas. Las bibliotecas también se vuelven a escanear cada vez que su dispositivo se reconecta."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Rescan every library"
-msgstr ""
+msgstr "Volver a escanear todas las bibliotecas"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Rescans only re-read files that changed, so they're cheap even for large libraries."
-msgstr ""
+msgstr "Al volver a escanear solo se releen los archivos que han cambiado, así que es poco costoso incluso en bibliotecas grandes."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Trickplay"
-msgstr ""
+msgstr "Miniaturas (trickplay)"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Scene thumbnails while hovering the player's progress bar."
-msgstr ""
+msgstr "Miniaturas de las escenas al pasar el cursor por la barra de progreso del reproductor."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Seek-bar thumbnails"
-msgstr ""
+msgstr "Miniaturas de la barra de progreso"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "The device holding a file renders its thumbnails (in the background, or the first time the title is played) and keeps them cached; <0>Regenerate trickplay thumbnails</0> on the Devices page re-checks a whole library. Turn this off to spare weak devices; a single device can also opt out with <1>FINDERELLA_TRICKPLAY=0</1>."
-msgstr ""
+msgstr "El dispositivo que contiene un archivo genera sus miniaturas (en segundo plano, o la primera vez que se reproduce el título) y las guarda en caché; <0>Regenerar miniaturas de la barra de progreso</0> en la página Dispositivos vuelve a revisar una biblioteca entera. Desactívalo para no sobrecargar los dispositivos poco potentes; un dispositivo concreto también puede excluirse con <1>FINDERELLA_TRICKPLAY=0</1>."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Generate in the background"
-msgstr ""
+msgstr "Generar en segundo plano"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Render thumbnails for newly scanned files right away, then work through older files that don't have them yet — one file at a time per device, at low priority. While Trickplay is on but this option is off, a video without thumbnails gets them on demand the first time someone plays it."
-msgstr ""
+msgstr "Genera de inmediato las miniaturas de los archivos recién escaneados y después continúa con los archivos más antiguos que aún no las tienen: un archivo a la vez por dispositivo, con prioridad baja. Si las miniaturas (trickplay) están activadas pero esta opción no, un video sin miniaturas las obtiene bajo demanda la primera vez que alguien lo reproduce."
 
 #: src/routes/admin/settings/+page.svelte
 #: src/routes/settings/playback/+page.svelte
 msgid "Skip intro & credits"
-msgstr ""
+msgstr "Saltar intro y créditos"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Skip buttons on the player when an intro or the credits start."
-msgstr ""
+msgstr "Botones para saltar en el reproductor cuando empieza una intro o los créditos."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Detect intros & credits"
-msgstr ""
+msgstr "Detectar intros y créditos"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "After each scan, the device holding the files compares the audio of every episode in a season to find the intro and closing theme they share, and looks for rolling credits at the end of movies. Chapters named <0>Intro</0> or <1>Credits</1> are used as they are. Viewers choose between a button and skipping automatically in their playback settings. A single device can opt out with <2>FINDERELLA_MARKERS=0</2>."
-msgstr ""
+msgstr "Tras cada escaneo, el dispositivo que contiene los archivos compara el audio de todos los episodios de una temporada para encontrar la intro y el tema de cierre que comparten, y busca créditos en movimiento al final de las películas. Los capítulos llamados <0>Intro</0> o <1>Credits</1> se usan tal cual. Los espectadores eligen entre un botón y el salto automático en sus ajustes de reproducción. Un dispositivo concreto puede excluirse con <2>FINDERELLA_MARKERS=0</2>."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Browser remux"
-msgstr ""
+msgstr "Remux en el navegador"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Play MKVs without transcoding them on the device."
-msgstr ""
+msgstr "Reproduce archivos MKV sin transcodificarlos en el dispositivo."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Remux in the browser"
-msgstr ""
+msgstr "Remuxear en el navegador"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "When the viewer's browser can decode a file's video but not open its container (MKV) or play its audio (AC-3, E-AC-3, a second audio track), the browser re-wraps the original file itself instead of the device transcoding it: original quality, HDR kept, no work for the device. AC-3 and E-AC-3 are converted to stereo in the browser. Anything the browser can't handle still transcodes. Turn this off to transcode everything that can't play directly."
-msgstr ""
+msgstr "Cuando el navegador del espectador puede decodificar el video de un archivo pero no abrir su contenedor (MKV) ni reproducir su audio (AC-3, E-AC-3, una segunda pista de audio), el propio navegador reempaqueta el archivo original en lugar de que el dispositivo lo transcodifique: calidad original, HDR conservado y ningún trabajo para el dispositivo. AC-3 y E-AC-3 se convierten a estéreo en el navegador. Lo que el navegador no pueda manejar se sigue transcodificando. Desactívalo para transcodificar todo lo que no se pueda reproducir directamente."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Hardware acceleration"
-msgstr ""
+msgstr "Aceleración por hardware"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Transcode on the devices' graphics cards."
-msgstr ""
+msgstr "Transcodifica en las tarjetas gráficas de los dispositivos."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Use the GPU for transcoding"
-msgstr ""
+msgstr "Usar la GPU para transcodificar"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Devices decode and encode transcodes on their GPU (NVIDIA, AMD, Intel, Apple, Raspberry Pi 4) when they have one that passed their startup check, which leaves the CPU free for more streams. Anything the GPU can't handle, or a GPU that can't start a transcode, falls back to the CPU. Turn this off to transcode everything on the CPU. Applies to transcodes started after the change; the Devices page shows which GPU each device found."
-msgstr ""
+msgstr "Los dispositivos decodifican y codifican las transcodificaciones en su GPU (NVIDIA, AMD, Intel, Apple, Raspberry Pi 4) cuando tienen una que superó su comprobación de inicio, lo que deja la CPU libre para más transmisiones. Lo que la GPU no pueda manejar, o una GPU que no consiga iniciar una transcodificación, recurre a la CPU. Desactívalo para transcodificarlo todo en la CPU. Se aplica a las transcodificaciones iniciadas después del cambio; la página Dispositivos muestra qué GPU encontró cada dispositivo."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Every title in the catalog is backed by a media file."
-msgstr ""
-
-#. 0: data.orphans.movies; 1: data.orphans.movies === 1 ? 'movie' \\: 'movies'; 2: data.orphans.series
-#: src/routes/admin/settings/+page.svelte
-msgid "{0} {1} and {2} series have no media files (placeholder titles, or files from a removed library). Titles are also pruned automatically when a scan finishes."
-msgstr ""
+msgstr "Todos los títulos del catálogo tienen un archivo multimedia."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Catalog"
-msgstr ""
+msgstr "Catálogo"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Remove titles without files"
-msgstr ""
+msgstr "Eliminar títulos sin archivos"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Add a TMDB API key to fetch posters, synopses, genres, cast and ratings for scanned titles automatically."
-msgstr ""
-
-#. 0: data.metadata.pending.movies; 1: data.metadata.pending.series; 2: data.metadata.pending.episodes
-#: src/routes/admin/settings/+page.svelte
-msgid "Fetching metadata from TMDB… ({0} movies, {1} series, {2} episodes pending)"
-msgstr ""
-
-#. 0: data.metadata.pending.movies; 1: data.metadata.pending.series; 2: data.metadata.pending.episodes
-#: src/routes/admin/settings/+page.svelte
-msgid "TMDB configured · {0} movies, {1} series and {2} episodes are waiting for metadata (fetched after the next scan, or refresh now)."
-msgstr ""
+msgstr "Añade una clave de API de TMDB para obtener automáticamente pósteres, sinopsis, géneros, reparto y valoraciones de los títulos escaneados."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "TMDB configured · every title has been looked up."
-msgstr ""
+msgstr "TMDB configurado · se han buscado todos los títulos."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Metadata"
-msgstr ""
+msgstr "Metadatos"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "API key or API Read Access Token"
-msgstr ""
+msgstr "Clave de API o token de acceso de lectura de la API"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Using the key saved here. Leave the field blank to keep it."
-msgstr ""
+msgstr "Se usa la clave guardada aquí. Deja el campo en blanco para conservarla."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Using <0>TMDB_API_KEY</0> from the hub's <1>.env</1>; a key saved here overrides it."
-msgstr ""
+msgstr "Se usa <0>TMDB_API_KEY</0> del <1>.env</1> del servidor; una clave guardada aquí tiene prioridad."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Either key from <0>themoviedb.org/settings/api</0> works. It's checked with TMDB before it's saved."
-msgstr ""
+msgstr "Sirve cualquiera de las dos claves de <0>themoviedb.org/settings/api</0>. Se comprueba con TMDB antes de guardarla."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "TMDB API key"
-msgstr ""
+msgstr "Clave de API de TMDB"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Remove the saved key"
-msgstr ""
+msgstr "Eliminar la clave guardada"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Saved key removed."
-msgstr ""
+msgstr "Clave guardada eliminada."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Key saved."
-msgstr ""
+msgstr "Clave guardada."
 
 #. 0: form.tmdbTest
 #: src/routes/admin/settings/+page.svelte
 msgid "{0} to TMDB."
-msgstr ""
+msgstr "{0} a TMDB."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Save key"
-msgstr ""
+msgstr "Guardar clave"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Refresh all metadata"
-msgstr ""
+msgstr "Actualizar todos los metadatos"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Metadata and artwork provided by <0>TMDB</0>. This product uses the TMDB API but is not endorsed or certified by TMDB."
-msgstr ""
+msgstr "Metadatos e imágenes proporcionados por <0>TMDB</0>. Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica."
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Remove titles without files?"
-msgstr ""
-
-#. 0: data.orphans.movies; 1: data.orphans.movies === 1 ? 'movie' \\: 'movies'; 2: data.orphans.series
-#: src/routes/admin/settings/+page.svelte
-msgid "{0} {1} and {2} series have no media file on any device. They leave the catalog, and their watch progress and watchlist entries go with them. Nothing is deleted from your devices."
-msgstr ""
+msgstr "¿Eliminar títulos sin archivos?"
 
 #: src/routes/admin/settings/+page.svelte
 msgid "Remove titles"
-msgstr ""
-
-#. 0: streams.length; 1: streams.length === 1 ? 'stream' \\: 'streams'; 2: transcoding; 3: formatBitrate( bandwidth )
-#: src/routes/admin/statistics/+page.svelte
-msgid "{0} {1} · {2} transcoding · {3}"
-msgstr ""
+msgstr "Eliminar títulos"
 
 #: src/routes/admin/statistics/+page.svelte
 msgid "Watch statistics"
-msgstr ""
+msgstr "Estadísticas de visionado"
 
 #: src/routes/admin/statistics/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "Most watched movies"
-msgstr ""
+msgstr "Películas más vistas"
 
 #: src/routes/admin/statistics/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "Most watched shows"
-msgstr ""
+msgstr "Series más vistas"
 
 #: src/routes/admin/statistics/+page.svelte
 msgid "Most active users"
-msgstr ""
+msgstr "Usuarios más activos"
 
 #: src/routes/admin/statistics/+page.svelte
 msgid "Most used platforms"
-msgstr ""
+msgstr "Plataformas más usadas"
 
 #: src/routes/settings/devices/+page.svelte
 msgid "Devices · Settings"
-msgstr ""
-
-#. 0: data.sessionLimit; 1: data.sessionLimit === 1 ? 'device' \\: 'devices'
-#: src/routes/settings/devices/+page.svelte
-msgid "Up to {0} {1} can be signed in at once; signing in on another signs out the one used longest ago."
-msgstr ""
+msgstr "Dispositivos · Ajustes"
 
 #: src/routes/settings/devices/+page.svelte
 msgid "Where your account is signed in. A device you sign out has to sign in again. <0/>"
-msgstr ""
+msgstr "Dispositivos en los que tienes la sesión iniciada. Un dispositivo cuya sesión cierres tendrá que volver a iniciar sesión. <0/>"
 
 #: src/routes/settings/devices/+page.svelte
 msgid "This device"
-msgstr ""
+msgstr "Este dispositivo"
 
 #: src/routes/settings/devices/+page.svelte
 msgid "Active now"
-msgstr ""
+msgstr "Activo ahora"
 
 #. 0: formatRelative(s.lastActiveAt)
 #: src/routes/settings/devices/+page.svelte
 msgid "Last used {0}"
-msgstr ""
+msgstr "Último uso: {0}"
 
 #: src/routes/settings/devices/+page.svelte
 msgid "You aren't signed in anywhere else."
-msgstr ""
+msgstr "No tienes la sesión iniciada en ningún otro sitio."
 
 #: src/routes/settings/devices/+page.svelte
 msgid "Sign out all other devices"
-msgstr ""
-
-#: src/routes/settings/devices/+page.svelte
-msgid "One other device"
-msgstr ""
-
-#. 0: others
-#: src/routes/settings/devices/+page.svelte
-msgid "{0} other devices"
-msgstr ""
+msgstr "Cerrar sesión en todos los demás dispositivos"
 
 #: src/routes/settings/devices/+page.svelte
 msgid "Sign out all other devices?"
-msgstr ""
-
-#. 0: others === 1 ? 'One other device' \\: `${others} other devices`
-#: src/routes/settings/devices/+page.svelte
-msgid "{0} will have to sign in again. This device stays signed in."
-msgstr ""
+msgstr "¿Cerrar sesión en todos los demás dispositivos?"
 
 #: src/routes/settings/devices/+page.svelte
 msgid "Sign out others"
-msgstr ""
+msgstr "Cerrar las demás sesiones"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Uses 5.1 surround when this device's audio output supports it, otherwise stereo."
-msgstr ""
+msgstr "Usa 5.1 envolvente cuando la salida de audio de este dispositivo lo admite; si no, estéreo."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Surround soundtracks play as two-channel stereo. Right for headphones and laptop or TV speakers."
-msgstr ""
+msgstr "Las bandas sonoras envolventes se reproducen en estéreo de dos canales. Ideal para auriculares y altavoces de portátil o TV."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Surround soundtracks play in 5.1; stereo ones stay stereo. Choose this if you listen through a surround sound system."
-msgstr ""
+msgstr "Las bandas sonoras envolventes se reproducen en 5.1; las estéreo siguen en estéreo. Elige esta opción si escuchas con un sistema de sonido envolvente."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "All sound comes out of every speaker equally. Useful with a single earbud or hearing in one ear."
-msgstr ""
+msgstr "Todo el sonido sale por igual por todos los altavoces. Útil con un solo auricular o si oyes por un solo oído."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "A Skip intro button appears while the intro plays."
-msgstr ""
+msgstr "Aparece un botón Saltar intro mientras se reproduce la intro."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Intros are skipped as soon as they start, with a moment to undo. Intros that were only guessed still get a button."
-msgstr ""
+msgstr "Las intros se saltan en cuanto empiezan, con un momento para deshacerlo. Las intros que solo se han estimado siguen mostrando un botón."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Intros play without a button."
-msgstr ""
+msgstr "Las intros se reproducen sin botón."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "A button appears when the credits start: Next episode for series, Skip credits otherwise."
-msgstr ""
+msgstr "Aparece un botón cuando empiezan los créditos: Siguiente episodio en las series y Saltar créditos en lo demás."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Series move on to the next episode when the credits start (with autoplay on); credits followed by a scene are skipped. Movies still just get a button."
-msgstr ""
+msgstr "Las series pasan al siguiente episodio cuando empiezan los créditos (con la reproducción automática activada); los créditos seguidos de una escena se saltan. Las películas siguen mostrando solo un botón."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Credits play without a button; the next episode starts once the episode ends."
-msgstr ""
+msgstr "Los créditos se reproducen sin botón; el siguiente episodio empieza cuando termina el episodio."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Original language"
-msgstr ""
+msgstr "Idioma original"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Playback · Settings"
-msgstr ""
+msgstr "Reproducción · Ajustes"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Which audio track plays when a title has several, for example a dub and the original language, and how many channels you hear."
-msgstr ""
+msgstr "Qué pista de audio se reproduce cuando un título tiene varias, por ejemplo un doblaje y el idioma original, y cuántos canales oyes."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Audio settings saved."
-msgstr ""
+msgstr "Ajustes de audio guardados."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Original language plays the track the file marks as its default, which is usually the original. A language plays when the title has it, otherwise the default track. Picking an audio track in the player updates this too."
-msgstr ""
+msgstr "Idioma original reproduce la pista que el archivo marca como predeterminada, que suele ser la original. Si eliges un idioma, se reproduce cuando el título lo tiene; si no, la pista predeterminada. Elegir una pista de audio en el reproductor también actualiza este ajuste."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Preferred audio language"
-msgstr ""
+msgstr "Idioma de audio preferido"
 
 #. 0: autoResult
 #: src/routes/settings/playback/+page.svelte
 msgid "On this device: {0}."
-msgstr ""
+msgstr "En este dispositivo: {0}."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "This browser can't play 5.1 audio, so you'll hear stereo here."
-msgstr ""
+msgstr "Este navegador no puede reproducir audio 5.1, así que aquí oirás estéreo."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Maximum audio channels"
-msgstr ""
+msgstr "Máximo de canales de audio"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Save audio settings"
-msgstr ""
+msgstr "Guardar ajustes de audio"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "What happens when an intro or the closing credits start. Titles are analysed after they're added, so new ones may take a while to get these."
-msgstr ""
+msgstr "Qué ocurre cuando empieza una intro o los créditos finales. Los títulos se analizan después de añadirse, así que los nuevos pueden tardar un poco en tenerlos."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Intros"
-msgstr ""
+msgstr "Intros"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Credits"
-msgstr ""
+msgstr "Créditos"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Skip settings saved."
-msgstr ""
+msgstr "Ajustes de salto guardados."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Save skip settings"
-msgstr ""
+msgstr "Guardar ajustes de salto"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "What happens when an episode ends."
-msgstr ""
+msgstr "Qué ocurre cuando termina un episodio."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Play next episode automatically"
-msgstr ""
+msgstr "Reproducir el siguiente episodio automáticamente"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Starts the next episode after a short countdown. The Autoplay switch in the player changes this too."
-msgstr ""
+msgstr "Empieza el siguiente episodio tras una breve cuenta atrás. El interruptor Reproducción automática del reproductor también cambia este ajuste."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Series settings saved."
-msgstr ""
+msgstr "Ajustes de series guardados."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Save series settings"
-msgstr ""
+msgstr "Guardar ajustes de series"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Still watching?"
-msgstr ""
+msgstr "¿Sigues viendo?"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Pauses playback and asks before carrying on, so nothing keeps playing to an empty room. Playback only resumes when you choose to continue."
-msgstr ""
+msgstr "Pausa la reproducción y pregunta antes de continuar, para que nada siga reproduciéndose en una habitación vacía. La reproducción solo se reanuda cuando eliges continuar."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Pause and ask if I'm still watching"
-msgstr ""
+msgstr "Pausar y preguntar si sigo viendo"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Any click, tap or key press in the player counts as watching and restarts the count."
-msgstr ""
+msgstr "Cualquier clic, toque o pulsación de tecla en el reproductor cuenta como que estás viendo y reinicia el recuento."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Series: ask after"
-msgstr ""
+msgstr "Series: preguntar tras"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "In a row, played automatically."
-msgstr ""
+msgstr "Seguidos y reproducidos automáticamente."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Movies: ask after"
-msgstr ""
+msgstr "Películas: preguntar tras"
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Of playback without any input."
-msgstr ""
+msgstr "De reproducción sin ninguna interacción."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Still watching settings saved."
-msgstr ""
+msgstr "Ajustes de “¿Sigues viendo?” guardados."
 
 #: src/routes/settings/playback/+page.svelte
 msgid "Save still watching settings"
-msgstr ""
+msgstr "Guardar ajustes de “¿Sigues viendo?”"
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Preferences · Settings"
-msgstr ""
+msgstr "Preferencias · Ajustes"
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Appearance"
-msgstr ""
+msgstr "Apariencia"
 
 #. 0: branding().appName
 #: src/routes/settings/preferences/+page.svelte
 msgid "How {0} looks for this profile, on every device. The player always stays dark."
-msgstr ""
+msgstr "Cómo se ve {0} en este perfil, en todos los dispositivos. El reproductor siempre es oscuro."
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Theme"
-msgstr ""
+msgstr "Tema"
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Save theme"
-msgstr ""
+msgstr "Guardar tema"
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Screensaver"
-msgstr ""
+msgstr "Salvapantallas"
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Shown after a while without mouse, keyboard or touch input — never over the player or a trailer. Any input brings you back."
-msgstr ""
+msgstr "Se muestra tras un rato sin actividad del ratón, el teclado o la pantalla táctil, nunca sobre el reproductor ni sobre un tráiler. Cualquier interacción te devuelve aquí."
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Show a screensaver when idle"
-msgstr ""
+msgstr "Mostrar un salvapantallas en reposo"
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Show"
-msgstr ""
+msgstr "Mostrar"
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Start after"
-msgstr ""
+msgstr "Empezar tras"
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Screensaver settings saved."
-msgstr ""
+msgstr "Ajustes del salvapantallas guardados."
 
 #: src/routes/settings/preferences/+page.svelte
 msgid "Save screensaver settings"
-msgstr ""
+msgstr "Guardar ajustes del salvapantallas"
 
-#. 0: labels.slice(0, -1).join(', '); 1: labels[labels.length - 1]
-#: src/routes/settings/account/+page.svelte
+#. 0: names[0]; 1: names[1]
+#: src/lib/data/together.ts
 msgid "{0} and {1}"
-msgstr ""
-
-#. 0: list; 1: labels.length === 1 ? 'was' \\: 'were'
-#: src/routes/settings/account/+page.svelte
-msgid "Your {0} {1} updated."
-msgstr ""
+msgstr "{0} y {1}"
 
 #: src/routes/settings/account/+page.svelte
 msgid "Account · Settings"
-msgstr ""
+msgstr "Cuenta · Ajustes"
 
 #: src/routes/settings/account/+page.svelte
 msgid "Administrator"
-msgstr ""
+msgstr "Administrador"
 
 #. 0: joined
 #: src/routes/settings/account/+page.svelte
 msgid "Member since {0}"
-msgstr ""
+msgstr "Miembro desde {0}"
 
 #: src/routes/settings/account/+page.svelte
 msgid "<0/> Edit"
-msgstr ""
+msgstr "<0/> Editar"
 
 #: src/routes/settings/account/+page.svelte
 msgid "Display name"
-msgstr ""
+msgstr "Nombre visible"
 
 #: src/routes/settings/account/+page.svelte
 msgid "Email address"
-msgstr ""
+msgstr "Correo electrónico"
 
 #: src/routes/settings/account/+page.svelte
 msgid "Leave blank to keep your password"
-msgstr ""
+msgstr "Déjalo en blanco para conservar tu contraseña"
 
 #: src/routes/settings/account/+page.svelte
 msgid "At least 8 characters. Changing it signs you out everywhere else."
-msgstr ""
+msgstr "Al menos 8 caracteres. Al cambiarla, se cerrará tu sesión en todos los demás dispositivos."
 
 #: src/routes/settings/account/+page.svelte
 msgid "Needed to change your email address or password."
-msgstr ""
+msgstr "Necesaria para cambiar tu correo electrónico o tu contraseña."
 
 #: src/routes/settings/account/+page.svelte
 msgid "Current password"
-msgstr ""
-
-#: src/routes/settings/subtitles/+page.svelte
-msgid "English"
-msgstr ""
+msgstr "Contraseña actual"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Subtitles · Settings"
-msgstr ""
+msgstr "Subtítulos · Ajustes"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Which language turns on automatically, and how subtitles look in the player. <0>Picking a language from the player's menu updates the preference too.</0>"
-msgstr ""
+msgstr "Qué idioma se activa automáticamente y cómo se ven los subtítulos en el reproductor. <0>Elegir un idioma en el menú del reproductor también actualiza la preferencia.</0>"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Preferred language"
-msgstr ""
+msgstr "Idioma preferido"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Shown when the title has it; otherwise the file's default track, if any."
-msgstr ""
+msgstr "Se muestra cuando el título lo tiene; si no, la pista predeterminada del archivo, si existe."
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Text size"
-msgstr ""
+msgstr "Tamaño del texto"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Text color"
-msgstr ""
+msgstr "Color del texto"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Font"
-msgstr ""
+msgstr "Fuente"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Text background"
-msgstr ""
+msgstr "Fondo del texto"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "A dark box behind the text. Off shows the text over the picture with a shadow."
-msgstr ""
+msgstr "Un recuadro oscuro detrás del texto. Si está desactivado, el texto se muestra sobre la imagen con una sombra."
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Vertical position"
-msgstr ""
+msgstr "Posición vertical"
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "How many lines above the bottom edge the text sits."
-msgstr ""
+msgstr "A cuántas líneas del borde inferior se sitúa el texto."
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Where are we going?<0/>Somewhere quiet, I hope."
-msgstr ""
+msgstr "¿Adónde vamos?<0/>A algún sitio tranquilo, espero."
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Subtitle settings saved."
-msgstr ""
+msgstr "Ajustes de subtítulos guardados."
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Approximate: a 16:9 model of the player. Exact placement depends on the browser and the video's aspect ratio."
-msgstr ""
+msgstr "Aproximado: un modelo 16:9 del reproductor. La posición exacta depende del navegador y de la relación de aspecto del video."
 
 #: src/routes/settings/subtitles/+page.svelte
 msgid "Save subtitle settings"
-msgstr ""
+msgstr "Guardar ajustes de subtítulos"
 
 #: src/routes/admin/statistics/graphs/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "Watch time (hours)"
-msgstr ""
+msgstr "Tiempo de visionado (horas)"
 
 #: src/routes/settings/statistics/+page.svelte
 msgid "Statistics · Settings"
-msgstr ""
-
-#: src/routes/settings/statistics/+page.svelte
-#: src/routes/settings/statistics/+page.svelte
-msgid "play"
-msgstr ""
+msgstr "Estadísticas · Ajustes"
 
 #: src/routes/settings/statistics/+page.svelte
 msgid "Nothing watched yet"
-msgstr ""
+msgstr "Aún no has visto nada"
 
 #: src/routes/settings/statistics/+page.svelte
 msgid "Your watch time, most watched titles and viewing habits show up here once you've watched something on this profile."
-msgstr ""
+msgstr "Tu tiempo de visionado, los títulos que más has visto y tus hábitos de visionado aparecerán aquí cuando hayas visto algo en este perfil."
 
-#: src/routes/settings/statistics/+page.svelte
-msgid "movie"
-msgstr ""
-
-#: src/routes/settings/statistics/+page.svelte
-msgid "episode"
-msgstr ""
-
-#. 0: plural(data.finished.movies, 'movie', 'movies'); 1: plural( data.finished.episodes, 'episode', 'episodes' )
+#. 0: plural(data.finished.movies, ['# movie', '# movies']); 1: plural( data.finished.episodes, ['# episode', '# episodes'] )
 #: src/routes/settings/statistics/+page.svelte
 msgid "Finished {0} and {1}."
-msgstr ""
+msgstr "Has terminado {0} y {1}."
 
 #: src/routes/settings/statistics/+page.svelte
 msgid "Chart metric"
-msgstr ""
+msgstr "Métrica del gráfico"
 
 #: src/routes/settings/statistics/+page.svelte
 msgid "Viewing charts"
-msgstr ""
+msgstr "Gráficos de visionado"
 
 #. 0: noun
 #. 0: noun
 #: src/routes/admin/statistics/graphs/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "{0} per day"
-msgstr ""
+msgstr "{0} por día"
 
 #: src/routes/admin/statistics/graphs/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "Movies and episodes, stacked."
-msgstr ""
+msgstr "Películas y episodios, apilados."
 
 #: src/routes/admin/statistics/graphs/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "By day of week"
-msgstr ""
+msgstr "Por día de la semana"
 
 #: src/routes/admin/statistics/graphs/+page.svelte
 #: src/routes/settings/statistics/+page.svelte
 msgid "By hour of day"
-msgstr ""
+msgstr "Por hora del día"
 
 #: src/routes/together/[code]/+page.svelte
 msgid "Watch party ended"
-msgstr ""
+msgstr "La sala de Ver juntos ha terminado"
 
 #: src/routes/together/[code]/+page.svelte
 msgid "This watch party has ended"
-msgstr ""
+msgstr "Esta sala de Ver juntos ha terminado"
 
 #: src/routes/together/[code]/+page.svelte
 msgid "The host ended it, or everyone left a while ago. Ask for a new link, or start your own from any title's page."
-msgstr ""
+msgstr "El anfitrión la cerró, o todos se fueron hace un rato. Pide un enlace nuevo o crea tu propia sala desde la página de cualquier título."
 
 #: src/lib/components/ui/pagination/pagination-ellipsis.svelte
 msgid "More pages"
-msgstr ""
+msgstr "Más páginas"
 
 #: src/lib/components/ui/pagination/pagination-next-button.svelte
 #: src/lib/components/ui/pagination/pagination-next.svelte
 msgid "Next"
-msgstr ""
+msgstr "Siguiente"
 
 #: src/lib/components/ui/pagination/pagination-next-button.svelte
 #: src/lib/components/ui/pagination/pagination-next.svelte
 msgid "Go to next page"
-msgstr ""
+msgstr "Ir a la página siguiente"
 
 #: src/lib/components/ui/pagination/pagination-prev-button.svelte
 #: src/lib/components/ui/pagination/pagination-previous.svelte
 msgid "Previous"
-msgstr ""
+msgstr "Anterior"
 
 #: src/lib/components/ui/pagination/pagination-prev-button.svelte
 #: src/lib/components/ui/pagination/pagination-previous.svelte
 msgid "Go to previous page"
-msgstr ""
+msgstr "Ir a la página anterior"
 
 #: src/lib/components/ui/sidebar/sidebar-rail.svelte
 #: src/lib/components/ui/sidebar/sidebar-rail.svelte
 #: src/lib/components/ui/sidebar/sidebar-trigger.svelte
 msgid "Toggle Sidebar"
-msgstr ""
+msgstr "Mostrar u ocultar la barra lateral"
 
 #: src/lib/components/ui/sidebar/sidebar.svelte
 msgid "Sidebar"
-msgstr ""
+msgstr "Barra lateral"
 
 #: src/lib/components/ui/sidebar/sidebar.svelte
 msgid "Displays the mobile sidebar."
-msgstr ""
+msgstr "Muestra la barra lateral móvil."
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Resolution"
-msgstr ""
+msgstr "Resolución"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Video codec"
-msgstr ""
+msgstr "Códec de video"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Container"
-msgstr ""
+msgstr "Contenedor"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Audio codec"
-msgstr ""
+msgstr "Códec de audio"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Library statistics"
-msgstr ""
+msgstr "Estadísticas de bibliotecas"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Files"
-msgstr ""
+msgstr "Archivos"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Total size"
-msgstr ""
+msgstr "Tamaño total"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Total runtime"
-msgstr ""
-
-#. 0: data.libraries.total.toLocaleString(); 1: data.libraries.total === 1 ? 'library' \\: 'libraries'
-#: src/routes/admin/statistics/libraries/+page.svelte
-msgid "Active files per library; a title on several devices counts in each · {0} {1}"
-msgstr ""
+msgstr "Duración total"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Titles"
-msgstr ""
+msgstr "Títulos"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Seasons / episodes"
-msgstr ""
+msgstr "Temporadas / episodios"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Size"
-msgstr ""
+msgstr "Tamaño"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Runtime"
-msgstr ""
+msgstr "Duración"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Last scan"
-msgstr ""
+msgstr "Último escaneo"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 #: src/routes/admin/statistics/users/+page.svelte
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "Last played"
-msgstr ""
+msgstr "Última reproducción"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 #: src/routes/admin/statistics/users/+page.svelte
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "Never"
-msgstr ""
+msgstr "Nunca"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "No libraries yet — add one under Devices."
-msgstr ""
+msgstr "Todavía no hay bibliotecas. Añade una en Dispositivos."
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Media breakdown"
-msgstr ""
+msgstr "Desglose multimedia"
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "No files."
-msgstr ""
+msgstr "No hay archivos."
 
 #: src/routes/admin/statistics/libraries/+page.svelte
 msgid "Nothing added yet."
-msgstr ""
+msgstr "Todavía no se ha añadido nada."
 
 #: src/routes/admin/statistics/history/+page.svelte
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "All users"
-msgstr ""
+msgstr "Todos los usuarios"
 
+#: src/lib/server/stats/queries.ts
 #: src/routes/admin/statistics/history/+page.svelte
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "Guests"
-msgstr ""
+msgstr "Invitados"
 
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "Unknown user"
-msgstr ""
+msgstr "Usuario desconocido"
 
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "Everything"
-msgstr ""
+msgstr "Todo"
 
 #: src/routes/admin/statistics/history/+page.svelte
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "Watch history"
-msgstr ""
+msgstr "Historial de visionado"
 
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "Type"
-msgstr ""
+msgstr "Tipo"
 
+#: src/lib/server/stats/queries.ts
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "All time"
-msgstr ""
-
-#. 0: first; 1: last; 2: data.history.total.toLocaleString()
-#: src/routes/admin/statistics/history/+page.svelte
-msgid "{0}–{1} of {2} plays"
-msgstr ""
+msgstr "Desde siempre"
 
 #: src/routes/admin/statistics/history/+page.svelte
 msgid "No plays match these filters."
-msgstr ""
+msgstr "Ninguna reproducción coincide con estos filtros."
 
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "Metric"
-msgstr ""
+msgstr "Métrica"
 
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "Direct play vs transcode"
-msgstr ""
+msgstr "Reproducción directa frente a transcodificación"
 
 #. 0: noun
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "{0} per day by how the stream reached the viewer."
-msgstr ""
+msgstr "{0} por día según cómo llegó la transmisión al espectador."
 
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "Transcode"
-msgstr ""
+msgstr "Transcodificación"
 
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "Top platforms"
-msgstr ""
+msgstr "Plataformas más usadas"
 
 #: src/routes/admin/statistics/graphs/+page.svelte
 msgid "Top users"
-msgstr ""
+msgstr "Usuarios más activos"
 
 #: src/routes/admin/statistics/users/+page.svelte
 msgid "User statistics"
-msgstr ""
-
-#. 0: data.total.toLocaleString(); 1: data.total === 1 ? 'account' \\: 'accounts'
-#: src/routes/admin/statistics/users/+page.svelte
-msgid "Every account's activity and watch totals, all time · {0} {1}"
-msgstr ""
+msgstr "Estadísticas de usuarios"
 
 #: src/routes/admin/statistics/users/+page.svelte
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "Last seen"
-msgstr ""
+msgstr "Visto por última vez"
 
 #: src/routes/admin/statistics/users/+page.svelte
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "Last platform"
-msgstr ""
+msgstr "Última plataforma"
 
 #: src/routes/admin/statistics/users/+page.svelte
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "Nothing yet"
-msgstr ""
+msgstr "Nada todavía"
 
 #: src/routes/categories/[type=category]/[slug]/+page.svelte
 msgid "Release order"
-msgstr ""
+msgstr "Orden de estreno"
 
 #: src/routes/categories/[type=category]/[slug]/+page.svelte
 msgid "<0/> Categories"
-msgstr ""
+msgstr "<0/> Categorías"
 
 #. 0: row.user.name
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "{0} · Statistics"
-msgstr ""
+msgstr "{0} · Estadísticas"
 
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "<0/> All users"
-msgstr ""
+msgstr "<0/> Todos los usuarios"
 
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "Platforms"
-msgstr ""
+msgstr "Plataformas"
 
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "No plays yet."
-msgstr ""
-
-#. 0: first; 1: last; 2: data.recent.total.toLocaleString()
-#: src/routes/admin/statistics/users/[id]/+page.svelte
-msgid "{0}–{1} of {2} plays · <0>View in history</0>"
-msgstr ""
+msgstr "Todavía no hay reproducciones."
 
 #: src/routes/admin/statistics/users/[id]/+page.svelte
 msgid "Recent history"
-msgstr ""
+msgstr "Historial reciente"
 
 #. 0: data.movie.title
 #: src/routes/movies/[id]/watch/+page.svelte
 msgid "Watch {0}"
-msgstr ""
+msgstr "Ver {0}"
 
 #: src/routes/movies/[id]/watch/+page.svelte
 #: src/routes/series/[id]/watch/[episode]/+page.svelte
 msgid "Can't play this right now"
-msgstr ""
+msgstr "No se puede reproducir en este momento"
 
 #: src/routes/movies/[id]/watch/+page.svelte
 #: src/routes/series/[id]/watch/[episode]/+page.svelte
 msgid "Preparing playback…"
-msgstr ""
+msgstr "Preparando la reproducción…"
 
 #. 0: data.show.title; 1: episodeLabel
 #: src/routes/series/[id]/watch/[episode]/+page.svelte
 msgid "Watch {0} {1}"
-msgstr ""
+msgstr "Ver {0} {1}"
+
+#: src/routes/settings/preferences/+page.svelte
+msgid "Save language"
+msgstr "Guardar idioma"
+
+#: src/routes/admin/statistics/history/+page.svelte
+#: src/routes/admin/statistics/users/[id]/+page.svelte
+#: src/routes/admin/statistics/users/[id]/+page.svelte
+#: src/routes/settings/statistics/+page.svelte
+#: src/routes/settings/statistics/+page.svelte
+msgid "# play"
+msgid_plural "# plays"
+msgstr[0] "# reproducción"
+msgstr[1] "# de reproducciones"
+msgstr[2] "# reproducciones"
+
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/settings/statistics/+page.svelte
+msgid "# movie"
+msgid_plural "# movies"
+msgstr[0] "# película"
+msgstr[1] "# de películas"
+msgstr[2] "# películas"
+
+#: src/lib/components/media/episodes-panel.svelte
+#: src/lib/data/playback-settings.ts
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/series/[id]/+page.svelte
+#: src/routes/settings/statistics/+page.svelte
+msgid "# episode"
+msgid_plural "# episodes"
+msgstr[0] "# episodio"
+msgstr[1] "# de episodios"
+msgstr[2] "# episodios"
+
+#: src/routes/admin/devices/+page.svelte
+msgid "# device"
+msgid_plural "# devices"
+msgstr[0] "# dispositivo"
+msgstr[1] "# de dispositivos"
+msgstr[2] "# dispositivos"
+
+#: src/routes/admin/devices/+page.svelte
+msgid "# online"
+msgid_plural "# online"
+msgstr[0] "# en línea"
+msgstr[1] "# en línea"
+msgstr[2] "# en línea"
+
+#: src/routes/admin/+page.svelte
+#: src/routes/admin/+page.svelte
+#: src/routes/admin/devices/+page.svelte
+#: src/routes/admin/statistics/libraries/+page.svelte
+msgid "# library"
+msgid_plural "# libraries"
+msgstr[0] "# biblioteca"
+msgstr[1] "# de bibliotecas"
+msgstr[2] "# bibliotecas"
+
+#: src/lib/components/devices/library-row.svelte
+#: src/routes/admin/+page.svelte
+#: src/routes/admin/devices/+page.svelte
+msgid "# file"
+msgid_plural "# files"
+msgstr[0] "# archivo"
+msgstr[1] "# de archivos"
+msgstr[2] "# archivos"
+
+#: src/lib/data/account-sessions.ts
+#: src/lib/data/stats.ts
+#: src/lib/server/stats/activity.ts
+msgid "Unknown device"
+msgstr "Dispositivo desconocido"
+
+#: src/lib/data/account-sessions.ts
+msgid "Unknown browser"
+msgstr "Navegador desconocido"
+
+#. 0: s.browser ?? 'Unknown browser'; 1: s.os
+#: src/lib/data/account-sessions.ts
+msgid "{0} on {1}"
+msgstr "{0} en {1}"
+
+#: src/lib/data/device-events.ts
+msgid "First scan of a new library"
+msgstr "Primer escaneo de una biblioteca nueva"
+
+#: src/lib/data/device-events.ts
+msgid "Full rescan: every file re-read"
+msgstr "Nuevo escaneo completo: se volvieron a leer todos los archivos"
+
+#: src/lib/data/device-events.ts
+#: src/lib/data/device-events.ts
+msgid "Stopped early"
+msgstr "Detenido antes de tiempo"
+
+#: src/lib/data/library-scanning.ts
+msgid "Every day"
+msgstr "Cada día"
+
+#: src/lib/data/media-format.ts
+#: src/lib/data/playback-settings.ts
+msgid "Mono"
+msgstr "Mono"
+
+#. 0: channels
+#: src/lib/data/media-format.ts
+msgid "{0} ch"
+msgstr "{0} canales"
+
+#. 0: decimal(bitsPerSecond / 1_000_000, 1)
+#: src/lib/data/media-format.ts
+msgid "{0} Mb/s"
+msgstr "{0} Mb/s"
+
+#. 0: decimal(bitsPerSecond / 1000, 0)
+#: src/lib/data/media-format.ts
+msgid "{0} kb/s"
+msgstr "{0} kb/s"
+
+#. 0: index + 1
+#. 0: index + 1
+#. 0: index + 1
+#: src/lib/data/media-format.ts
+#: src/lib/server/streaming/audio.ts
+#: src/lib/server/streaming/subtitles.ts
+msgid "Track {0}"
+msgstr "Pista {0}"
+
+#: src/lib/data/media-format.ts
+#: src/lib/server/streaming/audio.ts
+msgid "Commentary"
+msgstr "Comentarios"
+
+#: src/lib/data/media-format.ts
+#: src/lib/server/streaming/audio.ts
+msgid "Audio description"
+msgstr "Audiodescripción"
+
+#: src/lib/data/genres.ts
+msgid "Drama"
+msgstr "Drama"
+
+#: src/lib/data/genres.ts
+msgid "Comedy"
+msgstr "Comedia"
+
+#: src/lib/data/genres.ts
+msgid "Horror"
+msgstr "Terror"
+
+#: src/lib/data/genres.ts
+msgid "Fantasy"
+msgstr "Fantasía"
+
+#: src/lib/data/genres.ts
+msgid "Romance"
+msgstr "Romance"
+
+#: src/lib/data/genres.ts
+msgid "Documentary"
+msgstr "Documental"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Bottom edge"
+msgstr "Borde inferior"
+
+#. 0: names[0]; 1: names[1]; 2: names[2]
+#: src/lib/data/together.ts
+msgid "{0}, {1} and {2}"
+msgstr "{0}, {1} y {2}"
+
+#: src/lib/components/devices/types.ts
+#: src/lib/components/devices/types.ts
+msgid "Turned off in Site settings"
+msgstr "Desactivado en Ajustes del sitio"
+
+#: src/lib/components/devices/types.ts
+#: src/lib/components/devices/types.ts
+msgid "Update the gateway on this device first"
+msgstr "Primero actualiza la pasarela de almacenamiento de este dispositivo"
+
+#: src/lib/components/devices/types.ts
+msgid "A detection run is in progress"
+msgstr "Hay una detección en curso"
+
+#: src/routes/admin/settings/+page.server.ts
+#: src/routes/settings/preferences/+page.server.ts
+msgid "Pick a language from the list"
+msgstr "Elige un idioma de la lista"
+
+#: src/routes/admin/settings/+page.svelte
+msgid "The language of menus, buttons and messages for guests and for profiles that haven't picked their own (Settings → Preferences)."
+msgstr "El idioma de los menús, botones y mensajes para los invitados y para los perfiles que no hayan elegido el suyo (Ajustes → Preferencias)."
+
+#: src/routes/admin/settings/+page.svelte
+msgid "Default language"
+msgstr "Idioma predeterminado"
+
+#: src/lib/data/genres.ts
+msgid "Sci-Fi"
+msgstr "Ciencia ficción"
+
+#: src/lib/components/media/meta-pills.svelte
+#: src/lib/components/media/poster-card.svelte
+msgid "# season"
+msgid_plural "# seasons"
+msgstr[0] "# temporada"
+msgstr[1] "# de temporadas"
+msgstr[2] "# temporadas"
+
+#: src/lib/components/media/category-tile.svelte
+#: src/lib/components/media/library-page.svelte
+msgid "# title"
+msgid_plural "# titles"
+msgstr[0] "# título"
+msgstr[1] "# de títulos"
+msgstr[2] "# títulos"
+
+#. 0: filtered.length; 1: plural(items.length, ['# title', '# titles'])
+#: src/lib/components/media/library-page.svelte
+msgid "{0} of {1}"
+msgstr "{0} de {1}"
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your name, email address and password were updated."
+msgstr "Se actualizaron tu nombre, tu correo electrónico y tu contraseña."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your name and email address were updated."
+msgstr "Se actualizaron tu nombre y tu correo electrónico."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your name and password were updated."
+msgstr "Se actualizaron tu nombre y tu contraseña."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your email address and password were updated."
+msgstr "Se actualizaron tu correo electrónico y tu contraseña."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your name was updated."
+msgstr "Se actualizó tu nombre."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your email address was updated."
+msgstr "Se actualizó tu correo electrónico."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Your password was updated."
+msgstr "Se actualizó tu contraseña."
+
+#: src/routes/settings/devices/+page.svelte
+msgid "Up to # device can be signed in at once; signing in on another signs out the one used longest ago."
+msgid_plural "Up to # devices can be signed in at once; signing in on another signs out the one used longest ago."
+msgstr[0] "Puede haber hasta # dispositivo con la sesión iniciada a la vez; al iniciar sesión en otro, se cierra la del que lleva más tiempo sin usarse."
+msgstr[1] "Puede haber hasta # de dispositivos con la sesión iniciada a la vez; al iniciar sesión en otro, se cierra la del que lleva más tiempo sin usarse."
+msgstr[2] "Puede haber hasta # dispositivos con la sesión iniciada a la vez; al iniciar sesión en otro, se cierra la del que lleva más tiempo sin usarse."
+
+#: src/routes/settings/devices/+page.svelte
+msgid "One other device will have to sign in again. This device stays signed in."
+msgid_plural "# other devices will have to sign in again. This device stays signed in."
+msgstr[0] "Otro dispositivo tendrá que volver a iniciar sesión. Este dispositivo mantiene la sesión iniciada."
+msgstr[1] "Otros # de dispositivos tendrán que volver a iniciar sesión. Este dispositivo mantiene la sesión iniciada."
+msgstr[2] "Otros # dispositivos tendrán que volver a iniciar sesión. Este dispositivo mantiene la sesión iniciada."
+
+#: src/routes/admin/devices/+page.svelte
+msgid "Its # file leaves the catalog. Nothing is deleted from the device, and you can add the folder again later."
+msgid_plural "Its # files leave the catalog. Nothing is deleted from the device, and you can add the folder again later."
+msgstr[0] "Su archivo sale del catálogo. No se elimina nada del dispositivo y puedes volver a añadir la carpeta más tarde."
+msgstr[1] "Sus # de archivos salen del catálogo. No se elimina nada del dispositivo y puedes volver a añadir la carpeta más tarde."
+msgstr[2] "Sus # archivos salen del catálogo. No se elimina nada del dispositivo y puedes volver a añadir la carpeta más tarde."
+
+#: src/lib/server/stats/activity.ts
+#: src/lib/server/stats/queries.ts
+#: src/lib/server/stats/queries.ts
+msgid "Deleted user"
+msgstr "Usuario eliminado"
+
+#: src/lib/server/stats/queries.ts
+msgid "Last 24 hours"
+msgstr "Últimas 24 horas"
+
+#: src/lib/server/stats/queries.ts
+msgid "Last 30 days"
+msgstr "Últimos 30 días"
+
+#: src/lib/data/stats.ts
+msgid "Transcoding"
+msgstr "Transcodificación"
+
+#: src/lib/data/stats.ts
+#: src/lib/data/stats.ts
+#: src/lib/data/stats.ts
+msgid "# day"
+msgid_plural "# days"
+msgstr[0] "# día"
+msgstr[1] "# de días"
+msgstr[2] "# días"
+
+#: src/lib/data/stats.ts
+msgid "# year"
+msgid_plural "# years"
+msgstr[0] "# año"
+msgstr[1] "# de años"
+msgstr[2] "# años"
+
+#: src/lib/data/stats.ts
+msgid "Desktop"
+msgstr "Escritorio"
+
+#: src/lib/data/stats.ts
+msgid "Phone"
+msgstr "Teléfono"
+
+#: src/lib/data/stats.ts
+msgid "Tablet"
+msgstr "Tableta"
+
+#: src/lib/data/stats.ts
+msgid "TV"
+msgstr "TV"
+
+#: src/routes/admin/+page.svelte
+msgid "Never seen"
+msgstr "Nunca visto"
+
+#: src/routes/admin/+page.svelte
+msgid "# new episode"
+msgid_plural "# new episodes"
+msgstr[0] "# episodio nuevo"
+msgstr[1] "# de episodios nuevos"
+msgstr[2] "# episodios nuevos"
+
+#: src/routes/search/+page.svelte
+msgid "# result"
+msgid_plural "# results"
+msgstr[0] "# resultado"
+msgstr[1] "# de resultados"
+msgstr[2] "# resultados"
+
+#. 0: plural(count, ['# result', '# results']); 1: data.q
+#: src/routes/search/+page.svelte
+msgid "{0} for “{1}”"
+msgstr "{0} para “{1}”"
+
+#: src/lib/components/media/category-tile.svelte
+msgid "# film"
+msgid_plural "# films"
+msgstr[0] "# película"
+msgstr[1] "# de películas"
+msgstr[2] "# películas"
+
+#: src/lib/data/time.ts
+msgid "just now"
+msgstr "hace un momento"
+
+#. 0: plural(data.libraries.total, ['# library', '# libraries'])
+#: src/routes/admin/statistics/libraries/+page.svelte
+msgid "Active files per library; a title on several devices counts in each · {0}"
+msgstr "Archivos activos por biblioteca; un título en varios dispositivos cuenta en cada uno · {0}"
+
+#: src/lib/components/media/find-subtitles-panel.svelte
+msgid "# download"
+msgid_plural "# downloads"
+msgstr[0] "# descarga"
+msgstr[1] "# de descargas"
+msgstr[2] "# descargas"
+
+#: src/lib/components/media/watch-player.svelte
+msgid "direct play"
+msgstr "reproducción directa"
+
+#: src/lib/components/media/watch-player.svelte
+msgid "remuxed"
+msgstr "remuxeado"
+
+#: src/lib/components/media/watch-player.svelte
+msgid "transcoded"
+msgstr "transcodificado"
+
+#: src/routes/admin/statistics/libraries/+page.svelte
+msgid "Offline"
+msgstr "Sin conexión"
+
+#: src/lib/components/media/hero-banner.svelte
+msgid "Featured movie"
+msgstr "Película destacada"
+
+#: src/lib/components/media/hero-banner.svelte
+msgid "Featured series"
+msgstr "Serie destacada"
+
+#: src/routes/profiles/+page.svelte
+msgid "Several people can share this account, each with their own progress, watchlist and settings."
+msgstr "Varias personas pueden compartir esta cuenta, cada una con su propio progreso, Mi lista y ajustes."
+
+#: src/routes/profiles/+page.svelte
+msgid "Up to # person can share this account, with their own progress, watchlist and settings."
+msgid_plural "Up to # people can share this account, each with their own progress, watchlist and settings."
+msgstr[0] "Hasta # persona puede compartir esta cuenta, con su propio progreso, Mi lista y ajustes."
+msgstr[1] "Hasta # de personas pueden compartir esta cuenta, cada una con su propio progreso, Mi lista y ajustes."
+msgstr[2] "Hasta # personas pueden compartir esta cuenta, cada una con su propio progreso, Mi lista y ajustes."
+
+#. 0: data.maxProfiles === null ? 'Several people can share this account, each with their own progress, watchlist and settings.' \\: plural(data.maxProfiles, [ 'Up to # person can share this account, with their own progress, watchlist and settings.', 'Up to # people can share this account, each with their own progress, watchlist and settings.' ])
+#: src/routes/profiles/+page.svelte
+msgid "Choose a profile to rename it or change its look. {0}"
+msgstr "Elige un perfil para cambiarle el nombre o el aspecto. {0}"
+
+#: src/routes/admin/statistics/libraries/+page.svelte
+msgid "all time"
+msgstr "desde siempre"
+
+#: src/lib/together/notices.ts
+msgid "Someone"
+msgstr "Alguien"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} joined"
+msgstr "{0} se unió"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} left"
+msgstr "{0} se fue"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} pressed play"
+msgstr "{0} pulsó reproducir"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} paused"
+msgstr "{0} pausó"
+
+#. 0: name; 1: formatDurationUnits(event.position)
+#: src/lib/together/notices.ts
+msgid "{0} jumped to {1}"
+msgstr "{0} saltó a {1}"
+
+#. 0: name; 1: event.label
+#: src/lib/together/notices.ts
+msgid "{0} started {1}"
+msgstr "{0} puso {1}"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} changed the episode"
+msgstr "{0} cambió el episodio"
+
+#. 0: event.target
+#: src/lib/together/notices.ts
+msgid "{0} was removed"
+msgstr "Se expulsó a {0}"
+
+#. 0: name
+#: src/lib/together/notices.ts
+msgid "{0} is now the host"
+msgstr "{0} ahora es el anfitrión"
+
+#. 0: end.by
+#: src/lib/together/notices.ts
+msgid "{0} ended the watch party."
+msgstr "{0} terminó la sala de Ver juntos."
+
+#. 0: end.by
+#: src/lib/together/notices.ts
+msgid "{0} removed you from the watch party."
+msgstr "{0} te expulsó de la sala de Ver juntos."
+
+#: src/lib/together/notices.ts
+msgid "You were removed from this watch party."
+msgstr "Te expulsaron de esta sala de Ver juntos."
+
+#: src/lib/together/notices.ts
+msgid "Opened in another window."
+msgstr "Se abrió en otra ventana."
+
+#: src/lib/together/notices.ts
+msgid "Slow down a little."
+msgstr "Ve un poco más despacio."
+
+#: src/lib/data/preferences.ts
+msgid "Movie & series artwork"
+msgstr "Imágenes de películas y series"
+
+#: src/lib/data/preferences.ts
+msgid "Logo"
+msgstr "Logotipo"
+
+#: src/lib/data/preferences.ts
+msgid "# second"
+msgid_plural "# seconds"
+msgstr[0] "# segundo"
+msgstr[1] "# de segundos"
+msgstr[2] "# segundos"
+
+#: src/lib/data/preferences.ts
+msgid "# minute"
+msgid_plural "# minutes"
+msgstr[0] "# minuto"
+msgstr[1] "# de minutos"
+msgstr[2] "# minutos"
+
+#: src/lib/data/playback-settings.ts
+msgid "# hour"
+msgid_plural "# hours"
+msgstr[0] "# hora"
+msgstr[1] "# de horas"
+msgstr[2] "# horas"
+
+#: src/lib/data/playback-settings.ts
+msgid "Auto"
+msgstr "Automático"
+
+#: src/lib/data/playback-settings.ts
+msgid "5.1 surround"
+msgstr "5.1 envolvente"
+
+#: src/lib/data/device-events.ts
+msgid "Files changed on the device"
+msgstr "Cambiaron archivos en el dispositivo"
+
+#: src/lib/data/device-events.ts
+msgid "Scheduled rescan"
+msgstr "Escaneo programado"
+
+#: src/lib/data/device-events.ts
+msgid "Device reconnected"
+msgstr "Dispositivo reconectado"
+
+#: src/lib/data/device-events.ts
+msgid "Device paired"
+msgstr "Dispositivo vinculado"
+
+#: src/lib/data/device-events.ts
+msgid "Device renamed"
+msgstr "Dispositivo renombrado"
+
+#: src/lib/data/device-events.ts
+msgid "Device revoked"
+msgstr "Dispositivo revocado"
+
+#: src/lib/data/device-events.ts
+msgid "Library added"
+msgstr "Biblioteca añadida"
+
+#: src/lib/data/device-events.ts
+msgid "Library removed"
+msgstr "Biblioteca eliminada"
+
+#: src/lib/data/device-events.ts
+msgid "Scan started"
+msgstr "Escaneo iniciado"
+
+#: src/lib/data/device-events.ts
+msgid "Scan finished"
+msgstr "Escaneo finalizado"
+
+#: src/lib/data/device-events.ts
+msgid "Thumbnails started"
+msgstr "Generación de miniaturas iniciada"
+
+#: src/lib/data/device-events.ts
+msgid "Intro & credits detection started"
+msgstr "Detección de intro y créditos iniciada"
+
+#. 0: formatElapsed(ms)
+#: src/lib/data/device-events.ts
+msgid "took {0}"
+msgstr "tardó {0}"
+
+#: src/lib/data/device-events.ts
+msgid "# file left the catalog"
+msgid_plural "# files left the catalog"
+msgstr[0] "# archivo salió del catálogo"
+msgstr[1] "# de archivos salieron del catálogo"
+msgstr[2] "# archivos salieron del catálogo"
+
+#: src/lib/data/device-events.ts
+msgid "# new or changed"
+msgid_plural "# new or changed"
+msgstr[0] "# nuevo o modificado"
+msgstr[1] "# nuevos o modificados"
+msgstr[2] "# nuevos o modificados"
+
+#: src/lib/data/device-events.ts
+msgid "# missing"
+msgid_plural "# missing"
+msgstr[0] "# ausente"
+msgstr[1] "# ausentes"
+msgstr[2] "# ausentes"
+
+#: src/lib/data/device-events.ts
+msgid "# file found"
+msgid_plural "# files found"
+msgstr[0] "# archivo encontrado"
+msgstr[1] "# de archivos encontrados"
+msgstr[2] "# archivos encontrados"
+
+#: src/lib/data/device-events.ts
+msgid "some folders couldn’t be read"
+msgstr "no se pudieron leer algunas carpetas"
+
+#: src/lib/data/device-events.ts
+msgid "# error"
+msgid_plural "# errors"
+msgstr[0] "# error"
+msgstr[1] "# de errores"
+msgstr[2] "# errores"
+
+#: src/lib/data/device-events.ts
+msgid "# generated"
+msgid_plural "# generated"
+msgstr[0] "# generado"
+msgstr[1] "# generados"
+msgstr[2] "# generados"
+
+#: src/lib/data/device-events.ts
+msgid "# already had them"
+msgid_plural "# already had them"
+msgstr[0] "# ya las tenía"
+msgstr[1] "# ya las tenían"
+msgstr[2] "# ya las tenían"
+
+#: src/lib/data/device-events.ts
+#: src/lib/data/device-events.ts
+msgid "# failed"
+msgid_plural "# failed"
+msgstr[0] "# fallido"
+msgstr[1] "# fallidos"
+msgstr[2] "# fallidos"
+
+#: src/lib/data/device-events.ts
+msgid "# file analysed"
+msgid_plural "# files analysed"
+msgstr[0] "# archivo analizado"
+msgstr[1] "# de archivos analizados"
+msgstr[2] "# archivos analizados"
+
+#: src/lib/data/device-events.ts
+msgid "# intro"
+msgid_plural "# intros"
+msgstr[0] "# intro"
+msgstr[1] "# de intros"
+msgstr[2] "# intros"
+
+#: src/lib/data/device-events.ts
+msgid "# with credits"
+msgid_plural "# with credits"
+msgstr[0] "# con créditos"
+msgstr[1] "# con créditos"
+msgstr[2] "# con créditos"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Teal"
+msgstr "Verde azulado"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Blue"
+msgstr "Azul"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Indigo"
+msgstr "Índigo"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Violet"
+msgstr "Violeta"
+
+#: src/lib/data/branding.ts
+msgid "Rose"
+msgstr "Rosa"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Orange"
+msgstr "Naranja"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+msgid "Amber"
+msgstr "Ámbar"
+
+#: src/lib/data/branding.ts
+#: src/lib/data/profiles.ts
+#: src/lib/data/subtitle-settings.ts
+msgid "Green"
+msgstr "Verde"
+
+#: src/lib/data/library-scanning.ts
+msgid "Every hour"
+msgid_plural "Every # hours"
+msgstr[0] "Cada hora"
+msgstr[1] "Cada # de horas"
+msgstr[2] "Cada # horas"
+
+#: src/lib/data/markers.ts
+msgid "Show a skip button"
+msgstr "Mostrar un botón para saltar"
+
+#: src/lib/data/markers.ts
+msgid "Skip automatically"
+msgstr "Saltar automáticamente"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Small"
+msgstr "Pequeño"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Medium"
+msgstr "Mediano"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Large"
+msgstr "Grande"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Extra large"
+msgstr "Muy grande"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "White"
+msgstr "Blanco"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Yellow"
+msgstr "Amarillo"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Cyan"
+msgstr "Cian"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Magenta"
+msgstr "Magenta"
+
+#: src/lib/data/profiles.ts
+#: src/lib/data/subtitle-settings.ts
+msgid "Red"
+msgstr "Rojo"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Black"
+msgstr "Negro"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Sans-serif"
+msgstr "Sans serif"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Serif"
+msgstr "Serif"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Monospace"
+msgstr "Monoespaciada"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "Casual"
+msgstr "Informal"
+
+#: src/lib/data/subtitle-settings.ts
+msgid "# line up"
+msgid_plural "# lines up"
+msgstr[0] "# línea más arriba"
+msgstr[1] "# de líneas más arriba"
+msgstr[2] "# líneas más arriba"
+
+#: src/lib/data/profiles.ts
+msgid "Sky"
+msgstr "Celeste"
+
+#: src/lib/data/profiles.ts
+msgid "Pink"
+msgstr "Rosa"
+
+#: src/lib/data/profiles.ts
+msgid "Lime"
+msgstr "Lima"
+
+#: src/lib/data/profiles.ts
+msgid "Slate"
+msgstr "Pizarra"
+
+#: src/lib/data/profiles.ts
+msgid "Smile"
+msgstr "Sonrisa"
+
+#: src/lib/data/profiles.ts
+msgid "Star"
+msgstr "Estrella"
+
+#: src/lib/data/profiles.ts
+msgid "Heart"
+msgstr "Corazón"
+
+#: src/lib/data/profiles.ts
+msgid "Crown"
+msgstr "Corona"
+
+#: src/lib/data/profiles.ts
+msgid "Rocket"
+msgstr "Cohete"
+
+#: src/lib/data/profiles.ts
+msgid "Ghost"
+msgstr "Fantasma"
+
+#: src/lib/data/profiles.ts
+msgid "Cat"
+msgstr "Gato"
+
+#: src/lib/data/profiles.ts
+msgid "Alien"
+msgstr "Alienígena"
+
+#: src/lib/data/profiles.ts
+msgid "Robot"
+msgstr "Robot"
+
+#: src/lib/data/profiles.ts
+msgid "Game controller"
+msgstr "Mando de videojuegos"
+
+#: src/lib/data/profiles.ts
+msgid "Popcorn"
+msgstr "Palomitas"
+
+#: src/lib/data/profiles.ts
+msgid "Music"
+msgstr "Música"
+
+#: src/lib/data/profiles.ts
+msgid "Panda"
+msgstr "Panda"
+
+#: src/lib/data/profiles.ts
+msgid "Rabbit"
+msgstr "Conejo"
+
+#: src/lib/data/profiles.ts
+msgid "Pizza"
+msgstr "Pizza"
+
+#: src/lib/data/profiles.ts
+msgid "Ice cream"
+msgstr "Helado"
+
+#: src/lib/data/profiles.ts
+msgid "Football"
+msgstr "Fútbol"
+
+#: src/lib/data/profiles.ts
+msgid "Guitar"
+msgstr "Guitarra"
+
+#: src/lib/data/profiles.ts
+msgid "Rainbow"
+msgstr "Arcoíris"
+
+#: src/lib/data/profiles.ts
+msgid "Flower"
+msgstr "Flor"
+
+#: src/lib/playback-quality.ts
+msgid "Original"
+msgstr "Original"
+
+#. 0: names[0]; 1: names[1]; 0: names[0]; 1: names[1]
+#: src/lib/data/together.ts
+msgid "{0}, {1} and # other"
+msgid_plural "{0}, {1} and # others"
+msgstr[0] "{0}, {1} y # más"
+msgstr[1] "{0}, {1} y # más"
+msgstr[2] "{0}, {1} y # más"
+
+#: src/lib/server/profiles.ts
+msgid "Enter a name."
+msgstr "Escribe un nombre."
+
+#. 0: PROFILE_NAME_MAX + 1
+#: src/lib/server/profiles.ts
+msgid "Keep the name under {0} characters."
+msgstr "El nombre debe tener menos de {0} caracteres."
+
+#: src/lib/server/profiles.ts
+msgid "Pick a color."
+msgstr "Elige un color."
+
+#: src/lib/server/profiles.ts
+msgid "Pick an icon."
+msgstr "Elige un icono."
+
+#: src/lib/server/profiles.ts
+msgid "Another profile on this account already has that name."
+msgstr "Otro perfil de esta cuenta ya tiene ese nombre."
+
+#: src/lib/server/profiles.ts
+#: src/lib/server/together/identity.ts
+msgid "Sign in to continue."
+msgstr "Inicia sesión para continuar."
+
+#: src/lib/server/profiles.ts
+msgid "Choose a profile first."
+msgstr "Primero elige un perfil."
+
+#: src/routes/api/progress/dismiss/+server.ts
+#: src/routes/api/progress/watched/+server.ts
+#: src/routes/api/together/+server.ts
+#: src/routes/api/together/+server.ts
+#: src/routes/api/watchlist/+server.ts
+msgid "Title not found"
+msgstr "Título no encontrado"
+
+#: src/routes/api/watchlist/+server.ts
+msgid "Sign in to use your watchlist."
+msgstr "Inicia sesión para usar Mi lista."
+
+#: src/routes/api/progress/dismiss/+server.ts
+msgid "Sign in to manage Continue watching."
+msgstr "Inicia sesión para gestionar Seguir viendo."
+
+#: src/routes/api/progress/watched/+server.ts
+msgid "Sign in to mark titles as watched."
+msgstr "Inicia sesión para marcar títulos como vistos."
+
+#: src/routes/api/playback/start/+server.ts
+msgid "Sign in to watch."
+msgstr "Inicia sesión para ver."
+
+#: src/routes/api/playback/start/+server.ts
+msgid "The device holding this title is offline right now."
+msgstr "El dispositivo que tiene este título está sin conexión en este momento."
+
+#: src/routes/api/playback/start/+server.ts
+msgid "No media file is linked to this title. Add it to a library on a device and rescan."
+msgstr "No hay ningún archivo multimedia vinculado a este título. Añádelo a una biblioteca de un dispositivo y vuelve a escanear."
+
+#: src/routes/api/subtitles/download/+server.ts
+msgid "Sign in to download subtitles."
+msgstr "Inicia sesión para descargar subtítulos."
+
+#. 0: THROTTLE_MAX
+#: src/routes/api/subtitles/download/+server.ts
+msgid "You've downloaded {0} subtitles in the last 10 minutes; please wait a little."
+msgstr "Has descargado {0} subtítulos en los últimos 10 minutos; espera un poco."
+
+#: src/routes/api/subtitles/download/+server.ts
+#: src/routes/api/subtitles/search/+server.ts
+msgid "This title is missing from the catalog."
+msgstr "Este título no está en el catálogo."
+
+#: src/routes/api/subtitles/search/+server.ts
+msgid "Sign in to search for subtitles."
+msgstr "Inicia sesión para buscar subtítulos."
+
+#: src/routes/api/subtitles/search/+server.ts
+msgid "No media file is linked to this title."
+msgstr "No hay ningún archivo multimedia vinculado a este título."
+
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+#: src/routes/admin/settings/+page.svelte
+msgid "# series"
+msgid_plural "# series"
+msgstr[0] "# serie"
+msgstr[1] "# de series"
+msgstr[2] "# series"
+
+#. 0: plural(form.pruned.movies, ['# movie', '# movies']); 1: plural( form.pruned.series, ['# series', '# series'] ); 2: plural(form.pruned.episodes, ['# episode', '# episodes'])
+#: src/routes/admin/settings/+page.svelte
+msgid "Removed {0} and {1} ({2})."
+msgstr "Se eliminaron {0} y {1} ({2})."
+
+#. 0: orphanMovies; 1: orphanSeries
+#: src/routes/admin/settings/+page.svelte
+msgid "{0} and {1} have no media files (placeholder titles, or files from a removed library). Titles are also pruned automatically when a scan finishes."
+msgstr "{0} y {1} no tienen archivos multimedia (títulos de relleno o archivos de una biblioteca eliminada). Los títulos también se depuran automáticamente al terminar un escaneo."
+
+#. 0: pendingMovies; 1: pendingSeries; 2: pendingEpisodes
+#: src/routes/admin/settings/+page.svelte
+msgid "Fetching metadata from TMDB… ({0}, {1}, {2} pending)"
+msgstr "Obteniendo metadatos de TMDB… ({0}, {1}, {2} pendientes)"
+
+#. 0: pendingMovies; 1: pendingSeries; 2: pendingEpisodes
+#: src/routes/admin/settings/+page.svelte
+msgid "TMDB configured · {0}, {1} and {2} are waiting for metadata (fetched after the next scan, or refresh now)."
+msgstr "TMDB configurado · {0}, {1} y {2} esperan metadatos (se obtienen tras el próximo escaneo, o actualiza ahora)."
+
+#. 0: orphanMovies; 1: orphanSeries
+#: src/routes/admin/settings/+page.svelte
+msgid "{0} and {1} have no media file on any device. They leave the catalog, and their watch progress and watchlist entries go with them. Nothing is deleted from your devices."
+msgstr "{0} y {1} no tienen archivos multimedia en ningún dispositivo. Salen del catálogo, junto con su progreso de visionado y sus entradas en Mi lista. No se elimina nada de tus dispositivos."
+
+#: src/routes/admin/subtitles/+page.svelte
+msgid "# subtitle downloaded so far"
+msgid_plural "# subtitles downloaded so far"
+msgstr[0] "# subtítulo descargado hasta ahora"
+msgstr[1] "# de subtítulos descargados hasta ahora"
+msgstr[2] "# subtítulos descargados hasta ahora"
+
+#: src/routes/admin/subtitles/+page.svelte
+msgid "# search without a result"
+msgid_plural "# searches without a result"
+msgstr[0] "# búsqueda sin resultados"
+msgstr[1] "# de búsquedas sin resultados"
+msgstr[2] "# búsquedas sin resultados"
+
+#: src/routes/admin/statistics/users/+page.svelte
+#: src/routes/admin/users/+page.svelte
+msgid "# account"
+msgid_plural "# accounts"
+msgstr[0] "# cuenta"
+msgstr[1] "# de cuentas"
+msgstr[2] "# cuentas"
+
+#: src/routes/admin/users/+page.svelte
+msgid "# administrator"
+msgid_plural "# administrators"
+msgstr[0] "# administrador"
+msgstr[1] "# de administradores"
+msgstr[2] "# administradores"
+
+#: src/routes/admin/users/+page.svelte
+msgid "# banned"
+msgid_plural "# banned"
+msgstr[0] "# bloqueado"
+msgstr[1] "# bloqueados"
+msgstr[2] "# bloqueados"
+
+#: src/routes/admin/users/+page.svelte
+msgid "# profile"
+msgid_plural "# profiles"
+msgstr[0] "# perfil"
+msgstr[1] "# de perfiles"
+msgstr[2] "# perfiles"
+
+#: src/routes/admin/statistics/+page.svelte
+msgid "of plays"
+msgstr "de las reproducciones"
+
+#: src/routes/admin/statistics/+page.svelte
+msgid "# stream"
+msgid_plural "# streams"
+msgstr[0] "# transmisión"
+msgstr[1] "# de transmisiones"
+msgstr[2] "# transmisiones"
+
+#. 0: plural(streams.length, ['# stream', '# streams']); 1: transcoding; 2: formatBitrate( bandwidth )
+#: src/routes/admin/statistics/+page.svelte
+msgid "{0} · {1} transcoding · {2}"
+msgstr "{0} · {1} transcodificando · {2}"
+
+#: src/routes/admin/statistics/+page.svelte
+msgid "# viewer"
+msgid_plural "# viewers"
+msgstr[0] "# espectador"
+msgstr[1] "# de espectadores"
+msgstr[2] "# espectadores"
+
+#. 0: first; 1: last; 2: plural(data.history.total, ['# play', '# plays'])
+#: src/routes/admin/statistics/history/+page.svelte
+msgid "{0}–{1} of {2}"
+msgstr "{0}–{1} de {2}"
+
+#. 0: plural(data.total, [ '# account', '# accounts' ])
+#: src/routes/admin/statistics/users/+page.svelte
+msgid "Every account's activity and watch totals, all time · {0}"
+msgstr "Actividad y totales de visionado de cada cuenta, desde siempre · {0}"
+
+#. 0: first; 1: last; 2: plural(data.recent.total, ['# play', '# plays'])
+#: src/routes/admin/statistics/users/[id]/+page.svelte
+msgid "{0}–{1} of {2} · <0>View in history</0>"
+msgstr "{0}–{1} de {2} · <0>Ver en el historial</0>"
+
+#. 0: hours
+#: src/lib/data/time.ts
+msgid "{0}h"
+msgstr "{0}h"
+
+#. 0: minutes
+#: src/lib/data/time.ts
+msgid "{0}m"
+msgstr "{0}min"
+
+#. 0: seconds
+#: src/lib/data/time.ts
+msgid "{0}s"
+msgstr "{0}s"
+
+#. 0: branding().appName
+#: src/routes/settings/preferences/+page.svelte
+msgid "Changes the language of {0} for this profile. Movie and series titles and descriptions stay in English."
+msgstr "Cambia el idioma de {0} para este perfil. Los títulos y las descripciones de películas y series se mantienen en inglés."
+
+#: src/lib/auth-messages.ts
+msgid "Wrong email or password."
+msgstr "Correo electrónico o contraseña incorrectos."
+
+#: src/lib/auth-messages.ts
+msgid "Enter a valid email address."
+msgstr "Introduce un correo electrónico válido."
+
+#: src/lib/auth-messages.ts
+msgid "This account has been suspended. Ask an administrator for help."
+msgstr "Esta cuenta está suspendida. Pide ayuda a un administrador."
+
+#: src/lib/auth-messages.ts
+msgid "That password is too short."
+msgstr "Esa contraseña es demasiado corta."
+
+#: src/lib/auth-messages.ts
+msgid "That password is too long."
+msgstr "Esa contraseña es demasiado larga."
+
+#: src/lib/auth-messages.ts
+msgid "An account with that email already exists."
+msgstr "Ya existe una cuenta con ese correo electrónico."
+
+#: src/lib/auth-messages.ts
+msgid "Registration is closed on this server."
+msgstr "El registro está cerrado en este servidor."
+
+#: src/lib/auth-messages.ts
+msgid "Sign in failed. Try again."
+msgstr "No se pudo iniciar sesión. Vuelve a intentarlo."
+
+#: src/lib/auth-messages.ts
+msgid "Sign up failed. Try again."
+msgstr "No se pudo crear la cuenta. Vuelve a intentarlo."
+
+#: src/lib/auth-messages.ts
+msgid "That password is wrong."
+msgstr "Esa contraseña no es correcta."
+
+#: src/lib/auth-messages.ts
+msgid "Your changes weren’t saved. Try again."
+msgstr "No se guardaron los cambios. Vuelve a intentarlo."

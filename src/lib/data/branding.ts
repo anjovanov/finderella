@@ -5,6 +5,8 @@
  * hook share one source for the options and the CSS they map to.
  */
 
+import { labeled } from '$lib/labels';
+
 export const APP_NAME_MAX = 32;
 export const TAGLINE_MAX = 120;
 
@@ -24,39 +26,41 @@ export interface AccentPreset {
 
 /** Hand-tuned oklch pairs; teal is the stock theme (layout.css), byte for byte. */
 export const ACCENT_PRESETS = [
-	accent('teal', 'Teal', 215, [0.55, 0.12], 210, [0.78, 0.12], 220),
-	accent('blue', 'Blue', 255, [0.55, 0.17], 250, [0.76, 0.12]),
-	accent('indigo', 'Indigo', 275, [0.51, 0.19], 275, [0.75, 0.12]),
-	accent('violet', 'Violet', 295, [0.53, 0.2], 300, [0.77, 0.13]),
-	accent('rose', 'Rose', 10, [0.56, 0.19], 10, [0.77, 0.13]),
-	accent('orange', 'Orange', 45, [0.58, 0.16], 50, [0.78, 0.14]),
-	accent('amber', 'Amber', 65, [0.58, 0.13], 75, [0.83, 0.14]),
-	accent('green', 'Green', 150, [0.55, 0.14], 150, [0.79, 0.15])
+	accent('teal', () => 'Teal', 215, [0.55, 0.12], 210, [0.78, 0.12], 220),
+	accent('blue', () => 'Blue', 255, [0.55, 0.17], 250, [0.76, 0.12]),
+	accent('indigo', () => 'Indigo', 275, [0.51, 0.19], 275, [0.75, 0.12]),
+	accent('violet', () => 'Violet', 295, [0.53, 0.2], 300, [0.77, 0.13]),
+	accent('rose', () => 'Rose', 10, [0.56, 0.19], 10, [0.77, 0.13]),
+	accent('orange', () => 'Orange', 45, [0.58, 0.16], 50, [0.78, 0.14]),
+	accent('amber', () => 'Amber', 65, [0.58, 0.13], 75, [0.83, 0.14]),
+	accent('green', () => 'Green', 150, [0.55, 0.14], 150, [0.79, 0.15])
 ] as const satisfies readonly AccentPreset[];
 
 export type AccentId = (typeof ACCENT_PRESETS)[number]['value'];
 
 function accent<V extends string>(
 	value: V,
-	label: string,
+	label: () => string,
 	lightHue: number,
 	[lightL, lightC]: [number, number],
 	darkHue: number,
 	[darkL, darkC]: [number, number],
 	darkForegroundHue = darkHue
 ): AccentPreset & { value: V } {
-	return {
-		value,
-		label,
-		light: {
-			primary: `oklch(${lightL} ${lightC} ${lightHue})`,
-			primaryForeground: `oklch(0.99 0.005 ${lightHue})`
+	return labeled(
+		{
+			value,
+			light: {
+				primary: `oklch(${lightL} ${lightC} ${lightHue})`,
+				primaryForeground: `oklch(0.99 0.005 ${lightHue})`
+			},
+			dark: {
+				primary: `oklch(${darkL} ${darkC} ${darkHue})`,
+				primaryForeground: `oklch(0.15 0.03 ${darkForegroundHue})`
+			}
 		},
-		dark: {
-			primary: `oklch(${darkL} ${darkC} ${darkHue})`,
-			primaryForeground: `oklch(0.15 0.03 ${darkForegroundHue})`
-		}
-	};
+		label
+	);
 }
 
 export interface FontOption {

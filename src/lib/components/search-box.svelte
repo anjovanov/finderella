@@ -64,7 +64,8 @@
 			results = hits;
 			errorMessage = null;
 		} catch (err) {
-			if (mySeq !== seq || (err instanceof DOMException && err.name === 'AbortError')) return;
+			const aborted = err instanceof DOMException && err.name === /* @wc-ignore */ 'AbortError';
+			if (mySeq !== seq || aborted) return;
 			results = [];
 			errorMessage = err instanceof Error ? err.message : 'Search failed';
 		} finally {
@@ -103,6 +104,8 @@
 	}
 
 	function onkeydown(event: KeyboardEvent) {
+		// Key names, not UI text: keep them out of the translation catalog.
+		/* @wc-ignore */
 		switch (event.key) {
 			case 'ArrowDown':
 			case 'ArrowUp': {

@@ -27,6 +27,7 @@
 	} from '$lib/components/devices/types';
 	import { formatRelative } from '$lib/data/time';
 	import { DialogForm } from '$lib/dialog-form.svelte';
+	import plural from '$lib/plural';
 
 	let { data, form } = $props();
 
@@ -84,13 +85,11 @@
 			(n, d) => n + d.libraries.reduce((m, lib) => m + lib.files, 0),
 			0
 		);
-		const plural = (n: number, word: string) =>
-			`${n.toLocaleString()} ${n === 1 ? word : `${word}s`}`;
 		return [
-			plural(devices, 'device'),
-			`${online} online`,
-			libraries === 1 ? '1 library' : `${libraries} libraries`,
-			plural(files, 'file')
+			plural(devices, ['# device', '# devices']),
+			plural(online, ['# online', '# online']),
+			plural(libraries, ['# library', '# libraries']),
+			plural(files, ['# file', '# files'])
 		].join(' · ');
 	});
 
@@ -339,9 +338,10 @@
 			<AlertDialog.Header>
 				<AlertDialog.Title>Remove {removeLibrary.target.name}?</AlertDialog.Title>
 				<AlertDialog.Description>
-					Its {removeLibrary.target.files.toLocaleString()}
-					{removeLibrary.target.files === 1 ? 'file leaves' : 'files leave'} the catalog. Nothing is deleted
-					from the device, and you can add the folder again later.
+					{plural(removeLibrary.target.files, [
+						'Its # file leaves the catalog. Nothing is deleted from the device, and you can add the folder again later.',
+						'Its # files leave the catalog. Nothing is deleted from the device, and you can add the folder again later.'
+					])}
 				</AlertDialog.Description>
 			</AlertDialog.Header>
 			{#if removeLibrary.error}<p class="text-sm text-destructive">{removeLibrary.error}</p>{/if}

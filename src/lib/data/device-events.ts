@@ -1,7 +1,12 @@
 /**
  * The Devices page's activity log — client-safe types and wording. The schema
- * (`device_event`) imports the type list from here.
+ * (`device_event`) imports the type list from here. Events are stored as data
+ * (type + detail) and worded here at display time, in the viewer's language.
  */
+
+import { labelTable } from '$lib/labels';
+import plural from '$lib/plural';
+import { formatUnits } from './time';
 
 export const DEVICE_EVENT_TYPES = [
 	'device.paired',
@@ -30,25 +35,26 @@ export interface DeviceEventEntry {
 }
 
 /** Why an automatic scan ran (`scan.finished` detail.reason). */
-const SCAN_TRIGGERS: Record<string, string> = {
-	watch: 'Files changed on the device',
-	scheduled: 'Scheduled rescan',
-	reconnect: 'Device reconnected'
-};
+function scanTrigger(reason: string | null): string | null {
+	if (reason === 'watch') return 'Files changed on the device';
+	if (reason === 'scheduled') return 'Scheduled rescan';
+	if (reason === 'reconnect') return 'Device reconnected';
+	return null;
+}
 
-export const DEVICE_EVENT_LABELS: Record<DeviceEventType, string> = {
-	'device.paired': 'Device paired',
-	'device.renamed': 'Device renamed',
-	'device.revoked': 'Device revoked',
-	'library.added': 'Library added',
-	'library.removed': 'Library removed',
-	'scan.started': 'Scan started',
-	'scan.finished': 'Scan finished',
-	'thumbnails.started': 'Thumbnails started',
-	'thumbnails.finished': 'Thumbnails finished',
-	'markers.started': 'Intro & credits detection started',
-	'markers.finished': 'Intro & credits detection finished'
-};
+export const DEVICE_EVENT_LABELS: Record<DeviceEventType, string> = labelTable({
+	'device.paired': () => 'Device paired',
+	'device.renamed': () => 'Device renamed',
+	'device.revoked': () => 'Device revoked',
+	'library.added': () => 'Library added',
+	'library.removed': () => 'Library removed',
+	'scan.started': () => 'Scan started',
+	'scan.finished': () => 'Scan finished',
+	'thumbnails.started': () => 'Thumbnails started',
+	'thumbnails.finished': () => 'Thumbnails finished',
+	'markers.started': () => 'Intro & credits detection started',
+	'markers.finished': () => 'Intro & credits detection finished'
+});
 
 /** Which part of the system an event is about (drives the icon and tint). */
 export type DeviceEventGroup = 'device' | 'library' | 'scan' | 'thumbnails' | 'markers';
@@ -65,19 +71,19 @@ function str(value: unknown): string | null {
 	return typeof value === 'string' && value ? value : null;
 }
 
-function plural(n: number, word: string): string {
-	return `${n.toLocaleString('en-US')} ${n === 1 ? word : `${word}s`}`;
-}
-
-/** "1m 5s", "12s", "2h 3m" — how long a scan or job ran. */
+/** "1m 5s", "12s", "2h 3m" — how long a scan or job ran (seconds dropped from an hour up). */
 export function formatElapsed(ms: number): string {
 	const s = Math.max(0, Math.round(ms / 1000));
-	const h = Math.floor(s / 3600);
-	const m = Math.floor((s % 3600) / 60);
-	const sec = s % 60;
-	if (h) return m ? `${h}h ${m}m` : `${h}h`;
-	if (m) return sec ? `${m}m ${sec}s` : `${m}m`;
-	return `${sec}s`;
+	const hours = Math.floor(s / 3600);
+	return formatUnits(
+		{ hours, minutes: Math.floor((s % 3600) / 60), seconds: hours ? 0 : s % 60 },
+		'seconds'
+	);
+}
+
+/** "took 1m 5s" — the last part of a finished scan or job. */
+function took(ms: number): string {
+	return /* @wc-include */ `took ${formatElapsed(ms)}`;
 }
 
 /** One line of detail for an entry, or null when the event says it all. */
@@ -98,7 +104,9 @@ export function describeDeviceEvent(
 		}
 		case 'library.removed': {
 			const files = num(d.files);
-			return files === null ? null : `${plural(files, 'file')} left the catalog`;
+			return files === null
+				? null
+				: plural(files, ['# file left the catalog', '# files left the catalog']);
 		}
 		case 'scan.started':
 			return d.reason === 'library-added'
@@ -108,19 +116,21 @@ export function describeDeviceEvent(
 					: null;
 		case 'scan.finished': {
 			const parts: string[] = [];
-			const trigger = SCAN_TRIGGERS[str(d.reason) ?? ''];
+			const trigger = scanTrigger(str(d.reason));
 			const files = num(d.files);
 			const changed = num(d.changed);
 			const missing = num(d.missing);
 			const errors = num(d.errors);
 			const ms = num(d.durationMs);
 			if (trigger) parts.push(trigger);
-			if (changed) parts.push(`${changed.toLocaleString()} new or changed`);
-			if (missing) parts.push(`${missing.toLocaleString()} missing`);
-			if (files !== null) parts.push(`${plural(files, 'file')} found`);
-			if (d.incomplete === true) parts.push('some folders couldn’t be read');
-			if (errors) parts.push(plural(errors, 'error'));
-			if (ms !== null) parts.push(`took ${formatElapsed(ms)}`);
+			// Counts go through plural() even where English has one form, so a
+			// translation can agree with the number.
+			if (changed) parts.push(plural(changed, ['# new or changed', '# new or changed']));
+			if (missing) parts.push(plural(missing, ['# missing', '# missing']));
+			if (files !== null) parts.push(plural(files, ['# file found', '# files found']));
+			if (d.incomplete === true) parts.push(/* @wc-include */ 'some folders couldn’t be read');
+			if (errors) parts.push(plural(errors, ['# error', '# errors']));
+			if (ms !== null) parts.push(took(ms));
 			return parts.join(' · ') || null;
 		}
 		case 'thumbnails.finished': {
@@ -130,10 +140,10 @@ export function describeDeviceEvent(
 			const ready = num(d.alreadyReady);
 			const failed = num(d.failed);
 			const ms = num(d.durationMs);
-			if (generated !== null) parts.push(`${generated.toLocaleString('en-US')} generated`);
-			if (ready) parts.push(`${ready.toLocaleString('en-US')} already had them`);
-			if (failed) parts.push(`${failed.toLocaleString('en-US')} failed`);
-			if (ms !== null) parts.push(`took ${formatElapsed(ms)}`);
+			if (generated !== null) parts.push(plural(generated, ['# generated', '# generated']));
+			if (ready) parts.push(plural(ready, ['# already had them', '# already had them']));
+			if (failed) parts.push(plural(failed, ['# failed', '# failed']));
+			if (ms !== null) parts.push(took(ms));
 			const error = str(d.error);
 			if (error) parts.push(error);
 			return parts.join(' · ') || null;
@@ -146,11 +156,12 @@ export function describeDeviceEvent(
 			const credits = num(d.credits);
 			const failed = num(d.failed);
 			const ms = num(d.durationMs);
-			if (processed !== null) parts.push(`${plural(processed, 'file')} analysed`);
-			if (intros !== null) parts.push(`${plural(intros, 'intro')}`);
-			if (credits !== null) parts.push(`${credits.toLocaleString('en-US')} with credits`);
-			if (failed) parts.push(`${failed.toLocaleString('en-US')} failed`);
-			if (ms !== null) parts.push(`took ${formatElapsed(ms)}`);
+			if (processed !== null)
+				parts.push(plural(processed, ['# file analysed', '# files analysed']));
+			if (intros !== null) parts.push(plural(intros, ['# intro', '# intros']));
+			if (credits !== null) parts.push(plural(credits, ['# with credits', '# with credits']));
+			if (failed) parts.push(plural(failed, ['# failed', '# failed']));
+			if (ms !== null) parts.push(took(ms));
 			return parts.join(' · ') || null;
 		}
 		default:

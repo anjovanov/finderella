@@ -4,22 +4,25 @@
  * the server stores them in the `profile` table (see $lib/server/profiles).
  */
 
+import { currentLocale } from '$lib/data/locale';
+import { labelTable, labeled } from '$lib/labels';
+
 export const PROFILE_NAME_MAX = 30;
 
 /** Avatar backgrounds. Mid-lightness so white text/icons read in both themes. */
 export const PROFILE_COLORS = [
-	{ value: 'teal', label: 'Teal', css: 'oklch(0.6 0.11 205)' },
-	{ value: 'sky', label: 'Sky', css: 'oklch(0.64 0.13 235)' },
-	{ value: 'blue', label: 'Blue', css: 'oklch(0.56 0.15 255)' },
-	{ value: 'indigo', label: 'Indigo', css: 'oklch(0.5 0.17 275)' },
-	{ value: 'violet', label: 'Violet', css: 'oklch(0.55 0.17 295)' },
-	{ value: 'pink', label: 'Pink', css: 'oklch(0.6 0.17 350)' },
-	{ value: 'red', label: 'Red', css: 'oklch(0.57 0.18 25)' },
-	{ value: 'orange', label: 'Orange', css: 'oklch(0.65 0.16 50)' },
-	{ value: 'amber', label: 'Amber', css: 'oklch(0.7 0.14 80)' },
-	{ value: 'lime', label: 'Lime', css: 'oklch(0.66 0.16 130)' },
-	{ value: 'green', label: 'Green', css: 'oklch(0.6 0.14 150)' },
-	{ value: 'slate', label: 'Slate', css: 'oklch(0.5 0.03 255)' }
+	labeled({ value: 'teal', css: 'oklch(0.6 0.11 205)' }, () => 'Teal'),
+	labeled({ value: 'sky', css: 'oklch(0.64 0.13 235)' }, () => 'Sky'),
+	labeled({ value: 'blue', css: 'oklch(0.56 0.15 255)' }, () => 'Blue'),
+	labeled({ value: 'indigo', css: 'oklch(0.5 0.17 275)' }, () => 'Indigo'),
+	labeled({ value: 'violet', css: 'oklch(0.55 0.17 295)' }, () => 'Violet'),
+	labeled({ value: 'pink', css: 'oklch(0.6 0.17 350)' }, () => 'Pink'),
+	labeled({ value: 'red', css: 'oklch(0.57 0.18 25)' }, () => 'Red'),
+	labeled({ value: 'orange', css: 'oklch(0.65 0.16 50)' }, () => 'Orange'),
+	labeled({ value: 'amber', css: 'oklch(0.7 0.14 80)' }, () => 'Amber'),
+	labeled({ value: 'lime', css: 'oklch(0.66 0.16 130)' }, () => 'Lime'),
+	labeled({ value: 'green', css: 'oklch(0.6 0.14 150)' }, () => 'Green'),
+	labeled({ value: 'slate', css: 'oklch(0.5 0.03 255)' }, () => 'Slate')
 ] as const;
 export type ProfileColor = (typeof PROFILE_COLORS)[number]['value'];
 export const PROFILE_COLOR_VALUES = PROFILE_COLORS.map((c) => c.value) as ProfileColor[];
@@ -51,28 +54,28 @@ export const PROFILE_ICONS = [
 export type ProfileIcon = (typeof PROFILE_ICONS)[number];
 
 /** Tooltip / screen-reader names for the icon picker. */
-export const PROFILE_ICON_LABELS: Record<ProfileIcon, string> = {
-	smile: 'Smile',
-	star: 'Star',
-	heart: 'Heart',
-	crown: 'Crown',
-	rocket: 'Rocket',
-	ghost: 'Ghost',
-	cat: 'Cat',
-	alien: 'Alien',
-	robot: 'Robot',
-	game: 'Game controller',
-	popcorn: 'Popcorn',
-	music: 'Music',
-	panda: 'Panda',
-	rabbit: 'Rabbit',
-	pizza: 'Pizza',
-	icecream: 'Ice cream',
-	football: 'Football',
-	guitar: 'Guitar',
-	rainbow: 'Rainbow',
-	flower: 'Flower'
-};
+export const PROFILE_ICON_LABELS: Record<ProfileIcon, string> = labelTable({
+	smile: () => 'Smile',
+	star: () => 'Star',
+	heart: () => 'Heart',
+	crown: () => 'Crown',
+	rocket: () => 'Rocket',
+	ghost: () => 'Ghost',
+	cat: () => 'Cat',
+	alien: () => 'Alien',
+	robot: () => 'Robot',
+	game: () => 'Game controller',
+	popcorn: () => 'Popcorn',
+	music: () => 'Music',
+	panda: () => 'Panda',
+	rabbit: () => 'Rabbit',
+	pizza: () => 'Pizza',
+	icecream: () => 'Ice cream',
+	football: () => 'Football',
+	guitar: () => 'Guitar',
+	rainbow: () => 'Rainbow',
+	flower: () => 'Flower'
+});
 
 /** What the site chrome and settings pages need about a profile. */
 export interface ProfileSummary {
@@ -109,7 +112,7 @@ export function profileColorCss(color: string): string {
 /** The first letter of the name, upper-cased ('?' for a blank name). */
 export function profileInitial(name: string): string {
 	const first = Array.from(name.trim())[0];
-	return first ? first.toLocaleUpperCase() : '?';
+	return first ? first.toLocaleUpperCase(currentLocale()) : '?';
 }
 
 /**

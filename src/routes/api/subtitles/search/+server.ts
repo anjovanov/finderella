@@ -23,7 +23,7 @@ const SearchRequest = z.object({
  * viewer would get (the best online copy).
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
-	if (!locals.user) error(401, 'Sign in to search for subtitles.');
+	if (!locals.user) error(401, /* @wc-include */ 'Sign in to search for subtitles.');
 	const parsed = SearchRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'expected { kind, slug, episodeSlug?, language }');
 	const language = normalizeLanguage(parsed.data.language);
@@ -37,9 +37,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 	const files = await activeFilesFor(parsed.data.kind, parsed.data.slug, parsed.data.episodeSlug);
 	const file = files.find((f) => registry.isOnline(f.gatewayId)) ?? files[0];
-	if (!file) error(404, 'No media file is linked to this title.');
+	if (!file) error(404, /* @wc-include */ 'No media file is linked to this title.');
 	const query = await titleQueryForFile(file);
-	if (!query) error(404, 'This title is missing from the catalog.');
+	if (!query) error(404, /* @wc-include */ 'This title is missing from the catalog.');
 	const outcome = await searchSubtitles(settings, await withMovieHash(query, file), language);
 	return json({
 		candidates: outcome.candidates,

@@ -30,6 +30,7 @@ import {
 	THEMES,
 	type Preferences
 } from '$lib/data/preferences';
+import { isLocale, LOCALES, type Locale } from '$lib/data/locale';
 
 /** A partial update from the settings form or the player (all fields optional). */
 export const SubtitleSettingsPatch = z.object({
@@ -192,6 +193,7 @@ export async function savePlaybackSettings(
 
 /** A partial update from one of the /settings/preferences forms. */
 export const PreferencesPatch = z.object({
+	language: z.enum(LOCALES).optional(),
 	theme: z.enum(THEMES).optional(),
 	screensaverEnabled: formBoolean.optional(),
 	screensaverKind: z.enum(SCREENSAVER_KINDS).optional(),
@@ -208,6 +210,7 @@ export async function getPreferences(profileId: string | null): Promise<Preferen
 	if (!profileId) return DEFAULT_PREFERENCES;
 	const row = await db.query.profileSettings.findFirst({
 		columns: {
+			language: true,
 			theme: true,
 			screensaverEnabled: true,
 			screensaverKind: true,
@@ -217,6 +220,7 @@ export async function getPreferences(profileId: string | null): Promise<Preferen
 	});
 	if (!row) return DEFAULT_PREFERENCES;
 	return normalizePreferences({
+		language: row.language,
 		theme: row.theme,
 		screensaver: {
 			enabled: row.screensaverEnabled,
@@ -233,6 +237,8 @@ export async function savePreferences(
 ): Promise<Preferences> {
 	const current = await getPreferences(profileId);
 	const next = normalizePreferences({
+		// null is a value here (the hub's default); only undefined leaves it alone.
+		language: patch.language === undefined ? current.language : patch.language,
 		theme: patch.theme ?? current.theme,
 		screensaver: {
 			enabled: patch.screensaverEnabled ?? current.screensaver.enabled,
@@ -241,6 +247,7 @@ export async function savePreferences(
 		}
 	});
 	const values = {
+		language: next.language,
 		theme: next.theme,
 		screensaverEnabled: next.screensaver.enabled,
 		screensaverKind: next.screensaver.kind,
@@ -251,5 +258,23 @@ export async function savePreferences(
 		.insert(profileSettings)
 		.values({ profileId, ...values })
 		.onConflictDoUpdate({ target: profileSettings.profileId, set: values });
+	languageCache.set(profileId, next.language);
 	return next;
+}
+
+// hooks.server.ts needs the active profile's language on every request; the
+// hub is single-process and savePreferences is the only writer, so memoise it.
+const languageCache = new Map<string, Locale | null>();
+
+/** The profile's UI language; null = the hub's default. */
+export async function profileLanguage(profileId: string): Promise<Locale | null> {
+	const cached = languageCache.get(profileId);
+	if (cached !== undefined) return cached;
+	const row = await db.query.profileSettings.findFirst({
+		columns: { language: true },
+		where: eq(profileSettings.profileId, profileId)
+	});
+	const language = isLocale(row?.language) ? row.language : null;
+	languageCache.set(profileId, language);
+	return language;
 }

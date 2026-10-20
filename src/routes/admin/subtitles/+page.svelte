@@ -3,7 +3,6 @@
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { LANGUAGES } from '@finderella/protocol/languages';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { AlertCircleIcon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
 	import PasswordInput from '$lib/components/password-input.svelte';
@@ -19,7 +18,10 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Table from '$lib/components/ui/table';
+	import { languageLabel, languageOptions } from '$lib/data/languages';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatRelative } from '$lib/data/time';
+	import plural from '$lib/plural';
 
 	let { data, form } = $props();
 
@@ -41,15 +43,11 @@
 	let languages = $derived(data.download.languages);
 	let autoDownload = $derived(data.download.autoDownload);
 	let preferHearingImpaired = $derived(data.download.preferHearingImpaired);
-	const languageOptions = LANGUAGES.map(({ code, name }) => ({ code, name })).toSorted((a, b) =>
-		a.name.localeCompare(b.name)
-	);
+	const languageChoices = $derived(languageOptions());
 	const languagesLabel = $derived(
 		languages.length === 0
 			? 'Choose languages'
-			: languages
-					.map((code) => languageOptions.find((o) => o.code === code)?.name ?? code)
-					.join(', ')
+			: languages.map((code) => languageLabel(code) ?? code).join(', ')
 	);
 
 	// Live job progress: poll while a run is active, then refresh the page data once.
@@ -360,7 +358,7 @@
 								<span class="truncate">{languagesLabel}</span>
 							</Select.Trigger>
 							<Select.Content class="max-h-72">
-								{#each languageOptions as option (option.code)}
+								{#each languageChoices as option (option.code)}
 									<Select.Item value={option.code} label={option.name} />
 								{/each}
 							</Select.Content>
@@ -521,7 +519,9 @@
 									? 'text-amber-600 dark:text-amber-500'
 									: ''}
 						>
-							<span class="text-muted-foreground">{new Date(line.at).toLocaleTimeString()}</span>
+							<span class="text-muted-foreground"
+								>{new Date(line.at).toLocaleTimeString(currentLocale())}</span
+							>
 							{line.message}
 						</div>
 					{/each}
@@ -536,8 +536,13 @@
 	<Card.Header>
 		<Card.Title>Recent activity</Card.Title>
 		<Card.Description>
-			{data.totals.downloaded.toLocaleString()} subtitles downloaded so far · {data.totals.notFound.toLocaleString()}
-			searches without a result
+			{plural(data.totals.downloaded, [
+				'# subtitle downloaded so far',
+				'# subtitles downloaded so far'
+			])} · {plural(data.totals.notFound, [
+				'# search without a result',
+				'# searches without a result'
+			])}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="overflow-x-auto">
@@ -559,7 +564,7 @@
 					{#each data.recent as row (row.id)}
 						<Table.Row>
 							<Table.Cell class="whitespace-nowrap text-muted-foreground">
-								<span title={new Date(row.createdAt).toLocaleString()}>
+								<span title={new Date(row.createdAt).toLocaleString(currentLocale())}>
 									{formatRelative(row.createdAt)}
 								</span>
 							</Table.Cell>

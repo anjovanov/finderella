@@ -22,6 +22,7 @@
 		type DeviceEventEntry,
 		type DeviceEventType
 	} from '$lib/data/device-events';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatRelative } from '$lib/data/time';
 
 	let {
@@ -82,7 +83,9 @@
 						{@const detail = describeDeviceEvent(entry)}
 						<Table.Row>
 							<Table.Cell class="whitespace-nowrap text-muted-foreground">
-								<span title={new Date(entry.at).toLocaleString()}>{formatRelative(entry.at)}</span>
+								<span title={new Date(entry.at).toLocaleString(currentLocale())}
+									>{formatRelative(entry.at)}</span
+								>
 							</Table.Cell>
 							<Table.Cell>
 								<span class="flex items-center gap-2.5 whitespace-nowrap">

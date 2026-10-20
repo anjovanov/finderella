@@ -29,6 +29,10 @@
 	$effect(() => {
 		document.documentElement.classList.toggle('dark', theme === 'dark');
 	});
+	// Same for <html lang> after a language change (hooks.server.ts renders it).
+	$effect(() => {
+		document.documentElement.lang = data.locale;
+	});
 
 	// hooks.server.ts inlines the same stylesheet for the first paint; this copy
 	// follows the data, so saving the admin Branding form restyles the app live.

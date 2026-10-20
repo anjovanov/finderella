@@ -20,6 +20,7 @@
 	} from '$lib/data';
 	import { markAsWatched, setWatchlist } from '$lib/watchlist-client';
 	import { withParty } from '$lib/data/together';
+	import { currentLocale } from '$lib/data/locale';
 	import { startParty } from '$lib/together-client';
 	import MetaPills from './meta-pills.svelte';
 	import PosterArt from './poster-art.svelte';
@@ -112,7 +113,7 @@
 	// "$200M" rather than a wall of zeros.
 	const budgetLabel = $derived(
 		item.kind === 'movie' && item.budget
-			? new Intl.NumberFormat('en-US', {
+			? new Intl.NumberFormat(currentLocale(), {
 					style: 'currency',
 					currency: 'USD',
 					notation: 'compact',

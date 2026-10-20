@@ -75,6 +75,8 @@ export const profileSettings = pgTable('profile_settings', {
 	stillWatchingEnabled: boolean('still_watching_enabled').notNull().default(false),
 	stillWatchingEpisodes: integer('still_watching_episodes').notNull().default(3),
 	stillWatchingMinutes: integer('still_watching_minutes').notNull().default(120),
+	/** UI language (a locale from $lib/data/locale); null = the hub's default language. */
+	language: text('language'),
 	/** 'dark' | 'light' (see $lib/data/preferences). */
 	theme: text('theme').notNull().default('dark'),
 	screensaverEnabled: boolean('screensaver_enabled').notNull().default(false),

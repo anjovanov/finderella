@@ -17,6 +17,8 @@
 	import { DEFAULT_MAX_PROFILES, LIMIT_MAX, LIMIT_MIN } from '$lib/data/account-limits';
 	import { SCAN_INTERVAL_HOURS, scanIntervalLabel } from '$lib/data/library-scanning';
 	import { DialogForm } from '$lib/dialog-form.svelte';
+	import { LOCALES, localeName } from '$lib/data/locale';
+	import plural from '$lib/plural';
 
 	let { data, form } = $props();
 
@@ -53,6 +55,15 @@
 	}
 	let savingRemux = $state(false);
 
+	let defaultLanguage = $derived(data.settings.defaultLanguage);
+	let languageForm = $state<HTMLFormElement | null>(null);
+	let savingLanguage = $state(false);
+
+	async function submitLanguage() {
+		await tick();
+		languageForm?.requestSubmit();
+	}
+
 	let watchLibraries = $derived(data.settings.watchLibraries);
 	/** Select values are strings; 'off' = no periodic rescans. */
 	let scanInterval = $derived(String(data.settings.scanIntervalHours ?? 'off'));
@@ -86,6 +97,13 @@
 
 	const prune = new DialogForm();
 	const noOrphans = $derived(data.orphans.movies === 0 && data.orphans.series === 0);
+	const orphanMovies = $derived(plural(data.orphans.movies, ['# movie', '# movies']));
+	const orphanSeries = $derived(plural(data.orphans.series, ['# series', '# series']));
+	const pendingMovies = $derived(plural(data.metadata.pending.movies, ['# movie', '# movies']));
+	const pendingSeries = $derived(plural(data.metadata.pending.series, ['# series', '# series']));
+	const pendingEpisodes = $derived(
+		plural(data.metadata.pending.episodes, ['# episode', '# episodes'])
+	);
 </script>
 
 <PageTitle title="Site settings" />
@@ -104,10 +122,10 @@
 	<Alert.Root>
 		<HugeiconsIcon icon={CheckmarkCircle02Icon} class="text-primary" />
 		<Alert.Title>
-			Removed {form.pruned.movies}
-			{form.pruned.movies === 1 ? 'movie' : 'movies'} and {form.pruned.series} series ({form.pruned
-				.episodes}
-			{form.pruned.episodes === 1 ? 'episode' : 'episodes'}).
+			Removed {plural(form.pruned.movies, ['# movie', '# movies'])} and {plural(
+				form.pruned.series,
+				['# series', '# series']
+			)} ({plural(form.pruned.episodes, ['# episode', '# episodes'])}).
 		</Alert.Title>
 	</Alert.Root>
 {:else if form && 'refreshing' in form && form.refreshing}
@@ -174,6 +192,54 @@
 					/>
 				</Field.Field>
 			</Field.Group>
+		</form>
+	</Card.Content>
+</Card.Root>
+
+<!-- Language -->
+<Card.Root>
+	<Card.Header>
+		<Card.Title>Language</Card.Title>
+		<Card.Description>
+			The language of menus, buttons and messages for guests and for profiles that haven't picked
+			their own (Settings → Preferences).
+		</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form
+			bind:this={languageForm}
+			method="POST"
+			action="?/updateLanguage"
+			autocomplete="off"
+			use:enhance={() => {
+				savingLanguage = true;
+				return async ({ update }) => {
+					savingLanguage = false;
+					await update();
+				};
+			}}
+		>
+			<input type="hidden" name="defaultLanguage" value={defaultLanguage} />
+			<Field.Field orientation="horizontal">
+				<Field.Content>
+					<Field.Label for="default-language">Default language</Field.Label>
+				</Field.Content>
+				<Select.Root
+					type="single"
+					bind:value={defaultLanguage}
+					onValueChange={submitLanguage}
+					disabled={savingLanguage}
+				>
+					<Select.Trigger id="default-language" class="w-36">
+						{localeName(defaultLanguage)}
+					</Select.Trigger>
+					<Select.Content>
+						{#each LOCALES as locale (locale)}
+							<Select.Item value={locale} label={localeName(locale)} lang={locale} />
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</Field.Field>
 		</form>
 	</Card.Content>
 </Card.Root>
@@ -553,10 +619,8 @@
 				{#if noOrphans}
 					Every title in the catalog is backed by a media file.
 				{:else}
-					{data.orphans.movies}
-					{data.orphans.movies === 1 ? 'movie' : 'movies'} and {data.orphans.series} series have no media
-					files (placeholder titles, or files from a removed library). Titles are also pruned automatically
-					when a scan finishes.
+					{orphanMovies} and {orphanSeries} have no media files (placeholder titles, or files from a removed
+					library). Titles are also pruned automatically when a scan finishes.
 				{/if}
 			</Card.Description>
 		</Card.Header>
@@ -576,12 +640,10 @@
 					Add a TMDB API key to fetch posters, synopses, genres, cast and ratings for scanned titles
 					automatically.
 				{:else if data.metadata.running}
-					Fetching metadata from TMDB… ({data.metadata.pending.movies} movies,
-					{data.metadata.pending.series} series, {data.metadata.pending.episodes} episodes pending)
+					Fetching metadata from TMDB… ({pendingMovies}, {pendingSeries}, {pendingEpisodes} pending)
 				{:else if data.metadata.pending.movies + data.metadata.pending.series + data.metadata.pending.episodes > 0}
-					TMDB configured · {data.metadata.pending.movies} movies, {data.metadata.pending.series} series
-					and {data.metadata.pending.episodes} episodes are waiting for metadata (fetched after the next
-					scan, or refresh now).
+					TMDB configured · {pendingMovies}, {pendingSeries} and {pendingEpisodes} are waiting for metadata
+					(fetched after the next scan, or refresh now).
 				{:else}
 					TMDB configured · every title has been looked up.
 				{/if}
@@ -695,10 +757,8 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>Remove titles without files?</AlertDialog.Title>
 			<AlertDialog.Description>
-				{data.orphans.movies}
-				{data.orphans.movies === 1 ? 'movie' : 'movies'} and {data.orphans.series} series have no media
-				file on any device. They leave the catalog, and their watch progress and watchlist entries go
-				with them. Nothing is deleted from your devices.
+				{orphanMovies} and {orphanSeries} have no media file on any device. They leave the catalog, and
+				their watch progress and watchlist entries go with them. Nothing is deleted from your devices.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		{#if prune.error}<p class="text-sm text-destructive">{prune.error}</p>{/if}

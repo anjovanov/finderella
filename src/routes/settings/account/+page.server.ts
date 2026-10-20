@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
+import { authErrorMessage } from '$lib/auth-messages';
 import { z } from 'zod';
 import { resolve } from '$app/paths';
 import { isAdmin } from '$lib/auth-roles';
@@ -118,7 +119,8 @@ export const actions: Actions = {
 				});
 			}
 		} catch (error) {
-			if (error instanceof APIError) return failOn(null, error.message || 'Request failed');
+			if (error instanceof APIError)
+				return failOn(null, authErrorMessage(error.body?.code, 'account'));
 			return failOn(null, 'Unexpected error', 500);
 		}
 

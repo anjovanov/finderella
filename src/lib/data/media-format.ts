@@ -3,7 +3,8 @@
  * names are ffprobe's `codec_name` values as stored at scan time.
  */
 
-import { languageName } from '@finderella/protocol/languages';
+import { languageLabel } from './languages';
+import { currentLocale } from './locale';
 import type { AudioFormat } from './types';
 
 const VIDEO_CODECS: Record<string, string> = {
@@ -64,6 +65,15 @@ export function channelLabel(channels: number | null): string | null {
 	}
 }
 
+/** A decimal in the viewer's language ("14.2" / "14,2"), without digit grouping like `toFixed`. */
+function decimal(value: number, digits: number): string {
+	return value.toLocaleString(currentLocale(), {
+		minimumFractionDigits: digits,
+		maximumFractionDigits: digits,
+		useGrouping: false
+	});
+}
+
 /** Binary units, one decimal from GB up: "14.2 GB", "700 MB". */
 export function formatBytes(bytes: number): string {
 	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -73,18 +83,18 @@ export function formatBytes(bytes: number): string {
 		value /= 1024;
 		unit++;
 	}
-	return `${unit >= 3 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
+	return `${decimal(value, unit >= 3 ? 1 : 0)} ${units[unit]}`;
 }
 
 /** Bits per second as "18.3 Mb/s" / "850 kb/s". */
 export function formatBitrate(bitsPerSecond: number): string {
-	if (bitsPerSecond >= 1_000_000) return `${(bitsPerSecond / 1_000_000).toFixed(1)} Mb/s`;
-	return `${Math.round(bitsPerSecond / 1000)} kb/s`;
+	if (bitsPerSecond >= 1_000_000) return `${decimal(bitsPerSecond / 1_000_000, 1)} Mb/s`;
+	return `${decimal(bitsPerSecond / 1000, 0)} kb/s`;
 }
 
 /** "English", else the stream title, else "Track N". */
 export function audioName(track: AudioFormat, index: number): string {
-	return languageName(track.language) ?? (track.title?.trim() || `Track ${index + 1}`);
+	return languageLabel(track.language) ?? (track.title?.trim() || `Track ${index + 1}`);
 }
 
 /** Codec + layout + markers: "Dolby Digital Plus (E-AC-3) 5.1 · Commentary". */

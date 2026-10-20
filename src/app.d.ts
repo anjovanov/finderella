@@ -13,6 +13,8 @@ declare global {
 			profile?: import('$lib/data/profiles').ProfileSummary | null;
 			/** Set by the root layout load; hooks.server.ts writes it into <html class>. */
 			theme?: import('$lib/data/preferences').Theme;
+			/** The request's UI language (hooks.server.ts handleLocale). */
+			locale?: import('$lib/data/locale').Locale;
 		}
 
 		// interface Error {}

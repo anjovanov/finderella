@@ -5,8 +5,12 @@
 	import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 	import LibraryPage from '$lib/components/media/library-page.svelte';
 	import { allGenres } from '$lib/data';
+	import { genreLabel } from '$lib/data/genres';
 
 	let { data } = $props();
+
+	// A genre page is named by the stored English genre.
+	const name = $derived(data.type === 'genres' ? genreLabel(data.name) : data.name);
 
 	// A collection reads best in release order; a genre page filtering by genre is moot.
 	const sortLabels = $derived(
@@ -16,11 +20,11 @@
 	);
 </script>
 
-<PageTitle title={data.name} />
+<PageTitle title={name} />
 
 {#key `${data.type}/${data.slug}`}
 	<LibraryPage
-		title={data.name}
+		title={name}
 		items={data.items}
 		genres={data.type === 'genres' ? [] : allGenres(data.items)}
 		defaultSort={data.type === 'collections' ? 'release' : 'title'}

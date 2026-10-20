@@ -8,6 +8,7 @@
 	import HistoryTable from '$lib/components/stats/history-table.svelte';
 	import TablePagination from '$lib/components/stats/table-pagination.svelte';
 	import { STAT_PERIODS } from '$lib/data/stats';
+	import plural from '$lib/plural';
 
 	let { data } = $props();
 
@@ -82,7 +83,7 @@
 		<Card.Title>Watch history</Card.Title>
 		<Card.Description>
 			{#if data.history.total}
-				{first}–{last} of {data.history.total.toLocaleString()} plays
+				{first}–{last} of {plural(data.history.total, ['# play', '# plays'])}
 			{:else}
 				No plays match these filters.
 			{/if}

@@ -11,12 +11,12 @@ const WatchedRequest = z.discriminatedUnion('kind', [
 
 /** Mark a movie, or one episode of a series, as fully watched (one-way). */
 export const POST: RequestHandler = async ({ request, locals }) => {
-	if (!locals.user) error(401, 'Sign in to mark titles as watched.');
+	if (!locals.user) error(401, /* @wc-include */ 'Sign in to mark titles as watched.');
 	const profile = requireProfile(locals);
 	const parsed = WatchedRequest.safeParse(await request.json().catch(() => null));
 	if (!parsed.success)
 		error(400, 'expected { kind: "movie", slug } or { kind: "series", slug, episodeSlug }');
 	const found = await markWatched(profile.id, parsed.data);
-	if (!found) error(404, 'Title not found');
+	if (!found) error(404, /* @wc-include */ 'Title not found');
 	return json({ ok: true });
 };

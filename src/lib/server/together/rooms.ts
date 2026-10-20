@@ -33,7 +33,9 @@ class RoomManager {
 		}
 		const owned = [...this.#rooms.values()].filter((r) => r.ownerUserId === owner.userId);
 		if (owned.length >= MAX_ROOMS_PER_USER) {
-			throw new TooManyRoomsError('You already have several watch parties going. End one first.');
+			throw new TooManyRoomsError(
+				/* @wc-include */ 'You already have several watch parties going. End one first.'
+			);
 		}
 		let code = newCode();
 		while (this.#rooms.has(code)) code = newCode();
@@ -65,7 +67,7 @@ class RoomManager {
 	}
 
 	#remove(room: Room, reason: 'gone' | 'ended'): void {
-		room.end(reason, 'This watch party has ended.');
+		room.end(reason);
 		this.#rooms.delete(room.code);
 		log.info({ code: room.code, reason }, 'watch party closed');
 	}

@@ -13,6 +13,7 @@
 	import { sessionDeviceLabel } from '$lib/data/account-sessions';
 	import { formatRelative } from '$lib/data/time';
 	import { DialogForm } from '$lib/dialog-form.svelte';
+	import plural from '$lib/plural';
 
 	let { data, form } = $props();
 
@@ -49,9 +50,10 @@
 		<Card.Description>
 			Where your account is signed in. A device you sign out has to sign in again.
 			{#if data.sessionLimit !== null}
-				Up to {data.sessionLimit}
-				{data.sessionLimit === 1 ? 'device' : 'devices'} can be signed in at once; signing in on another
-				signs out the one used longest ago.
+				{plural(data.sessionLimit, [
+					'Up to # device can be signed in at once; signing in on another signs out the one used longest ago.',
+					'Up to # devices can be signed in at once; signing in on another signs out the one used longest ago.'
+				])}
 			{/if}
 		</Card.Description>
 	</Card.Header>
@@ -96,8 +98,10 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>Sign out all other devices?</AlertDialog.Title>
 			<AlertDialog.Description>
-				{others === 1 ? 'One other device' : `${others} other devices`} will have to sign in again. This
-				device stays signed in.
+				{plural(others, [
+					'One other device will have to sign in again. This device stays signed in.',
+					'# other devices will have to sign in again. This device stays signed in.'
+				])}
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		{#if revokeOthers.error}<p class="text-sm text-destructive">{revokeOthers.error}</p>{/if}

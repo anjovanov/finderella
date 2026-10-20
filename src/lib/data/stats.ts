@@ -3,15 +3,17 @@
  * /admin/statistics pages and the server queries in $lib/server/stats.
  */
 
+import { labelTable, labeled } from '$lib/labels';
+import plural from '$lib/plural';
 import type { RemuxAudioAction } from './remux';
 import type { PlaybackMode } from './types';
 
 /** How a live stream reaches the viewer, as the activity monitor words it. */
-export const STREAM_MODE_LABELS: Record<PlaybackMode, string> = {
-	direct: 'Direct play',
-	remux: 'Remux',
-	hls: 'Transcoding'
-};
+export const STREAM_MODE_LABELS: Record<PlaybackMode, string> = labelTable({
+	direct: () => 'Direct play',
+	remux: () => 'Remux',
+	hls: () => 'Transcoding'
+});
 
 export type DeviceType = 'desktop' | 'mobile' | 'tablet' | 'tv' | 'unknown';
 export type PlayerState = 'playing' | 'paused' | 'buffering' | 'unknown';
@@ -20,10 +22,10 @@ export type PlayerState = 'playing' | 'paused' | 'buffering' | 'unknown';
 export const MIN_PLAY_SECONDS = 30;
 
 export const STAT_PERIODS = [
-	{ days: 7, label: '7 days' },
-	{ days: 30, label: '30 days' },
-	{ days: 90, label: '90 days' },
-	{ days: 365, label: '1 year' }
+	labeled({ days: 7 }, () => plural(7, ['# day', '# days'])),
+	labeled({ days: 30 }, () => plural(30, ['# day', '# days'])),
+	labeled({ days: 90 }, () => plural(90, ['# day', '# days'])),
+	labeled({ days: 365 }, () => plural(1, ['# year', '# years']))
 ] as const;
 export type StatPeriod = (typeof STAT_PERIODS)[number]['days'];
 export const DEFAULT_STAT_PERIOD: StatPeriod = 30;
@@ -47,13 +49,13 @@ export function platformLabel(p: Pick<Platform, 'browser' | 'os'>): string {
 	return parts.length ? parts.join(' · ') : 'Unknown';
 }
 
-export const DEVICE_LABELS: Record<DeviceType, string> = {
-	desktop: 'Desktop',
-	mobile: 'Phone',
-	tablet: 'Tablet',
-	tv: 'TV',
-	unknown: 'Unknown device'
-};
+export const DEVICE_LABELS: Record<DeviceType, string> = labelTable({
+	desktop: () => 'Desktop',
+	mobile: () => 'Phone',
+	tablet: () => 'Tablet',
+	tv: () => /* @wc-include */ 'TV',
+	unknown: () => 'Unknown device'
+});
 
 export interface StatUser {
 	id: string;

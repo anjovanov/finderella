@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Series } from '$lib/data';
+	import plural from '$lib/plural';
 	import Carousel from './carousel.svelte';
 	import EpisodeCard from './episode-card.svelte';
 	import PlayerSheet from './player-sheet.svelte';
@@ -49,7 +50,9 @@
 		</div>
 	{/if}
 
-	<p class="text-sm text-white/60">{season.year} · {season.episodes.length} episodes</p>
+	<p class="text-sm text-white/60">
+		{season.year} · {plural(season.episodes.length, ['# episode', '# episodes'])}
+	</p>
 
 	<!-- Same arrowTop math as the series detail page: scroller py-3 (0.75rem)
 	     + half the 20rem 16:9 thumb (5.625rem) − half the arrow button (1.125rem). -->

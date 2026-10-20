@@ -7,7 +7,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import SaveStatus from '$lib/components/save-status.svelte';
 	import { SettingsSaver } from '$lib/settings-saver.svelte';
-	import { LANGUAGES } from '@finderella/protocol/languages';
+	import { languageLabel, languageOptions } from '$lib/data/languages';
 	import {
 		cueStyle,
 		MAX_SUBTITLE_LINES,
@@ -41,12 +41,10 @@
 		})
 	);
 
-	const languageOptions = LANGUAGES.map(({ code, name }) => ({ code, name })).toSorted((a, b) =>
-		a.name.localeCompare(b.name)
-	);
-	function languageLabel(code: string): string {
+	const languages = $derived(languageOptions());
+	function preferredLabel(code: string): string {
 		if (code === 'off') return 'Off';
-		return languageOptions.find((option) => option.code === code)?.name ?? 'English';
+		return languageLabel(code) ?? code;
 	}
 	function optionLabel(options: { value: string; label: string }[], value: string): string {
 		return options.find((option) => option.value === value)?.label ?? value;
@@ -83,11 +81,11 @@
 							onValueChange={(language) => saver.save({ language })}
 						>
 							<Select.Trigger id="subtitle-language" class="w-full">
-								{languageLabel(subLanguage)}
+								{preferredLabel(subLanguage)}
 							</Select.Trigger>
 							<Select.Content class="max-h-72">
 								<Select.Item value="off" label="Off" />
-								{#each languageOptions as option (option.code)}
+								{#each languages as option (option.code)}
 									<Select.Item value={option.code} label={option.name} />
 								{/each}
 							</Select.Content>

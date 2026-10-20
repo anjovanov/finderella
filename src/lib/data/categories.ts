@@ -1,3 +1,5 @@
+import { genreLabel } from './genres';
+import { currentLocale } from './locale';
 import { GENRES, type Genre } from './types';
 
 /**
@@ -85,6 +87,8 @@ export function groupCategories(
 	studios: StudioInfo[],
 	collections: CollectionInfo[]
 ): CategoryIndex {
+	const locale = currentLocale();
+	const byName = (a: CategoryTile, b: CategoryTile) => a.name.localeCompare(b.name, locale);
 	const byGenre = new Map<Genre, CategorySource[]>();
 	const byStudio = new Map<string, CategorySource[]>();
 	const byCollection = new Map<number, CategorySource[]>();
@@ -110,11 +114,11 @@ export function groupCategories(
 		.map(([genre, members]) => ({
 			type: 'genres' as const,
 			slug: genreSlug(genre),
-			name: genre,
+			name: genreLabel(genre),
 			count: members.length,
 			imageUrl: genreArt.get(genre)
 		}))
-		.toSorted((a, b) => a.name.localeCompare(b.name));
+		.toSorted(byName);
 
 	const collectionTiles: CategoryTile[] = collections
 		.flatMap((c) => {
@@ -130,7 +134,7 @@ export function groupCategories(
 				}
 			];
 		})
-		.toSorted((a, b) => a.name.localeCompare(b.name));
+		.toSorted(byName);
 
 	const networks: CategoryTile[] = studios
 		.flatMap((s) => {
@@ -146,7 +150,7 @@ export function groupCategories(
 				}
 			];
 		})
-		.toSorted((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+		.toSorted((a, b) => b.count - a.count || byName(a, b));
 
 	return { genres, collections: collectionTiles, networks };
 }

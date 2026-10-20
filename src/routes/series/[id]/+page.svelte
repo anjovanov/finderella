@@ -8,6 +8,7 @@
 	import MediaRow from '$lib/components/media/media-row.svelte';
 	import CastRow from '$lib/components/media/cast-row.svelte';
 	import { playTarget } from '$lib/data';
+	import plural from '$lib/plural';
 
 	let { data } = $props();
 
@@ -40,7 +41,7 @@
 				<Tabs.Content value={String(season.number)}>
 					<div class="flex flex-col gap-1 pt-3">
 						<p class="page-gutter text-sm text-muted-foreground">
-							{season.year} · {season.episodes.length} episodes
+							{season.year} · {plural(season.episodes.length, ['# episode', '# episodes'])}
 						</p>
 						<!-- arrowTop: strip padding (0.75rem) + half the 20rem-wide 16:9 thumb (5.625rem)
 						     - half the button (1.125rem) = 5.25rem -->

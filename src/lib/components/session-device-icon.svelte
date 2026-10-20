@@ -54,7 +54,7 @@
 	<div class="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
 		{#if osLogo}
 			{@render brand(osLogo, 'size-[1.125rem]')}
-		{:else if session.os === 'Windows'}
+		{:else if session.os === /* @wc-ignore */ 'Windows'}
 			<HugeiconsIcon icon={WindowsNewIcon} class="size-5" aria-hidden="true" />
 		{:else}
 			<HugeiconsIcon icon={DEVICE_ICONS[session.deviceType]} class="size-5" aria-hidden="true" />

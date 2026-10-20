@@ -13,13 +13,17 @@
 	import TitleLink from '$lib/components/stats/title-link.svelte';
 	import { audioCodecLabel, formatBytes, videoCodecLabel } from '$lib/data/media-format';
 	import { resolutionLabel } from '$lib/playback-quality';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatRelative, formatWatchTime } from '$lib/data/time';
+	import plural from '$lib/plural';
 	import type { Breakdown } from '$lib/data/stats';
 
 	let { data } = $props();
 	const now = Date.now();
 
 	const totals = $derived(data.libraries.totals);
+	// A lower-case attribute isn't extracted; this one is UI text.
+	const allTime = /* @wc-include */ 'all time';
 
 	function selectLibrary(value: string) {
 		const url = new URL(page.url);
@@ -35,7 +39,7 @@
 	// Top 8 per chart; labels through the same codec names the detail pages use.
 	const chartRows = (rows: Breakdown[], label: (key: string) => string) =>
 		rows.slice(0, 8).map((row) => ({
-			label: row.label === 'Unknown' ? row.label : label(row.label),
+			label: row.label === /* @wc-ignore */ 'Unknown' ? 'Unknown' : label(row.label),
 			value: row.files
 		}));
 	const breakdownCards = $derived([
@@ -54,10 +58,10 @@
 <PageTitle title="Library statistics" />
 
 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-	<StatTile label="Files" value={totals.files.toLocaleString()} />
+	<StatTile label="Files" value={totals.files.toLocaleString(currentLocale())} />
 	<StatTile label="Total size" value={formatBytes(totals.bytes)} />
 	<StatTile label="Total runtime" value={formatWatchTime(totals.durationSeconds)} />
-	<StatTile label="Plays" value={totals.plays.toLocaleString()} hint="all time" />
+	<StatTile label="Plays" value={totals.plays.toLocaleString(currentLocale())} hint={allTime} />
 </div>
 
 <Card.Root size="sm">
@@ -65,8 +69,7 @@
 		<Card.Title>Libraries</Card.Title>
 		<Card.Description>
 			Active files per library; a title on several devices counts in each ·
-			{data.libraries.total.toLocaleString()}
-			{data.libraries.total === 1 ? 'library' : 'libraries'}
+			{plural(data.libraries.total, ['# library', '# libraries'])}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="overflow-x-auto">
@@ -104,21 +107,21 @@
 											'inline-block size-2 rounded-full',
 											library.device.online ? 'bg-emerald-400' : 'bg-muted-foreground/50'
 										]}
-										aria-label={library.device.online ? 'online' : 'offline'}
+										aria-label={library.device.online ? 'Online' : 'Offline'}
 									></span>
 									{library.device.name}
 								</span>
 							</Table.Cell>
 							<Table.Cell class="text-right tabular-nums"
-								>{library.titles.toLocaleString()}</Table.Cell
+								>{library.titles.toLocaleString(currentLocale())}</Table.Cell
 							>
 							<Table.Cell class="text-right tabular-nums">
 								{library.kind === 'series'
-									? `${library.seasons.toLocaleString()} / ${library.episodes.toLocaleString()}`
+									? `${library.seasons.toLocaleString(currentLocale())} / ${library.episodes.toLocaleString(currentLocale())}`
 									: '—'}
 							</Table.Cell>
 							<Table.Cell class="text-right tabular-nums"
-								>{library.files.toLocaleString()}</Table.Cell
+								>{library.files.toLocaleString(currentLocale())}</Table.Cell
 							>
 							<Table.Cell class="text-right whitespace-nowrap tabular-nums"
 								>{formatBytes(library.bytes)}</Table.Cell
@@ -130,7 +133,7 @@
 								{library.lastScanAt ? formatRelative(library.lastScanAt, now) : 'Never'}
 							</Table.Cell>
 							<Table.Cell class="text-right tabular-nums"
-								>{library.plays.toLocaleString()}</Table.Cell
+								>{library.plays.toLocaleString(currentLocale())}</Table.Cell
 							>
 							<Table.Cell class="max-w-56">
 								{#if library.lastPlayed}

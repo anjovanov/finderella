@@ -11,6 +11,8 @@
 		mediaHref,
 		type MediaItem
 	} from '$lib/data';
+	import { currentLocale } from '$lib/data/locale';
+	import plural from '$lib/plural';
 	import CardMenu from './card-menu.svelte';
 	import PosterArt from './poster-art.svelte';
 	import ProgressLine from './progress-line.svelte';
@@ -78,7 +80,10 @@
 					class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm"
 				>
 					<HugeiconsIcon icon={StarIcon} class="size-3 text-yellow-400" />
-					{rating.toFixed(1)}
+					{rating.toLocaleString(currentLocale(), {
+						minimumFractionDigits: 1,
+						maximumFractionDigits: 1
+					})}
 				</span>
 			{/if}
 			{#if justAdded}
@@ -98,9 +103,8 @@
 					{#if target}
 						{episodeLabel(target.season, target.episode.number)} · {target.episode.title}
 					{:else}
-						{item.year}{item.kind === 'series'
-							? ` · ${item.seasons.length} season${item.seasons.length === 1 ? '' : 's'}`
-							: ''}
+						{item.year}{#if item.kind === 'series'}
+							· {plural(item.seasons.length, ['# season', '# seasons'])}{/if}
 					{/if}
 				</span>
 				{#if showKind}

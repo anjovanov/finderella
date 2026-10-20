@@ -28,14 +28,11 @@ export const load: PageServerLoad = async ({ url, parent }) => {
 };
 
 export const actions: Actions = {
-	/** Admin "Stop stream": the viewer's player shows the message on its next heartbeat. */
+	/** Admin "Stop stream": the viewer's player says so on its next heartbeat. */
 	terminate: async ({ request }) => {
 		const form = await request.formData();
 		const sessionId = String(form.get('sessionId') ?? '');
-		const ok = sessionManager.requestTermination(
-			sessionId,
-			'Playback was stopped by an administrator.'
-		);
+		const ok = sessionManager.requestTermination(sessionId);
 		if (!ok) return fail(404, { message: 'That stream has already ended.' });
 		return { stopped: sessionId };
 	}

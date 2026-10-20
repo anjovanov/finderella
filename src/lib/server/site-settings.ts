@@ -1,6 +1,7 @@
 import { count, eq } from 'drizzle-orm';
 import { isRegistrationOpen } from '$lib/auth-roles';
 import { normalizeBranding, type Branding } from '$lib/data/branding';
+import { pickLocale, type Locale } from '$lib/data/locale';
 import { db } from '$lib/server/db';
 import { siteSettings, user, type SiteSettingsRow } from '$lib/server/db/schema';
 
@@ -24,6 +25,7 @@ export type SiteSettings = Pick<
 	| 'accent'
 	| 'bodyFont'
 	| 'headingFont'
+	| 'defaultLanguage'
 	| 'updatedAt'
 >;
 type SiteSettingsPatch = Partial<
@@ -45,6 +47,7 @@ type SiteSettingsPatch = Partial<
 		| 'accent'
 		| 'bodyFont'
 		| 'headingFont'
+		| 'defaultLanguage'
 	>
 >;
 
@@ -128,6 +131,11 @@ export async function profileLimit(): Promise<number | null> {
 }
 
 /** The hub's name, tagline, accent and fonts (every page reads them). */
+/** The UI language for guests and for profiles that follow the hub's default. */
+export async function defaultLocale(): Promise<Locale> {
+	return pickLocale((await getSiteSettings()).defaultLanguage);
+}
+
 export async function getBranding(): Promise<Branding> {
 	return normalizeBranding(await getSiteSettings());
 }

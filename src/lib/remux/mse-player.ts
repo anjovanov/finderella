@@ -183,7 +183,7 @@ export class RemuxPlayer {
 		const MS = mediaSourceCtor()!;
 		const ms = new MS();
 		this.#ms = ms;
-		if ('ManagedMediaSource' in globalThis && MS !== globalThis.MediaSource) {
+		if (/* @wc-ignore */ 'ManagedMediaSource' in globalThis && MS !== globalThis.MediaSource) {
 			this.#video.disableRemotePlayback = true;
 		}
 		// Listen before the element has a source: a seek made while it's still
@@ -295,7 +295,7 @@ export class RemuxPlayer {
 			onInit: async (init, mime) => {
 				if (!current()) return;
 				if (!this.#sb) {
-					this.#log(`SourceBuffer ${mime}`);
+					this.#log(/* @wc-ignore */ `SourceBuffer ${mime}`);
 					this.#sb = this.#ms!.addSourceBuffer(mime);
 					this.#sb.mode = 'segments';
 				}
@@ -433,7 +433,7 @@ export class RemuxPlayer {
 				});
 				return;
 			} catch (err) {
-				if ((err as DOMException).name === 'QuotaExceededError' && attempt < 3) {
+				if ((err as DOMException).name === /* @wc-ignore */ 'QuotaExceededError' && attempt < 3) {
 					this.#log('quota exceeded, evicting');
 					await this.#evict();
 					continue;

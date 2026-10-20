@@ -14,6 +14,7 @@ import {
 	type TogetherServerMessage,
 	type TogetherState
 } from '$lib/data/together';
+import { chatEventText, endedText, slowDownText } from './notices';
 import { requestTicket } from '$lib/together-client';
 
 /**
@@ -183,14 +184,13 @@ export class TogetherSession {
 			this.#ws = null;
 			this.#stopClock();
 			if (this.#disposed || this.status === 'ended') return;
+			// The 'ended' message (with the host's name) usually got here first.
 			if (event.code === TOGETHER_CLOSE.full) {
-				this.#end('This watch party is full.');
-			} else if (
-				event.code === TOGETHER_CLOSE.kicked ||
-				event.code === TOGETHER_CLOSE.gone ||
-				event.code === TOGETHER_CLOSE.ended
-			) {
-				this.#end(event.reason || 'This watch party has ended.');
+				this.#end(endedText({ reason: 'full' }));
+			} else if (event.code === TOGETHER_CLOSE.kicked) {
+				this.#end(endedText({ reason: 'kicked' }));
+			} else if (event.code === TOGETHER_CLOSE.gone || event.code === TOGETHER_CLOSE.ended) {
+				this.#end(endedText({ reason: event.reason === 'replaced' ? 'replaced' : 'gone' }));
 			} else {
 				this.#scheduleReconnect();
 			}
@@ -247,7 +247,7 @@ export class TogetherSession {
 			case 'chat':
 				this.chat = [...this.chat, message.entry].slice(-200);
 				if (message.entry.participantId === this.me) return;
-				if (message.entry.kind === 'event') this.#flash(message.entry.text);
+				if (message.entry.kind === 'event') this.#flash(chatEventText(message.entry));
 				else if (!this.chatOpen) this.unread++;
 				return;
 			case 'reaction':
@@ -261,10 +261,10 @@ export class TogetherSession {
 				this.#offset = clockOffset(this.#clock);
 				return;
 			case 'ended':
-				this.#end(message.message);
+				this.#end(endedText(message));
 				return;
 			case 'error':
-				this.#flash(message.message);
+				this.#flash(slowDownText());
 				return;
 		}
 	}
@@ -485,7 +485,7 @@ export class TogetherSession {
 			video.play().then(
 				() => (this.needsGesture = false),
 				(err: DOMException) => {
-					if (err?.name === 'NotAllowedError') this.needsGesture = true;
+					if (err?.name === /* @wc-ignore */ 'NotAllowedError') this.needsGesture = true;
 				}
 			);
 		} else if (!plan.play && !video.paused) {

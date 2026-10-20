@@ -6,6 +6,8 @@
 
 import { DEFAULT_AUDIO_LANGUAGE, normalizeAudioLanguage } from '$lib/audio-preference';
 import { isSkipMode, type SkipMode } from '$lib/data/markers';
+import { labelTable } from '$lib/labels';
+import plural from '$lib/plural';
 
 /** Episodes in a row, autoplayed without input, before "Still watching?". */
 export const STILL_WATCHING_EPISODES = [2, 3, 4, 5, 6] as const;
@@ -13,12 +15,12 @@ export const STILL_WATCHING_EPISODES = [2, 3, 4, 5, 6] as const;
 export const STILL_WATCHING_MINUTES = [60, 120, 180, 240] as const;
 
 export function episodesLabel(count: number): string {
-	return `${count} episodes`;
+	return plural(count, ['# episode', '# episodes']);
 }
 
 export function minutesLabel(minutes: number): string {
 	const hours = Math.round(minutes / 60);
-	return hours === 1 ? '1 hour' : `${hours} hours`;
+	return plural(hours, ['# hour', '# hours']);
 }
 
 export interface StillWatchingSettings {
@@ -36,12 +38,12 @@ export interface StillWatchingSettings {
 export const AUDIO_CHANNEL_OPTIONS = ['auto', 'mono', 'stereo', 'surround'] as const;
 export type AudioChannels = (typeof AUDIO_CHANNEL_OPTIONS)[number];
 
-export const AUDIO_CHANNEL_LABELS: Record<AudioChannels, string> = {
-	auto: 'Auto',
-	mono: 'Mono',
-	stereo: 'Stereo',
-	surround: '5.1 surround'
-};
+export const AUDIO_CHANNEL_LABELS: Record<AudioChannels, string> = labelTable({
+	auto: () => 'Auto',
+	mono: () => 'Mono',
+	stereo: () => 'Stereo',
+	surround: () => /* @wc-include */ '5.1 surround'
+});
 
 /** Output channel counts the transcoder emits. */
 export type ChannelCount = 1 | 2 | 6;

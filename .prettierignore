@@ -9,3 +9,8 @@ bun.lockb
 /static/
 /drizzle/
 packages/*/dist/
+
+# wuchale regenerates these on every extract
+src/locales/.wuchale/
+src/locales/data.js
+src/locales/plural.js

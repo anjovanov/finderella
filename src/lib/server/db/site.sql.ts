@@ -31,6 +31,8 @@ export const siteSettings = pgTable('site_settings', {
 	accent: text('accent').notNull().default('teal'),
 	bodyFont: text('body_font').notNull().default('figtree'),
 	headingFont: text('heading_font').notNull().default('figtree'),
+	/** UI language for guests and profiles that haven't picked one (a locale from $lib/data/locale). */
+	defaultLanguage: text('default_language').notNull().default('en'),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 

@@ -1,3 +1,4 @@
+import { genreLabel } from '$lib/data/genres';
 import { arrayContains, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { collection, movie, series, studio } from '$lib/server/db/schema';
@@ -65,7 +66,7 @@ export async function categoryDetail(
 			listSeriesWhere(arrayContains(series.genres, [genre]))
 		]);
 		const items = [...movies, ...shows];
-		return items.length > 0 ? { type, slug, name: genre, items } : null;
+		return items.length > 0 ? { type, slug, name: genreLabel(genre), items } : null;
 	}
 
 	if (type === 'networks') {

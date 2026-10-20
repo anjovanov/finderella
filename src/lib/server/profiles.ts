@@ -5,6 +5,7 @@ import { db } from '$lib/server/db';
 import { profile } from '$lib/server/db/schema';
 import { profileLimit } from '$lib/server/site-settings';
 import { canAddProfile } from '$lib/data/account-limits';
+import plural from '$lib/plural';
 import {
 	isProfileColor,
 	isProfileIcon,
@@ -27,15 +28,22 @@ export const ProfileInput = z.object({
 	name: z
 		.string()
 		.trim()
-		.min(1, 'Enter a name.')
-		.max(PROFILE_NAME_MAX, `Keep the name under ${PROFILE_NAME_MAX + 1} characters.`),
-	avatarColor: z.string().refine(isProfileColor, 'Pick a color.'),
+		// Messages as functions: zod calls them while parsing, inside the request's locale.
+		.min(1, { error: () => /* @wc-include */ 'Enter a name.' })
+		.max(PROFILE_NAME_MAX, {
+			error: () => /* @wc-include */ `Keep the name under ${PROFILE_NAME_MAX + 1} characters.`
+		}),
+	avatarColor: z
+		.string()
+		.refine(isProfileColor, { error: () => /* @wc-include */ 'Pick a color.' }),
 	// '' (the "initial" option in the form) → null.
 	avatarIcon: z
 		.string()
 		.optional()
 		.transform((v) => (v ? v : null))
-		.refine((v) => v === null || isProfileIcon(v), 'Pick an icon.')
+		.refine((v) => v === null || isProfileIcon(v), {
+			error: () => /* @wc-include */ 'Pick an icon.'
+		})
 });
 export type ProfileInput = z.infer<typeof ProfileInput>;
 
@@ -90,7 +98,8 @@ async function nameTaken(userId: string, name: string, exceptId?: string): Promi
 	return !!row && row.id !== exceptId;
 }
 
-const DUPLICATE_NAME = 'Another profile on this account already has that name.';
+const duplicateName = () =>
+	/* @wc-include */ 'Another profile on this account already has that name.';
 
 export async function createProfile(userId: string, input: ProfileInput): Promise<ProfileSummary> {
 	const [[{ n }], limit] = await Promise.all([
@@ -99,9 +108,11 @@ export async function createProfile(userId: string, input: ProfileInput): Promis
 	]);
 	// An admin-set cap (site settings). Lowering it never deletes profiles;
 	// an account over it just can't add more.
-	if (!canAddProfile(n, limit))
-		throw new ProfileError(`An account can have up to ${limit} profiles.`);
-	if (await nameTaken(userId, input.name)) throw new ProfileError(DUPLICATE_NAME);
+	if (limit !== null && !canAddProfile(n, limit))
+		throw new ProfileError(
+			plural(limit, ['An account can have one profile.', 'An account can have up to # profiles.'])
+		);
+	if (await nameTaken(userId, input.name)) throw new ProfileError(duplicateName());
 	try {
 		const [row] = await db
 			.insert(profile)
@@ -115,7 +126,7 @@ export async function createProfile(userId: string, input: ProfileInput): Promis
 			.returning();
 		return toSummary(row);
 	} catch (err) {
-		if (isUniqueViolation(err, 'profile_user_name')) throw new ProfileError(DUPLICATE_NAME);
+		if (isUniqueViolation(err, 'profile_user_name')) throw new ProfileError(duplicateName());
 		throw err;
 	}
 }
@@ -126,8 +137,8 @@ export async function updateProfile(
 	input: ProfileInput
 ): Promise<ProfileSummary> {
 	const existing = await getProfile(userId, id);
-	if (!existing) throw new ProfileError('That profile no longer exists.');
-	if (await nameTaken(userId, input.name, id)) throw new ProfileError(DUPLICATE_NAME);
+	if (!existing) throw new ProfileError(/* @wc-include */ 'That profile no longer exists.');
+	if (await nameTaken(userId, input.name, id)) throw new ProfileError(duplicateName());
 	try {
 		const [row] = await db
 			.update(profile)
@@ -136,7 +147,7 @@ export async function updateProfile(
 			.returning();
 		return toSummary(row);
 	} catch (err) {
-		if (isUniqueViolation(err, 'profile_user_name')) throw new ProfileError(DUPLICATE_NAME);
+		if (isUniqueViolation(err, 'profile_user_name')) throw new ProfileError(duplicateName());
 		throw err;
 	}
 }
@@ -149,8 +160,9 @@ export async function updateProfile(
  */
 export async function deleteProfile(userId: string, id: string): Promise<void> {
 	const existing = await getProfile(userId, id);
-	if (!existing) throw new ProfileError('That profile no longer exists.');
-	if (existing.isPrimary) throw new ProfileError("The account's main profile can't be deleted.");
+	if (!existing) throw new ProfileError(/* @wc-include */ 'That profile no longer exists.');
+	if (existing.isPrimary)
+		throw new ProfileError(/* @wc-include */ "The account's main profile can't be deleted.");
 	await db.delete(profile).where(and(eq(profile.id, id), eq(profile.userId, userId)));
 }
 
@@ -176,7 +188,7 @@ export function viewerProfileId(locals: App.Locals): string | null {
 
 /** For writes that belong to a profile: 401 for guests, 409 before a profile is picked. */
 export function requireProfile(locals: App.Locals): ProfileSummary {
-	if (!locals.user) error(401, 'Sign in to continue.');
-	if (!locals.profile) error(409, 'Choose a profile first.');
+	if (!locals.user) error(401, /* @wc-include */ 'Sign in to continue.');
+	if (!locals.profile) error(409, /* @wc-include */ 'Choose a profile first.');
 	return locals.profile;
 }

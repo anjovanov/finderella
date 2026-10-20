@@ -10,10 +10,11 @@
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import PasswordInput from '$lib/components/password-input.svelte';
+	import { currentLocale } from '$lib/data/locale';
 
 	let { data, form } = $props();
 
-	const joined = $derived(new Date(data.account.createdAt).toLocaleDateString());
+	const joined = $derived(new Date(data.account.createdAt).toLocaleDateString(currentLocale()));
 	const editing = $derived(data.editing);
 
 	// Seeded from the account; Edit, Cancel and a save each re-run the load
@@ -40,19 +41,19 @@
 	}
 	const formError = $derived(form && 'field' in form && form.field === null ? form.message : null);
 
-	const SAVED_LABELS: Record<string, string> = {
-		name: 'name',
-		email: 'email address',
-		password: 'password'
-	};
+	// Whole sentences per combination, so a translation can word each one freely.
 	const savedMessage = $derived.by(() => {
-		const labels = data.saved.flatMap((key) => SAVED_LABELS[key] ?? []);
-		if (labels.length === 0) return null;
-		const list =
-			labels.length === 1
-				? labels[0]
-				: `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
-		return `Your ${list} ${labels.length === 1 ? 'was' : 'were'} updated.`;
+		const name = data.saved.includes('name');
+		const email = data.saved.includes('email');
+		const password = data.saved.includes('password');
+		if (name && email && password) return 'Your name, email address and password were updated.';
+		if (name && email) return 'Your name and email address were updated.';
+		if (name && password) return 'Your name and password were updated.';
+		if (email && password) return 'Your email address and password were updated.';
+		if (name) return 'Your name was updated.';
+		if (email) return 'Your email address was updated.';
+		if (password) return 'Your password was updated.';
+		return null;
 	});
 </script>
 

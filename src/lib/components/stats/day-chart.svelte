@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { AreaChart } from 'layerchart';
 	import * as Chart from '$lib/components/ui/chart';
+	import { currentLocale } from '$lib/data/locale';
 	import type { DayPoint } from '$lib/data/stats';
 
 	/** Stacked area over calendar days (YYYY-MM-DD in the admin's zone). */
@@ -25,8 +26,10 @@
 
 	// Local midnight, so axis ticks and tooltips show the admin's calendar day.
 	const points = $derived(data.map((d) => ({ ...d, date: new Date(`${d.day}T00:00:00`) })));
-	const dayFormat = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
-	const tooltipFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
+	const dayFormat = $derived(
+		new Intl.DateTimeFormat(currentLocale(), { month: 'short', day: 'numeric' })
+	);
+	const tooltipFormat = $derived(new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'medium' }));
 </script>
 
 <Chart.Container {config} class="aspect-auto h-64 w-full">

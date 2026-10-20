@@ -1,8 +1,9 @@
 import { error, redirect, type Handle, type ServerInit } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { isAdmin } from '$lib/auth-roles';
-import { getBranding, loginRequired } from '$lib/server/site-settings';
+import { defaultLocale, getBranding, loginRequired } from '$lib/server/site-settings';
 import { markSeen } from '$lib/server/stats/seen';
 import { markSessionActive } from '$lib/server/account-sessions';
 import { setActiveProfile } from '$lib/server/active-profile';
@@ -10,6 +11,17 @@ import { ensurePrimaryProfile, listProfiles } from '$lib/server/profiles';
 import { pickActiveProfile } from '$lib/data/profiles';
 import { brandStyleSheet } from '$lib/data/branding';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
+import { loadLocales, runWithLocale } from 'wuchale/load-utils/server';
+import { locales } from './locales/data.js';
+import * as mainCatalog from './locales/main.loader.server.svelte.js';
+import * as jsCatalog from './locales/js.loader.server.js';
+import { resolveLocale } from '$lib/data/locale';
+import { profileLanguage } from '$lib/server/profile-settings';
+
+// Every locale's wuchale catalogs, loaded once; handleLocale renders each request
+// inside runWithLocale (per-request AsyncLocalStorage) with its viewer's catalog.
+await loadLocales(mainCatalog.key, mainCatalog.loadCount, mainCatalog.loadCatalog, locales);
+await loadLocales(jsCatalog.key, jsCatalog.loadCount, jsCatalog.loadCatalog, locales);
 
 // Bridge the WebSocket handlers out of the SvelteKit bundle so the production
 // server (server/index.js) can route /gateway/ws (storage gateways) and
@@ -173,4 +185,24 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	return svelteKitHandler({ event, resolve: resolveWithTheme, auth, building });
 };
 
-export const handle: Handle = handleBetterAuth;
+// The UI language: the active profile's pick, else the hub's default. Runs after
+// handleBetterAuth, which resolves the profile. Everything rendered inside
+// runWithLocale uses that catalog; the root layout hands the same locale to the
+// client, whose +layout.ts loads its catalogs.
+const handleLocale: Handle = async ({ event, resolve }) => {
+	// Media bytes carry no text (and skip the lookups, like the auth handle).
+	if (event.url.pathname.startsWith('/api/stream/')) return resolve(event);
+	const profileId = event.locals.profile?.id;
+	const locale = resolveLocale(
+		profileId ? await profileLanguage(profileId) : null,
+		await defaultLocale()
+	);
+	event.locals.locale = locale;
+	return await runWithLocale(locale, () =>
+		resolve(event, {
+			transformPageChunk: ({ html }) => html.replace('%finderella.lang%', locale)
+		})
+	);
+};
+
+export const handle: Handle = sequence(handleBetterAuth, handleLocale);

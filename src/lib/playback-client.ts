@@ -183,11 +183,11 @@ export function createHeartbeat(sessionId: string, onTerminated: (message: strin
 			body: JSON.stringify(snapshot),
 			keepalive: true
 		})
-			.then(async (res) => {
+			.then((res) => {
 				if (res.status !== 410 || disposed) return;
 				dispose();
-				const body = (await res.json().catch(() => null)) as { message?: string } | null;
-				onTerminated(body?.message ?? 'Playback was stopped.');
+				// 410 = an admin stopped it; the hub sends no text (it has no viewer language there).
+				onTerminated('Playback was stopped by an administrator.');
 			})
 			.catch(() => {});
 	}

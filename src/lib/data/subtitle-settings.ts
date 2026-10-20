@@ -5,6 +5,8 @@
  */
 
 import { normalizeLanguage } from '@finderella/protocol/languages';
+import { labeled } from '$lib/labels';
+import plural from '$lib/plural';
 
 export const SUBTITLE_SIZES = ['small', 'medium', 'large', 'xlarge'] as const;
 export type SubtitleSize = (typeof SUBTITLE_SIZES)[number];
@@ -38,27 +40,27 @@ export const DEFAULT_SUBTITLE_SETTINGS: SubtitleSettings = {
 };
 
 export const SUBTITLE_SIZE_OPTIONS: { value: SubtitleSize; label: string }[] = [
-	{ value: 'small', label: 'Small' },
-	{ value: 'medium', label: 'Medium' },
-	{ value: 'large', label: 'Large' },
-	{ value: 'xlarge', label: 'Extra large' }
+	labeled({ value: 'small' }, () => 'Small'),
+	labeled({ value: 'medium' }, () => 'Medium'),
+	labeled({ value: 'large' }, () => 'Large'),
+	labeled({ value: 'xlarge' }, () => 'Extra large')
 ];
 
 export const SUBTITLE_COLOR_OPTIONS: { value: string; label: string }[] = [
-	{ value: '#ffffff', label: 'White' },
-	{ value: '#ffff00', label: 'Yellow' },
-	{ value: '#00ffff', label: 'Cyan' },
-	{ value: '#00ff00', label: 'Green' },
-	{ value: '#ff00ff', label: 'Magenta' },
-	{ value: '#ff4040', label: 'Red' },
-	{ value: '#000000', label: 'Black' }
+	labeled({ value: '#ffffff' }, () => 'White'),
+	labeled({ value: '#ffff00' }, () => 'Yellow'),
+	labeled({ value: '#00ffff' }, () => 'Cyan'),
+	labeled({ value: '#00ff00' }, () => 'Green'),
+	labeled({ value: '#ff00ff' }, () => 'Magenta'),
+	labeled({ value: '#ff4040' }, () => 'Red'),
+	labeled({ value: '#000000' }, () => 'Black')
 ];
 
 export const SUBTITLE_FONT_OPTIONS: { value: SubtitleFont; label: string }[] = [
-	{ value: 'sans', label: 'Sans-serif' },
-	{ value: 'serif', label: 'Serif' },
-	{ value: 'mono', label: 'Monospace' },
-	{ value: 'casual', label: 'Casual' }
+	labeled({ value: 'sans' }, () => 'Sans-serif'),
+	labeled({ value: 'serif' }, () => 'Serif'),
+	labeled({ value: 'mono' }, () => 'Monospace'),
+	labeled({ value: 'casual' }, () => 'Casual')
 ];
 
 export const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
@@ -118,7 +120,7 @@ export function cueLine(position: number): number {
 export function positionLabel(position: number): string {
 	const lines = asLines(position, DEFAULT_SUBTITLE_SETTINGS.position);
 	if (lines === 0) return 'Bottom edge';
-	return `${lines} ${lines === 1 ? 'line' : 'lines'} up`;
+	return plural(lines, ['# line up', '# lines up']);
 }
 
 const FONT_STACKS: Record<SubtitleFont, string> = {

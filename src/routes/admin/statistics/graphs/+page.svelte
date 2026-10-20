@@ -6,6 +6,7 @@
 	import DayChart from '$lib/components/stats/day-chart.svelte';
 	import PeriodToggle from '$lib/components/stats/period-toggle.svelte';
 	import RankChart from '$lib/components/stats/rank-chart.svelte';
+	import { currentLocale } from '$lib/data/locale';
 	import type { TopEntry } from '$lib/data/stats';
 
 	let { data } = $props();
@@ -17,7 +18,9 @@
 	const noun = $derived(metric === 'plays' ? 'Plays' : 'Watch time (hours)');
 
 	const formatValue = (value: number) =>
-		metric === 'plays' ? value.toLocaleString() : `${value.toLocaleString()}h`;
+		metric === 'plays'
+			? value.toLocaleString(currentLocale())
+			: `${value.toLocaleString(currentLocale())}h`;
 
 	const rank = (entries: TopEntry[]) =>
 		entries.map((e) => ({

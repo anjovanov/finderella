@@ -14,7 +14,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { formatBytes } from '$lib/data/media-format';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatRelative } from '$lib/data/time';
+	import plural from '$lib/plural';
 	import type { DeviceLibrary } from './types';
 
 	let {
@@ -56,15 +58,13 @@
 	);
 
 	const kindLabel = $derived(library.kind === 'series' ? 'Series' : 'Movies');
-	const filesLabel = $derived(
-		`${library.files.toLocaleString()} ${library.files === 1 ? 'file' : 'files'}`
-	);
+	const filesLabel = $derived(plural(library.files, ['# file', '# files']));
 	const sizeLabel = $derived(formatBytes(library.bytes));
 	const scannedLabel = $derived(
 		library.lastScanAt ? `Scanned ${formatRelative(library.lastScanAt)}` : 'Not scanned yet'
 	);
 	const scannedTitle = $derived(
-		library.lastScanAt ? new Date(library.lastScanAt).toLocaleString() : undefined
+		library.lastScanAt ? new Date(library.lastScanAt).toLocaleString(currentLocale()) : undefined
 	);
 </script>
 

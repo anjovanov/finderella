@@ -2,6 +2,7 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { PlayIcon, StarIcon } from '@hugeicons/core-free-icons';
 	import { episodeWatchHref, type Episode, type Series } from '$lib/data';
+	import { currentLocale } from '$lib/data/locale';
 	import EpisodeMenu from './episode-menu.svelte';
 	import PosterArt from './poster-art.svelte';
 	import MediaFormatTooltip from './media-format-tooltip.svelte';
@@ -58,7 +59,10 @@
 					class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm"
 				>
 					<HugeiconsIcon icon={StarIcon} class="size-3 text-yellow-400" />
-					{episode.rating.toFixed(1)}
+					{episode.rating.toLocaleString(currentLocale(), {
+						minimumFractionDigits: 1,
+						maximumFractionDigits: 1
+					})}
 				</span>
 			{/if}
 			<!-- Always-visible badge; pops slightly when the card is hovered. `scale`

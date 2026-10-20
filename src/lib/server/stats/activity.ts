@@ -101,7 +101,11 @@ export async function listActiveStreams(): Promise<ActiveStream[]> {
 		return {
 			sessionId: s.id,
 			user: s.userId
-				? { id: s.userId, name: u?.name ?? 'Deleted user', image: u?.image ?? null }
+				? {
+						id: s.userId,
+						name: u?.name ?? /* @wc-include */ 'Deleted user',
+						image: u?.image ?? null
+					}
 				: null,
 			profileName: s.profileName,
 			title,
@@ -128,11 +132,11 @@ export async function listActiveStreams(): Promise<ActiveStream[]> {
 			subtitleLabel: subtitleLabels[i],
 			device: {
 				id: s.source.gatewayId,
-				name: gatewayBy.get(s.source.gatewayId) ?? 'Unknown device'
+				name: gatewayBy.get(s.source.gatewayId) ?? /* @wc-include */ 'Unknown device'
 			},
 			bitrateBps: s.rate.read(now),
 			bytesSent: s.bytesSent,
-			terminating: !!s.terminateMessage
+			terminating: !!s.terminateRequested
 		};
 	});
 }

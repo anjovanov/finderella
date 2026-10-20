@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { auth } from '$lib/server/auth';
+import { authErrorMessage } from '$lib/auth-messages';
 import { registrationOpen } from '$lib/server/site-settings';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -20,7 +21,7 @@ export const actions: Actions = {
 			await auth.api.signInEmail({ body: { email, password }, headers: event.request.headers });
 		} catch (error) {
 			if (error instanceof APIError) {
-				return fail(400, { message: error.message || 'Sign in failed', email });
+				return fail(400, { message: authErrorMessage(error.body?.code, 'sign-in'), email });
 			}
 			return fail(500, { message: 'Unexpected error', email });
 		}

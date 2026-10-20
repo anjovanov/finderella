@@ -4,6 +4,8 @@
  * in a cookie (see /admin/statistics/+layout.svelte).
  */
 
+import { currentLocale } from '$lib/data/locale';
+
 export const TZ_COOKIE = 'finderella_tz';
 
 /** An IANA zone the runtime (and therefore Postgres' tz database) knows, else UTC. */
@@ -45,8 +47,13 @@ export function fillDays<T extends { day: string }>(
 	return range.map((day) => byDay.get(day) ?? empty(day));
 }
 
-/** Postgres ISO day-of-week (1 = Monday) labels. */
-export const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+/** Postgres ISO day-of-week (1 = Monday) → "Mon", in the UI language. */
+export function weekdayLabel(isoDay: number): string {
+	// 2024-01-01 was a Monday.
+	return new Intl.DateTimeFormat(currentLocale(), { weekday: 'short', timeZone: 'UTC' }).format(
+		Date.UTC(2024, 0, isoDay)
+	);
+}
 
 /** "00" … "23". */
 export function hourLabel(hour: number): string {

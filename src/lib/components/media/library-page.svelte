@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { Genre, MediaItem } from '$lib/data';
+	import { currentLocale } from '$lib/data/locale';
+	import plural from '$lib/plural';
 	import LibraryToolbar from './library-toolbar.svelte';
 	import PosterCard from './poster-card.svelte';
 
@@ -47,10 +49,10 @@
 			sort === 'year'
 				? b.year - a.year
 				: sort === 'release'
-					? a.year - b.year || a.title.localeCompare(b.title)
+					? a.year - b.year || a.title.localeCompare(b.title, currentLocale())
 					: sort === 'rating'
 						? b.rating - a.rating
-						: a.title.localeCompare(b.title)
+						: a.title.localeCompare(b.title, currentLocale())
 		);
 	});
 	// The kind filter only earns its place when both kinds are present.
@@ -64,7 +66,7 @@
 		{@render eyebrow?.()}
 		<h1 class="text-3xl font-bold tracking-tight">{title}</h1>
 		<p class="text-sm text-muted-foreground">
-			{filtered.length} of {items.length} titles
+			{filtered.length} of {plural(items.length, ['# title', '# titles'])}
 		</p>
 	</div>
 	{#if items.length === 0 && empty}

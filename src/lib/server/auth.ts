@@ -38,7 +38,11 @@ export const auth = betterAuth({
 		before: createAuthMiddleware(async (ctx) => {
 			if (ctx.path !== '/sign-up/email') return;
 			if (await registrationOpen()) return;
-			throw new APIError('FORBIDDEN', { message: 'Registration is closed on this server.' });
+			throw new APIError('FORBIDDEN', {
+				message: 'Registration is closed on this server.',
+				// The register form words it from the code (authErrorMessage).
+				code: 'REGISTRATION_CLOSED'
+			});
 		})
 	},
 	databaseHooks: {

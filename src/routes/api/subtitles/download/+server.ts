@@ -53,11 +53,11 @@ function throttled(userId: string): boolean {
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = locals.user;
-	if (!user) error(401, 'Sign in to download subtitles.');
+	if (!user) error(401, /* @wc-include */ 'Sign in to download subtitles.');
 	if (throttled(user.id)) {
 		error(
 			429,
-			`You've downloaded ${THROTTLE_MAX} subtitles in the last 10 minutes; please wait a little.`
+			/* @wc-include */ `You've downloaded ${THROTTLE_MAX} subtitles in the last 10 minutes; please wait a little.`
 		);
 	}
 	const parsed = DownloadRequest.safeParse(await request.json().catch(() => null));
@@ -68,7 +68,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!session) error(404, 'no such playback session');
 	const file = session.source.file;
 	const query = await titleQueryForFile(file);
-	if (!query) error(404, 'This title is missing from the catalog.');
+	if (!query) error(404, /* @wc-include */ 'This title is missing from the catalog.');
 	const settings = await getSubtitleProviderSettings();
 	const candidate: SubtitleCandidate = {
 		provider: parsed.data.provider,

@@ -124,7 +124,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = locals.user ?? null;
 	// hooks.server.ts already answers 401 when an account is required; this is
 	// the defensive check for guest mode being switched off mid-session.
-	if (!user && (await loginRequired())) error(401, 'Sign in to watch.');
+	if (!user && (await loginRequired())) error(401, /* @wc-include */ 'Sign in to watch.');
 	const viewerId = user?.id ?? null;
 	// Signed in but no profile picked yet (several on the account): 409.
 	const profile = user ? requireProfile(locals) : null;
@@ -150,11 +150,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		kind === 'movie' ? await pickMovieSource(slug) : await pickEpisodeSource(slug, episodeSlug!);
 	if (!lookup.source) {
 		if (lookup.reason === 'offline') {
-			error(503, 'The device holding this title is offline right now.');
+			error(503, /* @wc-include */ 'The device holding this title is offline right now.');
 		}
 		error(
 			404,
-			'No media file is linked to this title. Add it to a library on a device and rescan.'
+			/* @wc-include */ 'No media file is linked to this title. Add it to a library on a device and rescan.'
 		);
 	}
 	const source = lookup.source;

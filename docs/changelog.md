@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-21
+
+**Spanish, and a language setting** (migration `0034_ui_language`: `profile_settings.language`, `site_settings.default_language`).
+
+- **The app speaks English and Spanish.** Menus, buttons, settings, the player, admin pages and messages are translated; numbers, dates, times, durations and language names follow the chosen language too ("12.345 archivos", "hace 3 horas", "1h 2min", "Inglés").
+- **Each profile picks its language** in Settings → Preferences → **Language**; the change applies at once, on every device that profile uses.
+- **Admins set the default language** in Site settings → **Language** (English unless changed). Guests, the sign-in pages and profiles that haven't picked a language use it.
+- **Watch parties mix languages:** each viewer reads "Ana paused" / "Ana ha pausado" in their own language.
+- Not translated: titles, descriptions and episode names from TMDB, genre values in links, subtitle-provider error texts and admin job notes.
+- Fixed a blank page after installing the translation library: no catalog was loaded, so every text rendered empty.
+
 ## 2026-10-20
 
 **No limit on simultaneous viewers** (no schema change; `HubLimits.maxTranscodeSessions` and `maxConcurrentTransfers` removed).

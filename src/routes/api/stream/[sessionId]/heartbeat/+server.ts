@@ -13,16 +13,15 @@ const Beat = z.object({
 /**
  * Player heartbeat (every 10 s and on play/pause/buffering changes). Like the
  * other /api/stream routes it is authorized by the session uuid alone, so it
- * skips the Better Auth lookup. 410 = an admin stopped the stream; the body's
- * message is shown to the viewer.
+ * skips the Better Auth lookup. 410 = an admin stopped the stream (the player
+ * words it in the viewer's language).
  */
 export const POST: RequestHandler = async ({ params, request }) => {
 	const session = sessionManager.get(params.sessionId!);
 	if (!session) error(404, 'no such playback session');
-	if (session.terminateMessage) {
-		const message = session.terminateMessage;
+	if (session.terminateRequested) {
 		await sessionManager.stop(session.id, 'admin');
-		return json({ message }, { status: 410 });
+		return json({ stoppedBy: 'admin' }, { status: 410 });
 	}
 	const parsed = Beat.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) error(400, 'expected { state, positionSeconds, durationSeconds }');

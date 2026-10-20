@@ -56,7 +56,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 		{ title: 'Series', items: series, href: resolve('/series') },
 		{
 			title: 'Mysteries & thrillers',
-			items: [...new Set([...byGenre('Mystery', allItems), ...byGenre('Thriller', allItems)])]
+			items: [
+				...new Set([
+					...byGenre(/* @wc-ignore */ 'Mystery', allItems),
+					...byGenre(/* @wc-ignore */ 'Thriller', allItems)
+				])
+			]
 		}
 	];
 	return { hero, rows: rows.filter((row): row is Row => !!row && row.items.length > 0) };

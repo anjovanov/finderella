@@ -1,4 +1,5 @@
 import type { ProfileColor, ProfileIcon } from './profiles';
+import plural from '$lib/plural';
 
 /**
  * Watch together: client-safe vocabulary + pure sync math shared by the hub's
@@ -40,17 +41,26 @@ export interface TogetherParticipant {
 	connected: boolean;
 }
 
-export interface TogetherChatEntry {
+/**
+ * A system line in the feed ("Ana paused"). The hub sends what happened, not
+ * text: rooms live outside any request, and each viewer reads the line in
+ * their own UI language (`chatEventText` in $lib/together/notices).
+ */
+export type TogetherEvent =
+	| { type: 'joined' | 'left' | 'played' | 'paused' | 'host' }
+	| { type: 'seeked'; position: number }
+	/** `label` = what the starter's player called the episode ('' = unknown). */
+	| { type: 'media'; label: string }
+	| { type: 'removed'; target: string };
+
+export type TogetherChatEntry = {
 	id: string;
 	/** Hub clock (ms). */
 	at: number;
-	/** `event` = a system line ("Ana paused"); `message` = chat text. */
-	kind: 'message' | 'event';
-	text: string;
-	/** Sender (messages) / actor (events); absent for events without one. */
+	/** Sender (messages) / actor (events). */
 	participantId?: string;
 	name?: string;
-}
+} & ({ kind: 'message'; text: string } | { kind: 'event'; event: TogetherEvent });
 
 export const TOGETHER_REACTIONS = ['😂', '😮', '😍', '😢', '👏', '🔥', '😱', '👍'] as const;
 export type TogetherReaction = (typeof TOGETHER_REACTIONS)[number];
@@ -74,6 +84,13 @@ export type TogetherClientMessage =
 
 export type TogetherEndReason = 'ended' | 'kicked' | 'gone';
 
+/**
+ * Why a viewer's party ended, worded by the client (`endedText`): `full` and
+ * `replaced` (the seat moved to another window) only refuse or close one
+ * viewer. `by` = the host who ended the party or removed this viewer.
+ */
+export type TogetherEnd = { reason: TogetherEndReason | 'full' | 'replaced'; by?: string };
+
 /** Hub → browser. */
 export type TogetherServerMessage =
 	| {
@@ -89,10 +106,15 @@ export type TogetherServerMessage =
 	| { type: 'chat'; entry: TogetherChatEntry }
 	| { type: 'reaction'; participantId: string; name: string; emoji: TogetherReaction }
 	| { type: 'pong'; t0: number; serverTime: number }
-	| { type: 'ended'; reason: TogetherEndReason; message: string }
-	| { type: 'error'; message: string };
+	| ({ type: 'ended' } & TogetherEnd)
+	/** `slow-down`: chat rate limit. */
+	| { type: 'error'; code: 'slow-down' };
 
-/** WebSocket close codes the hub uses when it refuses or ends a connection. */
+/**
+ * WebSocket close codes the hub uses when it refuses or ends a connection. The
+ * close reason is a TogetherEnd reason (`replaced` for a seat taken over by
+ * another window), never text.
+ */
 export const TOGETHER_CLOSE = {
 	ended: 4000,
 	kicked: 4003,
@@ -194,7 +216,10 @@ export function listNames(names: readonly string[]): string {
 	if (names.length <= 1) return names[0] ?? '';
 	if (names.length === 2) return `${names[0]} and ${names[1]}`;
 	if (names.length === 3) return `${names[0]}, ${names[1]} and ${names[2]}`;
-	return `${names[0]}, ${names[1]} and ${names.length - 2} others`;
+	return plural(names.length - 2, [
+		`${names[0]}, ${names[1]} and # other`,
+		`${names[0]}, ${names[1]} and # others`
+	]);
 }
 
 /**

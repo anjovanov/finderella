@@ -54,7 +54,7 @@ import {
 	type UserStatsRow,
 	type WatchTimeWindow
 } from '$lib/data/stats';
-import { dayRange, fillDays, hourLabel, todayIn, WEEKDAY_LABELS } from './period';
+import { dayRange, fillDays, hourLabel, todayIn, weekdayLabel } from './period';
 
 /**
  * Statistics queries over `play_history` (+ the catalog for library stats):
@@ -127,7 +127,9 @@ function toStatUser(
 	id: string | null,
 	row: { userName: string | null; userImage: string | null }
 ): StatUser | null {
-	return id ? { id, name: row.userName ?? 'Deleted user', image: row.userImage } : null;
+	return id
+		? { id, name: row.userName ?? /* @wc-include */ 'Deleted user', image: row.userImage }
+		: null;
 }
 
 const platformColumns = {
@@ -285,7 +287,11 @@ export async function topSeries(
 		)
 		.orderBy(desc(playsCol), desc(secondsCol))
 		.limit(limit);
-	return rows.map((r) => ({ kind: 'series', ...r, title: r.title ?? 'Unknown series' }));
+	return rows.map((r) => ({
+		kind: 'series',
+		...r,
+		title: r.title ?? /* @wc-include */ 'Unknown series'
+	}));
 }
 
 export async function topUsers(days: number, tz: string, limit = 5): Promise<TopEntry[]> {
@@ -304,7 +310,7 @@ export async function topUsers(days: number, tz: string, limit = 5): Promise<Top
 		.limit(limit);
 	return rows.map((r) => ({
 		key: r.userId ?? 'guest',
-		label: r.userId ? (r.userName ?? 'Deleted user') : 'Guests',
+		label: r.userId ? (r.userName ?? /* @wc-include */ 'Deleted user') : /* @wc-include */ 'Guests',
 		plays: r.plays,
 		playedSeconds: r.playedSeconds,
 		user: toStatUser(r.userId, r)
@@ -326,7 +332,7 @@ export async function topPlatforms(days: number, tz: string, limit = 5): Promise
 		.limit(limit);
 	return rows.map((r) => ({
 		key: `${r.browser ?? ''}|${r.os ?? ''}`,
-		label: [r.browser, r.os].filter(Boolean).join(' · ') || 'Unknown',
+		label: [r.browser, r.os].filter(Boolean).join(' · ') || /* @wc-include */ 'Unknown',
 		plays: r.plays,
 		playedSeconds: r.playedSeconds
 	}));
@@ -465,7 +471,6 @@ export async function activityGraphs(
 	};
 	const weekdays = [1, 2, 3, 4, 5, 6, 7];
 	const hours = Array.from({ length: 24 }, (_, h) => h);
-	const weekdayLabel = (k: number) => WEEKDAY_LABELS[k - 1];
 	return {
 		plays: {
 			byDay: toDays(byDay.plays),
@@ -717,7 +722,7 @@ export async function userDetail(userId: string): Promise<UserDetail | null> {
 		windows,
 		platforms: platforms.map((p) => ({
 			key: `${p.browser ?? ''}|${p.os ?? ''}`,
-			label: [p.browser, p.os].filter(Boolean).join(' · ') || 'Unknown',
+			label: [p.browser, p.os].filter(Boolean).join(' · ') || /* @wc-include */ 'Unknown',
 			plays: p.plays,
 			playedSeconds: p.playedSeconds
 		}))
@@ -737,10 +742,10 @@ async function watchTimeWindows(filter: SQL): Promise<WatchTimeWindow[]> {
 			Number
 		);
 	const windows = [
-		{ label: 'Last 24 hours', hours: 24 },
-		{ label: 'Last 7 days', hours: 24 * 7 },
-		{ label: 'Last 30 days', hours: 24 * 30 },
-		{ label: 'All time', hours: null }
+		{ label: /* @wc-include */ 'Last 24 hours', hours: 24 },
+		{ label: /* @wc-include */ 'Last 7 days', hours: 24 * 7 },
+		{ label: /* @wc-include */ 'Last 30 days', hours: 24 * 30 },
+		{ label: /* @wc-include */ 'All time', hours: null }
 	];
 	const [agg] = await db
 		.select({

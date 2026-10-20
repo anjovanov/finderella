@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { auth } from '$lib/server/auth';
+import { authErrorMessage } from '$lib/auth-messages';
 import { registrationStatus } from '$lib/server/site-settings';
 import { displayNameFromEmail } from '$lib/server/users';
 import type { Actions, PageServerLoad } from './$types';
@@ -42,7 +43,7 @@ export const actions: Actions = {
 		} catch (error) {
 			if (error instanceof APIError) {
 				const status = error.statusCode === 403 ? 403 : 400;
-				return fail(status, { message: error.message || 'Sign up failed', ...values });
+				return fail(status, { message: authErrorMessage(error.body?.code, 'sign-up'), ...values });
 			}
 			return fail(500, { message: 'Unexpected error', ...values });
 		}

@@ -11,7 +11,9 @@
 	import TitleLink from '$lib/components/stats/title-link.svelte';
 	import TablePagination from '$lib/components/stats/table-pagination.svelte';
 	import UserCell from '$lib/components/stats/user-cell.svelte';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatRelative, formatWatchTime } from '$lib/data/time';
+	import plural from '$lib/plural';
 	import type { UserSortKey } from '$lib/data/stats';
 
 	let { data } = $props();
@@ -56,8 +58,10 @@
 	<Card.Header>
 		<Card.Title>Users</Card.Title>
 		<Card.Description>
-			Every account's activity and watch totals, all time · {data.total.toLocaleString()}
-			{data.total === 1 ? 'account' : 'accounts'}
+			Every account's activity and watch totals, all time · {plural(data.total, [
+				'# account',
+				'# accounts'
+			])}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="overflow-x-auto">
@@ -98,7 +102,9 @@
 							{/if}
 						</Table.Cell>
 						<Table.Cell class="max-w-48"><PlatformLabel platform={row.lastPlatform} /></Table.Cell>
-						<Table.Cell class="text-right tabular-nums">{row.plays.toLocaleString()}</Table.Cell>
+						<Table.Cell class="text-right tabular-nums"
+							>{row.plays.toLocaleString(currentLocale())}</Table.Cell
+						>
 						<Table.Cell class="text-right tabular-nums"
 							>{formatWatchTime(row.playedSeconds)}</Table.Cell
 						>
@@ -122,7 +128,7 @@
 							><PlatformLabel platform={data.guests.lastPlatform} /></Table.Cell
 						>
 						<Table.Cell class="text-right tabular-nums"
-							>{data.guests.plays.toLocaleString()}</Table.Cell
+							>{data.guests.plays.toLocaleString(currentLocale())}</Table.Cell
 						>
 						<Table.Cell class="text-right tabular-nums">
 							{formatWatchTime(data.guests.playedSeconds)}

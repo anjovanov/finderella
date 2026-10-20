@@ -4,14 +4,16 @@
  * direct play and HLS (the hub synthesizes the full VOD playlist).
  */
 
+import { labelTable } from '$lib/labels';
+
 export const SKIP_MODES = ['show', 'auto', 'off'] as const;
 export type SkipMode = (typeof SKIP_MODES)[number];
 
-export const SKIP_MODE_LABELS: Record<SkipMode, string> = {
-	show: 'Show a skip button',
-	auto: 'Skip automatically',
-	off: 'Off'
-};
+export const SKIP_MODE_LABELS: Record<SkipMode, string> = labelTable({
+	show: () => 'Show a skip button',
+	auto: () => 'Skip automatically',
+	off: () => 'Off'
+});
 
 export function isSkipMode(value: unknown): value is SkipMode {
 	return (SKIP_MODES as readonly unknown[]).includes(value);

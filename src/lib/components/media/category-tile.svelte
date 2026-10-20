@@ -1,12 +1,19 @@
 <script lang="ts">
 	import { categoryHref, type CategoryTile } from '$lib/data';
+	import { genreLabel } from '$lib/data/genres';
+	import plural from '$lib/plural';
 	import { cn } from '$lib/utils.js';
 	import LoadedImage from './loaded-image.svelte';
 
 	let { tile, class: className }: { tile: CategoryTile; class?: string } = $props();
 
-	const unit = $derived(tile.type === 'collections' ? 'film' : 'title');
-	const countLabel = $derived(`${tile.count} ${unit}${tile.count === 1 ? '' : 's'}`);
+	const countLabel = $derived(
+		tile.type === 'collections'
+			? plural(tile.count, ['# film', '# films'])
+			: plural(tile.count, ['# title', '# titles'])
+	);
+	// Genre tiles are named by the stored English genre.
+	const name = $derived(tile.type === 'genres' ? genreLabel(tile.name) : tile.name);
 	let loaded = $state(false);
 	let logoLoaded = $state(false);
 	const artReady = $derived(Boolean(tile.imageUrl) && loaded);
@@ -36,21 +43,21 @@
 			{#if tile.logoUrl}
 				<LoadedImage
 					src={tile.logoUrl}
-					alt={tile.name}
+					alt={name}
 					bind:loaded={logoLoaded}
 					class="max-h-full max-w-full object-contain brightness-0 dark:invert"
 				/>
 			{/if}
 			{#if !tile.logoUrl || !logoLoaded}
 				<span class="absolute text-center text-xl font-semibold tracking-tight text-balance">
-					{tile.name}
+					{name}
 				</span>
 			{/if}
 		</div>
 		<div
 			class="absolute inset-x-0 bottom-0 flex items-baseline justify-between gap-2 px-3 pb-2 text-xs text-muted-foreground"
 		>
-			<span class="truncate font-medium group-hover:text-primary">{tile.name}</span>
+			<span class="truncate font-medium group-hover:text-primary">{name}</span>
 			<span class="shrink-0">{countLabel}</span>
 		</div>
 	{:else}
@@ -73,7 +80,7 @@
 					artReady && '[text-shadow:0_1px_8px_rgb(0_0_0/0.5)]'
 				)}
 			>
-				{tile.name}
+				{name}
 			</span>
 			<span class={cn('text-xs', artReady ? 'text-white/70' : 'text-muted-foreground')}>
 				{countLabel}

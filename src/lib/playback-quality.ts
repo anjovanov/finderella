@@ -8,6 +8,8 @@
  * would stall.
  */
 
+import { labeled } from '$lib/labels';
+
 export const QUALITY_IDS = ['original', '2160p', '1080p', '720p', '480p', '360p'] as const;
 export type QualityId = (typeof QUALITY_IDS)[number];
 
@@ -27,7 +29,7 @@ export const QUALITY_LADDER: Record<Exclude<QualityId, 'original'>, QualityRung>
 };
 
 export const QUALITY_OPTIONS: { id: QualityId; label: string }[] = [
-	{ id: 'original', label: 'Original' },
+	labeled({ id: 'original' }, () => 'Original'),
 	{ id: '2160p', label: '2160p (4K)' },
 	{ id: '1080p', label: '1080p' },
 	{ id: '720p', label: '720p' },

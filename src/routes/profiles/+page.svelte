@@ -24,6 +24,7 @@
 	} from '$lib/data/profiles';
 	import { canAddProfile } from '$lib/data/account-limits';
 	import { DialogForm } from '$lib/dialog-form.svelte';
+	import plural from '$lib/plural';
 	import { cn } from '$lib/utils.js';
 
 	let { data, form } = $props();
@@ -96,10 +97,13 @@
 		</h1>
 		{#if managing}
 			<p class="text-sm text-muted-foreground sm:text-base">
-				Choose a profile to rename it or change its look. {data.maxProfiles === null
-					? 'Several people'
-					: `Up to ${data.maxProfiles} people`} can share this account, each with their own progress,
-				watchlist and settings.
+				Choose a profile to rename it or change its look.
+				{data.maxProfiles === null
+					? 'Several people can share this account, each with their own progress, watchlist and settings.'
+					: plural(data.maxProfiles, [
+							'Up to # person can share this account, with their own progress, watchlist and settings.',
+							'Up to # people can share this account, each with their own progress, watchlist and settings.'
+						])}
 			</p>
 		{/if}
 	</div>

@@ -2,8 +2,9 @@
 	import { fly } from 'svelte/transition';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { Cancel01Icon, Download04Icon, Loading03Icon } from '@hugeicons/core-free-icons';
-	import { LANGUAGES, languageName } from '@finderella/protocol/languages';
 	import type { SubtitleTrack } from '$lib/data';
+	import { languageLabel, languageOptions } from '$lib/data/languages';
+	import plural from '$lib/plural';
 	import {
 		downloadSubtitleOnline,
 		searchSubtitlesOnline,
@@ -28,9 +29,7 @@
 		ondownloaded: (tracks: SubtitleTrack[], trackId: string) => void;
 	} = $props();
 
-	const languageOptions = LANGUAGES.map(({ code, name }) => ({ code, name })).toSorted((a, b) =>
-		a.name.localeCompare(b.name)
-	);
+	const languages = $derived(languageOptions());
 	// The prop seeds the select; later changes come from the viewer, not the prop.
 	// svelte-ignore state_referenced_locally
 	let language = $state(initialLanguage);
@@ -108,7 +107,7 @@
 				bind:value={language}
 				class="h-9 rounded-full border border-white/15 bg-white/10 px-3 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-primary"
 			>
-				{#each languageOptions as option (option.code)}
+				{#each languages as option (option.code)}
 					<option value={option.code} class="bg-neutral-900">{option.name}</option>
 				{/each}
 			</select>
@@ -130,7 +129,7 @@
 	{#if loading}
 		<div class="flex items-center gap-3 py-6 text-sm text-white/70">
 			<HugeiconsIcon icon={Loading03Icon} class="size-5 animate-spin" />
-			Searching {languageName(language) ?? language} subtitles…
+			Searching {languageLabel(language) ?? language} subtitles…
 		</div>
 	{:else if searchError}
 		<p class="py-4 text-sm text-red-200">{searchError}</p>
@@ -144,7 +143,7 @@
 		{/if}
 		{#if response.candidates.length === 0}
 			<p class="py-4 text-sm text-white/70">
-				Nothing found in {languageName(language) ?? language}. Try another language.
+				Nothing found in {languageLabel(language) ?? language}. Try another language.
 			</p>
 		{:else}
 			<ul class="flex flex-col divide-y divide-white/10">
@@ -170,7 +169,8 @@
 								{#if result.trusted}<span>trusted</span>{/if}
 								{#if result.aiTranslated}<span>AI translated</span>{/if}
 								{#if result.machineTranslated}<span>machine translated</span>{/if}
-								{#if result.downloads > 0}<span>{result.downloads.toLocaleString()} downloads</span
+								{#if result.downloads > 0}<span
+										>{plural(result.downloads, ['# download', '# downloads'])}</span
 									>{/if}
 								{#if result.uploader}<span>by {result.uploader}</span>{/if}
 							</span>

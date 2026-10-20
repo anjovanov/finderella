@@ -81,7 +81,7 @@ export interface HotSession {
 	bytesSent: number;
 	rate: RateMeter;
 	/** Set by an admin "Stop stream"; the next heartbeat tells the player and ends the session. */
-	terminateMessage?: string;
+	terminateRequested?: boolean;
 }
 
 const IDLE_TIMEOUT_MS = 60_000;
@@ -206,10 +206,10 @@ class SessionManager {
 	}
 
 	/** Admin "Stop stream": the player learns on its next heartbeat; stopped regardless after a grace period. */
-	requestTermination(sessionId: string, message: string): boolean {
+	requestTermination(sessionId: string): boolean {
 		const session = this.#sessions.get(sessionId);
 		if (!session) return false;
-		session.terminateMessage = message;
+		session.terminateRequested = true;
 		setTimeout(() => void this.stop(sessionId, 'admin'), TERMINATE_FALLBACK_MS).unref?.();
 		return true;
 	}

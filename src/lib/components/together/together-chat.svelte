@@ -4,6 +4,8 @@
 	import { Cancel01Icon, SentIcon } from '@hugeicons/core-free-icons';
 	import { CHAT_MAX_LENGTH } from '$lib/data/together';
 	import type { TogetherSession } from '$lib/together/session.svelte';
+	import { chatEventText } from '$lib/together/notices';
+	import { currentLocale } from '$lib/data/locale';
 
 	/** The party's chat + feed, as a side panel inside the player. */
 	let { party, onclose }: { party: TogetherSession; onclose: () => void } = $props();
@@ -27,7 +29,9 @@
 		node.focus({ preventScroll: true });
 	}
 
-	const timeFormat = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+	const timeFormat = $derived(
+		new Intl.DateTimeFormat(currentLocale(), { hour: 'numeric', minute: '2-digit' })
+	);
 </script>
 
 <!-- Bottom-anchored above the control bar; capped height (never past the top bar). -->
@@ -60,7 +64,7 @@
 		<ul class="flex flex-col gap-2 pb-2">
 			{#each party.chat as entry (entry.id)}
 				{#if entry.kind === 'event'}
-					<li class="text-center text-xs text-white/50">{entry.text}</li>
+					<li class="text-center text-xs text-white/50">{chatEventText(entry)}</li>
 				{:else}
 					<li class="flex flex-col">
 						<span class="text-xs text-white/50">

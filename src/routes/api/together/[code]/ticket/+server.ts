@@ -15,7 +15,8 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 	const profile = requireProfile(locals);
 	const parsed = TicketRequest.safeParse(await request.json().catch(() => ({})));
 	if (!parsed.success) error(400, 'expected { resumeParticipantId? }');
-	if (!togetherRooms.get(params.code ?? '')) error(404, 'This watch party has ended.');
+	if (!togetherRooms.get(params.code ?? ''))
+		error(404, /* @wc-include */ 'This watch party has ended.');
 	const ticket = issueTicket({
 		code: params.code ?? '',
 		identity: identityFor(locals, profile),

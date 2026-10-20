@@ -14,6 +14,7 @@
 	import * as Empty from '$lib/components/ui/empty';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { formatWatchTime } from '$lib/data/time';
+	import plural from '$lib/plural';
 	import type { TopTitle } from '$lib/data/stats';
 	import { syncTimeZoneCookie } from '$lib/time-zone';
 
@@ -21,9 +22,6 @@
 
 	// Days and hours are bucketed on this browser's calendar.
 	onMount(() => syncTimeZoneCookie(data.tz, '/settings/statistics'));
-
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	// The last window is "All time": nothing there means nothing to chart either.
 	const hasHistory = $derived((data.windows.at(-1)?.plays ?? 0) > 0);
@@ -54,7 +52,7 @@
 			<span class="truncate font-medium">{item.title}</span>
 		{/if}
 		<span class="text-xs text-muted-foreground">
-			{plural(item.plays, 'play', 'plays')} · {formatWatchTime(item.playedSeconds)}
+			{plural(item.plays, ['# play', '# plays'])} · {formatWatchTime(item.playedSeconds)}
 		</span>
 	</div>
 {/snippet}
@@ -77,10 +75,9 @@
 		<div>
 			<h2 class="text-lg font-semibold">Watch time</h2>
 			<p class="text-sm text-muted-foreground">
-				Finished {plural(data.finished.movies, 'movie', 'movies')} and {plural(
+				Finished {plural(data.finished.movies, ['# movie', '# movies'])} and {plural(
 					data.finished.episodes,
-					'episode',
-					'episodes'
+					['# episode', '# episodes']
 				)}.
 			</p>
 		</div>
@@ -89,7 +86,7 @@
 				<StatTile
 					label={window.label}
 					value={formatWatchTime(window.playedSeconds)}
-					hint={plural(window.plays, 'play', 'plays')}
+					hint={plural(window.plays, ['# play', '# plays'])}
 				/>
 			{/each}
 		</div>

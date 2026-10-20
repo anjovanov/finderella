@@ -29,7 +29,7 @@
 		class="relative flex min-h-[70vh] max-w-3xl page-gutter flex-col justify-end gap-4 pt-32 pb-12"
 	>
 		<span class="text-xs font-medium tracking-[0.3em] text-primary uppercase">
-			Featured {item.kind === 'movie' ? 'movie' : 'series'}
+			{item.kind === 'movie' ? 'Featured movie' : 'Featured series'}
 		</span>
 		<h1 class="text-4xl font-bold tracking-tight text-balance sm:text-6xl">{item.title}</h1>
 		{#if item.tagline}

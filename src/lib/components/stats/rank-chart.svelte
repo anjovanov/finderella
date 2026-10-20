@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { BarChart } from 'layerchart';
 	import * as Chart from '$lib/components/ui/chart';
+	import { currentLocale } from '$lib/data/locale';
 
 	/**
 	 * Horizontal bars, largest first (top platforms, users, codecs…). Each
@@ -12,7 +13,7 @@
 		data,
 		label = 'Value',
 		color = 'var(--chart-1)',
-		format = (value: number) => value.toLocaleString()
+		format = (value: number) => value.toLocaleString(currentLocale())
 	}: {
 		data: { label: string; value: number }[];
 		label?: string;

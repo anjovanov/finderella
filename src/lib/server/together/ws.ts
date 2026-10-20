@@ -80,24 +80,15 @@ function onConnection(ws: WebSocket, ticket: Ticket): void {
 		}
 	};
 	if (!room) {
-		connection.send({ type: 'ended', reason: 'gone', message: 'This watch party has ended.' });
-		ws.close(TOGETHER_CLOSE.gone, 'ended');
+		connection.send({ type: 'ended', reason: 'gone' });
+		ws.close(TOGETHER_CLOSE.gone, 'gone');
 		return;
 	}
 	const joined = room.join(ticket.identity, connection, ticket.resumeId);
 	if (!joined.ok) {
-		const message =
-			joined.reason === 'full'
-				? 'This watch party is full.'
-				: joined.reason === 'kicked'
-					? 'You were removed from this watch party.'
-					: 'This watch party has ended.';
-		connection.send({
-			type: 'ended',
-			reason: joined.reason === 'kicked' ? 'kicked' : 'gone',
-			message
-		});
-		ws.close(joined.reason === 'full' ? TOGETHER_CLOSE.full : TOGETHER_CLOSE.gone, 'refused');
+		const reason = joined.reason === 'ended' ? 'gone' : joined.reason;
+		connection.send({ type: 'ended', reason });
+		ws.close(reason === 'full' ? TOGETHER_CLOSE.full : TOGETHER_CLOSE.gone, reason);
 		return;
 	}
 	const participantId = joined.participantId;

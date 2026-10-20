@@ -33,3 +33,7 @@ test/*
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# wuchale dev-server runtime files
+src/locales/.wuchale/dev.pid
+src/locales/.wuchale/confUpdate.json

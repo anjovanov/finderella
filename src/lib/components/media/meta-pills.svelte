@@ -3,6 +3,10 @@
 	import { StarIcon } from '@hugeicons/core-free-icons';
 	import { Badge } from '$lib/components/ui/badge';
 	import type { MediaItem } from '$lib/data';
+	import { genreLabel } from '$lib/data/genres';
+	import { currentLocale } from '$lib/data/locale';
+	import plural from '$lib/plural';
+	import { formatUnits } from '$lib/data/time';
 	import { resolutionLabel } from '$lib/playback-quality';
 	import MediaFormatTooltip from './media-format-tooltip.svelte';
 
@@ -14,8 +18,11 @@
 	);
 	const lengthLabel = $derived(
 		item.kind === 'movie'
-			? `${Math.floor(item.runtimeMinutes / 60)}h ${item.runtimeMinutes % 60}m`
-			: `${item.seasons.length} season${item.seasons.length === 1 ? '' : 's'}`
+			? formatUnits(
+					{ hours: Math.floor(item.runtimeMinutes / 60), minutes: item.runtimeMinutes % 60 },
+					'minutes'
+				)
+			: plural(item.seasons.length, ['# season', '# seasons'])
 	);
 	// Source resolution of the best file; only the movie detail loader fills sourceWidth/format.
 	const resolution = $derived.by(() => {
@@ -36,7 +43,10 @@
 			icon={StarIcon}
 			class="text-yellow-500 dark:text-yellow-400 {md ? 'size-5' : 'size-4'}"
 		/>
-		{item.rating.toFixed(1)}
+		{item.rating.toLocaleString(currentLocale(), {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1
+		})}
 	</span>
 	<span>{yearLabel}</span>
 	<span aria-hidden="true">·</span>
@@ -53,6 +63,6 @@
 		<Badge variant="outline" class={md ? 'h-6 px-2.5 text-sm' : ''}>{resolution}</Badge>
 	{/if}
 	{#each item.genres as genre (genre)}
-		<Badge variant="secondary" class={md ? 'h-6 px-2.5 text-sm' : ''}>{genre}</Badge>
+		<Badge variant="secondary" class={md ? 'h-6 px-2.5 text-sm' : ''}>{genreLabel(genre)}</Badge>
 	{/each}
 </div>

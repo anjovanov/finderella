@@ -7,7 +7,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import SaveStatus from '$lib/components/save-status.svelte';
 	import { SettingsSaver } from '$lib/settings-saver.svelte';
-	import { LANGUAGES } from '@finderella/protocol/languages';
+	import { languageLabel, languageOptions } from '$lib/data/languages';
 	import { DEFAULT_AUDIO_LANGUAGE } from '$lib/audio-preference';
 	import { canDecodeSurround, detectOutputChannels } from '$lib/audio-output';
 	import { SKIP_MODE_LABELS, SKIP_MODES, type SkipMode } from '$lib/data/markers';
@@ -60,8 +60,8 @@
 	const autoResult = $derived.by(() => {
 		if (surroundDecodable === undefined || deviceChannels === undefined) return null;
 		return resolveAudioChannels('auto', deviceChannels, surroundDecodable) === 6
-			? '5.1 surround'
-			: 'Stereo';
+			? AUDIO_CHANNEL_LABELS.surround
+			: AUDIO_CHANNEL_LABELS.stereo;
 	});
 
 	// Explains the selected option of each skip select.
@@ -79,12 +79,10 @@
 	// 'default' = the track the file flags as default, which is usually the original language.
 	const ORIGINAL_LANGUAGE = 'Original language';
 
-	const languageOptions = LANGUAGES.map(({ code, name }) => ({ code, name })).toSorted((a, b) =>
-		a.name.localeCompare(b.name)
-	);
-	function languageLabel(code: string): string {
+	const languages = $derived(languageOptions());
+	function preferredLabel(code: string): string {
 		if (code === DEFAULT_AUDIO_LANGUAGE) return ORIGINAL_LANGUAGE;
-		return languageOptions.find((option) => option.code === code)?.name ?? ORIGINAL_LANGUAGE;
+		return languageLabel(code) ?? ORIGINAL_LANGUAGE;
 	}
 
 	function message(section: string): string | null {
@@ -121,11 +119,11 @@
 						onValueChange={(audioLanguage) => audio.save({ audioLanguage })}
 					>
 						<Select.Trigger id="audio-language" class="w-full sm:w-72">
-							{languageLabel(audioLanguage)}
+							{preferredLabel(audioLanguage)}
 						</Select.Trigger>
 						<Select.Content class="max-h-72">
 							<Select.Item value={DEFAULT_AUDIO_LANGUAGE} label={ORIGINAL_LANGUAGE} />
-							{#each languageOptions as option (option.code)}
+							{#each languages as option (option.code)}
 								<Select.Item value={option.code} label={option.name} />
 							{/each}
 						</Select.Content>

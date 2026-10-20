@@ -535,7 +535,12 @@
 		);
 	});
 	// Shown on the row that is actually playing.
-	const DELIVERY_LABELS = { file: 'direct play', remux: 'remuxed', hls: 'transcoded' } as const;
+	// Lower-case (they follow a "·"), so extraction has to be forced.
+	const DELIVERY_LABELS = {
+		file: /* @wc-include */ 'direct play',
+		remux: /* @wc-include */ 'remuxed',
+		hls: /* @wc-include */ 'transcoded'
+	} as const;
 	const delivery = $derived(DELIVERY_LABELS[videoKind]);
 	const chromeVisible = $derived(barVisible || menuOpen);
 
@@ -716,7 +721,7 @@
 		if (stillWatchingOpen) return;
 		// Escape closes the open sheet/menu even while one of its controls has focus.
 		// (In fullscreen the browser may consume Escape to exit fullscreen first.)
-		if (event.key === 'Escape' && menuOpen) {
+		if (event.key === /* @wc-ignore */ 'Escape' && menuOpen) {
 			episodesOpen = false;
 			similarOpen = false;
 			qualityOpen = false;
@@ -725,7 +730,7 @@
 			reactionsOpen = false;
 			return;
 		}
-		if (event.key === 'Escape' && chatOpen) {
+		if (event.key === /* @wc-ignore */ 'Escape' && chatOpen) {
 			party?.setChatOpen(false);
 			return;
 		}
@@ -737,15 +742,15 @@
 		) {
 			return;
 		}
-		if (event.code === 'Space') {
+		if (event.code === /* @wc-ignore */ 'Space') {
 			event.preventDefault();
 			if (!videoEl) return;
 			if (videoEl.paused) videoEl.play().catch(() => {});
 			else videoEl.pause();
-		} else if (event.key === 'ArrowLeft') {
+		} else if (event.key === /* @wc-ignore */ 'ArrowLeft') {
 			event.preventDefault();
 			seekBy(-10);
-		} else if (event.key === 'ArrowRight') {
+		} else if (event.key === /* @wc-ignore */ 'ArrowRight') {
 			event.preventDefault();
 			seekBy(10);
 		} else if ((event.key === 'c' || event.key === 'C') && tracks.length > 0) {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Table from '$lib/components/ui/table';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatBytes } from '$lib/data/media-format';
 	import { formatWatchTime } from '$lib/data/time';
 	import type { HistoryEntry } from '$lib/data/stats';
@@ -11,8 +12,8 @@
 	/** Watch-history rows; `showUser` off on a user's own page. */
 	let { entries, showUser = true }: { entries: HistoryEntry[]; showUser?: boolean } = $props();
 
-	const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
-	const timeFormat = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
+	const dateFormat = $derived(new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'medium' }));
+	const timeFormat = $derived(new Intl.DateTimeFormat(currentLocale(), { timeStyle: 'short' }));
 
 	function complete(entry: HistoryEntry): number | null {
 		if (!entry.durationSeconds) return null;

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Select from '$lib/components/ui/select';
 	import type { Genre } from '$lib/data';
+	import { genreLabel } from '$lib/data/genres';
 
 	const DEFAULT_SORT_LABELS: Record<string, string> = {
 		title: 'Title A–Z',
@@ -54,13 +55,13 @@
 		{#if genres.length > 0}
 			<Select.Root type="single" bind:value={genre}>
 				<Select.Trigger aria-label="Filter by genre">
-					{genre === 'all' ? 'All genres' : genre}
+					{genre === 'all' ? 'All genres' : genreLabel(genre)}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Group>
 						<Select.Item value="all" label="All genres" />
 						{#each genres as g (g)}
-							<Select.Item value={g} label={g} />
+							<Select.Item value={g} label={genreLabel(g)} />
 						{/each}
 					</Select.Group>
 				</Select.Content>

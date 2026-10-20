@@ -239,6 +239,13 @@
       "when": 1792443365924,
       "tag": "0033_hardware_acceleration",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792534528227,
+      "tag": "0034_ui_language",
+      "breakpoints": true
     }
   ]
 }

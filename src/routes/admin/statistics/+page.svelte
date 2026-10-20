@@ -14,7 +14,9 @@
 	import UserCell from '$lib/components/stats/user-cell.svelte';
 	import * as Card from '$lib/components/ui/card';
 	import { formatBitrate } from '$lib/data/media-format';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatWatchTime } from '$lib/data/time';
+	import plural from '$lib/plural';
 	import type { ActiveStream, TopEntry, TopTitle } from '$lib/data/stats';
 
 	let { data, form } = $props();
@@ -52,6 +54,8 @@
 
 	const bandwidth = $derived(streams.reduce((sum, s) => sum + s.bitrateBps, 0));
 	const transcoding = $derived(streams.filter((s) => s.mode === 'hls').length);
+	// A lower-case attribute isn't extracted; this one is UI text.
+	const ofPlays = /* @wc-include */ 'of plays';
 </script>
 
 <PageTitle title="Statistics" />
@@ -61,8 +65,7 @@
 		<h2 class="text-lg font-semibold">Now playing</h2>
 		{#if streams.length}
 			<p class="text-sm text-muted-foreground">
-				{streams.length}
-				{streams.length === 1 ? 'stream' : 'streams'} · {transcoding} transcoding · {formatBitrate(
+				{plural(streams.length, ['# stream', '# streams'])} · {transcoding} transcoding · {formatBitrate(
 					bandwidth
 				)}
 			</p>
@@ -96,13 +99,13 @@
 		<PeriodToggle days={data.days} />
 	</div>
 	<div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-		<StatTile label="Plays" value={data.totals.plays.toLocaleString()} />
+		<StatTile label="Plays" value={data.totals.plays.toLocaleString(currentLocale())} />
 		<StatTile label="Watch time" value={formatWatchTime(data.totals.playedSeconds)} />
-		<StatTile label="Viewers" value={data.totals.viewers.toLocaleString()} />
+		<StatTile label="Viewers" value={data.totals.viewers.toLocaleString(currentLocale())} />
 		<StatTile
 			label="Transcoded"
 			value="{Math.round(data.totals.transcodedShare * 100)}%"
-			hint="of plays"
+			hint={ofPlays}
 		/>
 	</div>
 
@@ -123,8 +126,7 @@
 				<span class="truncate font-medium">{item.title}</span>
 			{/if}
 			<span class="text-xs text-muted-foreground">
-				{item.viewers}
-				{item.viewers === 1 ? 'viewer' : 'viewers'} · {formatWatchTime(item.playedSeconds)}
+				{plural(item.viewers, ['# viewer', '# viewers'])} · {formatWatchTime(item.playedSeconds)}
 			</span>
 		</div>
 		<span class="text-sm tabular-nums">{item.plays}</span>

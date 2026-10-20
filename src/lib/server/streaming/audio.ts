@@ -1,4 +1,5 @@
 import { languageName } from '@finderella/protocol';
+import { languageLabel } from '$lib/data/languages';
 import { channelLabel } from '$lib/data/media-format';
 import type { AudioTrack } from '$lib/data/types';
 import type { mediaAudio } from '$lib/server/db/schema';
@@ -11,18 +12,20 @@ export type AudioRow = typeof mediaAudio.$inferSelect;
  * layout — "English (5.1)", "English – Commentary (Stereo)".
  */
 export function audioLabel(row: AudioRow, index: number): string {
-	const name = languageName(row.language);
+	const english = languageName(row.language);
+	const name = languageLabel(row.language);
 	const title = row.title?.trim();
-	let label = name ?? (title || `Track ${index + 1}`);
-	// Titles like "English 5.1" or "Stereo" repeat what the label already says.
+	let label = name ?? (title || /* @wc-include */ `Track ${index + 1}`);
+	// Titles like "English 5.1" or "Stereo" repeat what the label already says
+	// (in the file's English or in the UI language).
 	const redundant =
 		!title ||
 		!name ||
-		title.toLowerCase().includes(name.toLowerCase()) ||
+		[english, name].some((n) => n && title.toLowerCase().includes(n.toLowerCase())) ||
 		/^(mono|stereo|surround|[257]\.[01])/i.test(title);
 	if (!redundant) label += ` – ${title}`;
-	if (row.commentary && !/commentary/i.test(label)) label += ' – Commentary';
-	if (row.descriptive) label += ' – Audio description';
+	if (row.commentary && !/commentary/i.test(label)) label += ' – ' + /* @wc-include */ 'Commentary';
+	if (row.descriptive) label += ' – ' + /* @wc-include */ 'Audio description';
 	const channels = channelLabel(row.channels);
 	return channels ? `${label} (${channels})` : label;
 }

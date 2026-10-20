@@ -22,7 +22,9 @@
 	import * as Empty from '$lib/components/ui/empty';
 	import { Progress } from '$lib/components/ui/progress';
 	import { STREAM_MODE_LABELS, type ActiveStream } from '$lib/data/stats';
+	import { currentLocale } from '$lib/data/locale';
 	import { formatRelative, formatWatchTime } from '$lib/data/time';
+	import plural from '$lib/plural';
 
 	let { data } = $props();
 
@@ -42,7 +44,7 @@
 		return () => clearInterval(poll);
 	});
 
-	const n = (value: number) => value.toLocaleString();
+	const n = (value: number) => value.toLocaleString(currentLocale());
 	const transcoding = $derived(streams.filter((s) => s.mode === 'hls').length);
 
 	const tiles = $derived([
@@ -56,7 +58,7 @@
 		{
 			label: 'Devices online',
 			value: `${data.stats.devices.online} / ${data.stats.devices.total}`,
-			hint: `${n(data.stats.libraries)} ${data.stats.libraries === 1 ? 'library' : 'libraries'}`,
+			hint: plural(data.stats.libraries, ['# library', '# libraries']),
 			icon: HardDriveIcon,
 			href: resolve('/admin/devices')
 		},
@@ -208,7 +210,10 @@
 									<div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
 										<UserCell user={entry.user} profile={entry.profileName} />
 										<span aria-hidden="true">·</span>
-										<span class="shrink-0" title={new Date(entry.startedAt).toLocaleString()}>
+										<span
+											class="shrink-0"
+											title={new Date(entry.startedAt).toLocaleString(currentLocale())}
+										>
 											{formatRelative(entry.startedAt)}
 										</span>
 									</div>
@@ -255,10 +260,11 @@
 									<p class="text-xs text-muted-foreground">
 										{device.online
 											? 'Online'
-											: `Last seen ${device.lastSeenAt ? formatRelative(device.lastSeenAt) : 'never'}`}
-										· {device.libraries}
-										{device.libraries === 1 ? 'library' : 'libraries'} · {n(device.files)}
-										{device.files === 1 ? 'file' : 'files'}
+											: device.lastSeenAt
+												? `Last seen ${formatRelative(device.lastSeenAt)}`
+												: 'Never seen'}
+										· {plural(device.libraries, ['# library', '# libraries'])} ·
+										{plural(device.files, ['# file', '# files'])}
 									</p>
 								</div>
 							</li>
@@ -316,9 +322,12 @@
 							<TitleLink title={file.title} />
 							<p
 								class="truncate text-xs text-muted-foreground"
-								title={new Date(file.addedAt).toLocaleString()}
+								title={new Date(file.addedAt).toLocaleString(currentLocale())}
 							>
-								{#if file.newEpisodes > 1}{file.newEpisodes} new episodes ·{/if}
+								{#if file.newEpisodes > 1}{plural(file.newEpisodes, [
+										'# new episode',
+										'# new episodes'
+									])} ·{/if}
 								{formatRelative(file.addedAt)}
 							</p>
 						</div>

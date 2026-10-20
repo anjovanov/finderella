@@ -1,3 +1,5 @@
+import plural from '$lib/plural';
+
 /** Rescan intervals offered in admin → Site settings → Library scanning (hours). */
 export const SCAN_INTERVAL_HOURS = [1, 6, 12, 24] as const;
 export type ScanIntervalHours = (typeof SCAN_INTERVAL_HOURS)[number];
@@ -17,5 +19,5 @@ export function scanDue(lastScanAt: Date | null, intervalHours: number | null, n
 
 export function scanIntervalLabel(hours: number | null): string {
 	if (!hours) return 'Off';
-	return hours === 24 ? 'Every day' : hours === 1 ? 'Every hour' : `Every ${hours} hours`;
+	return hours === 24 ? 'Every day' : plural(hours, ['Every hour', 'Every # hours']);
 }

@@ -31,14 +31,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	let media: TogetherMedia;
 	if (kind === 'movie') {
-		if (!(await getMovieBySlug(slug))) error(404, 'Title not found');
+		if (!(await getMovieBySlug(slug))) error(404, /* @wc-include */ 'Title not found');
 		media = { kind, slug };
 	} else {
 		const show = await getSeriesBySlug(slug);
-		if (!show) error(404, 'Title not found');
+		if (!show) error(404, /* @wc-include */ 'Title not found');
 		const flat = flattenEpisodes(show);
 		const episode = episodeSlug ? flat.find(({ episode }) => episode.id === episodeSlug) : flat[0];
-		if (!episode) error(404, 'Episode not found');
+		if (!episode) error(404, /* @wc-include */ 'Episode not found');
 		media = { kind, slug, episodeSlug: episode.episode.id };
 	}
 
