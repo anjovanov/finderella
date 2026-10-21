@@ -27,11 +27,16 @@ forwarding or router configuration**.
 
 ## 1. Install the storage gateway
 
-Grab the tarball URL from the [latest release](../../releases/latest) and:
+Install the newest release:
 
 ```sh
-npm install -g https://github.com/<owner>/<repo>/releases/download/v0.0.1/finderella-storage-gateway-0.0.1.tgz
+npm install -g https://github.com/anjovanov/finderella/releases/latest/download/finderella-storage-gateway.tgz
 ```
+
+The hub and gateway share version numbers. To install the gateway that matches your hub
+exactly, use that release's versioned file:
+`https://github.com/anjovanov/finderella/releases/download/v<version>/finderella-storage-gateway-<version>.tgz`.
+A newer hub works with older gateways, so devices don't have to be updated in step with the hub.
 
 Verify:
 
@@ -41,31 +46,42 @@ finderella-storage-gateway --version
 
 ### Alternative: gateway on the same machine as the hub
 
-If your media lives on the machine that hosts the hub itself, skip the tarball —
-the repo you deployed the hub from already contains the gateway. Build it once in
-the hub's checkout:
+If your media lives on the machine that hosts the hub, you don't need to install anything
+else: the hub tarball and the Docker image both include the gateway.
 
-```sh
-npm run build --workspace @finderella/storage-gateway
-```
-
-and run it with `node` instead of the global command (they are the same file —
-the `finderella-storage-gateway` bin is just a symlink to `dist/cli.js`):
+**Hub from the release tarball** (or a source checkout, after
+`npm run build --workspace @finderella/storage-gateway`): run the gateway with `node` from
+the hub's folder instead of the global command. They are the same file; the
+`finderella-storage-gateway` bin is a symlink to `dist/cli.js`.
 
 ```sh
 node packages/storage-gateway/dist/cli.js pair --hub http://localhost:3000 --code ABCD1234 --name "This server"
 node packages/storage-gateway/dist/cli.js connect
 ```
 
-Pairing against `http://localhost:3000` is deliberate: the token exchange and
-the WebSocket stay on loopback (your reverse proxy still handles TLS for
-browsers). Everything below applies unchanged — substitute
-`node /path/to/repo/packages/storage-gateway/dist/cli.js connect` as the `ExecStart` in
-the systemd unit, and note that a production hub requires the real pairing flow
-(the `GATEWAY_DEV_TOKEN` shortcut only works under `npm run dev`). Updates come
-from the repo (`git pull`, rebuild both, restart both services) rather than a
-release tarball. Optional: `npm install -g ./packages/storage-gateway` after building
-gives you the bare `finderella-storage-gateway` command on this machine too.
+Pairing against `http://localhost:3000` is deliberate: the token exchange and the
+WebSocket stay on loopback (your reverse proxy still handles TLS for browsers).
+Everything below applies unchanged. Substitute
+`node /path/to/hub/packages/storage-gateway/dist/cli.js connect` as the `ExecStart` in
+the systemd unit. A production hub requires the real pairing flow (the
+`GATEWAY_DEV_TOKEN` shortcut only works under `npm run dev`). The gateway updates
+with the hub: install a new hub release and restart both services.
+
+**Hub in Docker** (`docker-compose.yml` from the release): set `MEDIA_DIR` in `.env` to
+the folder that holds your media (mounted at `/media` in the container), generate a
+pairing code (step 2), then:
+
+```sh
+docker compose run --rm gateway pair --hub http://hub:3000 --code ABCD1234 --name "This server"
+docker compose --profile local-gateway up -d
+```
+
+The token and caches live in the `gateway-config` and `gateway-cache` volumes. On the
+Devices page, enter library paths as the container sees them, e.g. `/media/Movies`. The
+container runs as UID 1000, which needs read access to the media and write access for
+downloaded subtitles. The image's bundled ffmpeg has no GPU encoders, so
+transcodes run on the CPU. For GPU transcoding, run the gateway outside Docker with a
+system ffmpeg (see [Hardware acceleration](#hardware-acceleration-gpu)).
 
 ## 2. Generate a pairing code (hub)
 
@@ -237,9 +253,11 @@ the library path instead.
 ## Updating
 
 ```sh
-npm install -g <new release tarball URL>
+npm install -g https://github.com/anjovanov/finderella/releases/latest/download/finderella-storage-gateway.tgz
 sudo systemctl restart finderella-storage-gateway
 ```
+
+The release notes say when a release has no gateway changes; updating is optional then.
 
 ## Hardware acceleration (GPU)
 

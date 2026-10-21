@@ -1,0 +1,171 @@
+# Publishes a Finderella release when a version tag is pushed (see docs/releasing.md):
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# One release carries both products, at the same version:
+# - the hub: Docker image ghcr.io/<owner>/<repo>:<version> (linux/amd64 + arm64), the
+#   finderella-hub-<version>.tar.gz tarball (it includes the storage gateway) and
+#   docker-compose.yml;
+# - the storage gateway: finderella-storage-gateway-<version>.tgz, plus an unversioned copy
+#   so releases/latest/download/finderella-storage-gateway.tgz always points at the newest.
+# A tag with a hyphen (v0.2.0-rc.1) publishes a prerelease and leaves the image's `latest` alone.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  verify:
+    name: Version and checks
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Tag matches both package.json versions
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          hub=$(node -p "require('./package.json').version")
+          gateway=$(node -p "require('./packages/storage-gateway/package.json').version")
+          if [ "$version" != "$hub" ] || [ "$version" != "$gateway" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match package.json ($hub) and packages/storage-gateway/package.json ($gateway). Run npm version (docs/releasing.md) and tag that commit."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          case "$version" in
+            *-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - run: npm ci
+      - run: npm run check
+      - run: npm run lint
+      # Some tests import the db module, which needs a URL (they never connect).
+      - run: npm test
+        env:
+          DATABASE_URL: postgres://test@localhost/test
+
+  gateway-platforms:
+    name: Gateway platforms
+    needs: verify
+    uses: ./.github/workflows/gateway-platforms.yml
+
+  packages:
+    name: Hub tarball and gateway package
+    needs: verify
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Route analysis during the build imports the db and auth modules, which refuse to
+      # load without these; nothing connects at build time and nothing is baked in.
+      - name: Build the hub
+        run: npm run build
+        env:
+          DATABASE_URL: postgres://build@localhost/build
+          BETTER_AUTH_SECRET: build-time-placeholder-never-used-at-runtime
+      - run: npm run build --workspace @finderella/storage-gateway
+      - name: Hub tarball
+        run: |
+          mkdir -p release-out
+          sh scripts/package-hub.sh "release-out/finderella-hub-$VERSION"
+          tar -C release-out -czf "release-out/finderella-hub-$VERSION.tar.gz" "finderella-hub-$VERSION"
+          rm -rf "release-out/finderella-hub-$VERSION"
+      - name: Gateway package
+        run: |
+          npm pack --workspace @finderella/storage-gateway --pack-destination release-out
+          cp "release-out/finderella-storage-gateway-$VERSION.tgz" release-out/finderella-storage-gateway.tgz
+      - name: Checksums
+        working-directory: release-out
+        run: sha256sum *.tar.gz *.tgz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          path: release-out/
+          if-no-files-found: error
+
+  docker:
+    name: Docker image
+    # Pushing is publishing (`latest` moves), so it waits for every test, not just verify.
+    needs: [verify, gateway-platforms]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # v1.2.3 → 1.2.3, 1.2 and latest; a prerelease (v1.3.0-rc.1) only gets its own tag.
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.title=Finderella
+            org.opencontainers.image.description=Finderella hub (self-hosted media streaming), with the storage gateway included
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    name: GitHub release
+    needs: [verify, gateway-platforms, packages, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+      PRERELEASE: ${{ needs.verify.outputs.prerelease }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the notes compare with the previous tag
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-files
+          path: release-out
+      - name: Release notes
+        run: sh scripts/release-notes.sh "$GITHUB_REF_NAME" > release-out/notes.md
+      - name: Publish
+        run: |
+          flags=""
+          if [ "$PRERELEASE" = true ]; then flags="--prerelease"; fi
+          # shellcheck disable=SC2086
+          gh release create "$GITHUB_REF_NAME" --verify-tag $flags \
+            --title "Finderella $VERSION" \
+            --notes-file release-out/notes.md \
+            release-out/*.tar.gz release-out/*.tgz release-out/SHA256SUMS docker-compose.yml

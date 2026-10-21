@@ -20,6 +20,7 @@ import {
 } from './subtitles/extract.js';
 import { TrickplayQueue } from './trickplay/queue.js';
 import { LibraryWatcher } from './watch.js';
+import { GATEWAY_VERSION } from './version.js';
 
 const SUBTITLE_EXTENSION_SET = new Set<string>(SUBTITLE_EXTENSIONS);
 /** How long a `trickplay.get` waits for the sheet ffmpeg is writing next. */
@@ -79,7 +80,7 @@ const program = new Command();
 program
 	.name('finderella-storage-gateway')
 	.description('Finderella storage gateway (media agent) — serves local media to a Finderella hub')
-	.version('0.0.1');
+	.version(GATEWAY_VERSION);
 
 program
 	.command('pair')

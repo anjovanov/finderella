@@ -2,6 +2,14 @@
 
 ## 2026-10-21
 
+**GitHub releases** (no schema change).
+
+- **One release per version, both products in it.** Pushing a `vX.Y.Z` tag tests everything (checks, lint, unit tests, the gateway's OS matrix) and publishes a GitHub release with the hub's Docker image (`ghcr.io/anjovanov/finderella`, amd64 + arm64), a `docker-compose.yml` (hub + PostgreSQL, optional local gateway), a hub tarball for installs without Docker, and the storage gateway on its own. See `docs/releasing.md`.
+- **The hub's downloads include the storage gateway**, for media on the hub's own machine: run it from the tarball's folder, or as the compose file's `local-gateway` service.
+- **Always-current gateway link:** `releases/latest/download/finderella-storage-gateway.tgz`.
+- **Migrations without dev tools:** `npm run db:migrate:deploy` applies them on installs made with `npm ci --omit=dev`; the Docker image runs it at every start.
+- The gateway reports its real version (from its `package.json`) instead of a fixed `0.0.1`. The hub and gateway need Node.js 22 or newer.
+
 **Spanish, and a language setting** (migration `0034_ui_language`: `profile_settings.language`, `site_settings.default_language`).
 
 - **The app speaks English and Spanish.** Menus, buttons, settings, the player, admin pages and messages are translated; numbers, dates, times, durations and language names follow the chosen language too ("12.345 archivos", "hace 3 horas", "1h 2min", "Inglés").

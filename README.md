@@ -41,19 +41,40 @@ Browser ──HTTPS──►  Hub (SvelteKit + Postgres, on your VPS)
 
 ## Hub setup (VPS)
 
-Requirements: Node.js 18+, PostgreSQL.
+Each [release](../../releases) ships the hub as a Docker image and as a tarball, and the
+storage gateway on its own. Pick one of these:
+
+**Docker (recommended).** Download `docker-compose.yml` from the latest release into an
+empty folder, add a `.env` next to it (the variables are listed at the top of the
+file: `ORIGIN`, `BETTER_AUTH_SECRET`, `POSTGRES_PASSWORD`), then:
+
+```sh
+docker compose up -d   # hub on :3000 + PostgreSQL; migrations run on start
+```
+
+**Release tarball** (Node.js 22+, PostgreSQL):
+
+```sh
+tar xzf finderella-hub-<version>.tar.gz && cd finderella-hub-<version>
+npm ci --omit=dev
+cp .env.example .env       # set DATABASE_URL, ORIGIN, BETTER_AUTH_SECRET
+npm run db:migrate:deploy
+npm start                  # serves the app + storage-gateway WebSocket on :3000
+```
+
+**From source:**
 
 ```sh
 git clone <this repo> && cd finderella
 npm ci
 cp .env.example .env   # set DATABASE_URL, ORIGIN, BETTER_AUTH_SECRET
-npm run db:migrate     # or db:push for dev
+npm run db:migrate
 npm run build
-npm start              # serves the app + storage-gateway WebSocket on :3000
+npm start
 ```
 
 Put a TLS reverse proxy in front (nginx/Caddy) and make sure WebSocket upgrades
-are forwarded on `/gateway/ws` (nginx: `proxy_set_header Upgrade $http_upgrade;
+are forwarded on `/gateway/ws` and `/ws/together` (nginx: `proxy_set_header Upgrade $http_upgrade;
 proxy_set_header Connection "upgrade";`).
 
 Open the site, create the first account, and you're in.
@@ -66,12 +87,14 @@ each device that holds media — see
 version:
 
 ```sh
-npm install -g <finderella-storage-gateway tarball from the latest GitHub release>
+npm install -g https://github.com/anjovanov/finderella/releases/latest/download/finderella-storage-gateway.tgz
 finderella-storage-gateway pair --hub https://your-hub-domain --code <code from Settings → Devices>
 finderella-storage-gateway connect
 ```
 
-Then add library folders on the devices page; scans run automatically.
+Then add library folders on the devices page; scans run automatically. Media on
+the hub's own machine needs no separate install: the hub tarball and the Docker
+image include the gateway.
 
 ## Development
 
@@ -98,7 +121,8 @@ storage-gateway CLI (`finderella-storage-gateway`, the media agent). See
 `docs/architecture.md` for architecture details and `CLAUDE.md` for conventions and
 hard-won gotchas.
 
-## Releasing the storage gateway
+## Releasing
 
-Push a version tag (`git tag v0.0.1 && git push origin v0.0.1`) — CI builds the
-storage gateway and attaches the installable tarball to the GitHub Release.
+Bump both versions, then push a `vX.Y.Z` tag. CI tests everything and publishes one
+GitHub release with the hub image, hub tarball and storage gateway. See
+[docs/releasing.md](docs/releasing.md).

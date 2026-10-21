@@ -1,0 +1,70 @@
+# Finderella hub + PostgreSQL. Put this file in an empty folder with a `.env` next to it:
+#
+#   ORIGIN=https://stream.example.com      # the address browsers use
+#   BETTER_AUTH_SECRET=...                 # openssl rand -base64 32
+#   POSTGRES_PASSWORD=...                  # letters and digits only (it goes into a URL)
+#   TMDB_API_KEY=...                       # optional, posters and synopses
+#   FINDERELLA_VERSION=0.1.0               # optional, pins a release (default: latest)
+#
+# then `docker compose up -d` and open the site. Put a TLS reverse proxy in front of port
+# 3000 that forwards WebSocket upgrades (see the README).
+#
+# Media on this same machine: the `gateway` service runs the bundled storage gateway.
+# Set MEDIA_DIR in `.env` to the folder that holds your media, then pair and start it:
+#
+#   docker compose run --rm gateway pair --hub http://hub:3000 --code <code> --name "This server"
+#   docker compose --profile local-gateway up -d
+#
+# Library paths on the Devices page are then container paths, e.g. /media/Movies.
+# See docs/gateway-install.md for the details.
+
+name: finderella
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: finderella
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: finderella
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U finderella -d finderella']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  hub:
+    image: ghcr.io/anjovanov/finderella:${FINDERELLA_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://finderella:${POSTGRES_PASSWORD}@db:5432/finderella
+      ORIGIN: ${ORIGIN:?set ORIGIN in .env}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+    ports:
+      - '3000:3000'
+
+  gateway:
+    image: ghcr.io/anjovanov/finderella:${FINDERELLA_VERSION:-latest}
+    profiles: [local-gateway]
+    restart: unless-stopped
+    depends_on:
+      - hub
+    entrypoint: ['node', 'packages/storage-gateway/dist/cli.js']
+    command: ['connect']
+    volumes:
+      - gateway-config:/home/node/.config/finderella-storage-gateway
+      - gateway-cache:/home/node/.cache/finderella-storage-gateway
+      # Read-write: downloaded subtitles are saved next to the video.
+      - ${MEDIA_DIR:-./media}:/media
+
+volumes:
+  db:
+  gateway-config:
+  gateway-cache:

@@ -7,8 +7,8 @@ import {
 	type HubLimits,
 	type HubMessage
 } from '@finderella/protocol';
+import { GATEWAY_VERSION } from './version.js';
 
-const GATEWAY_VERSION = '0.0.1';
 const HEARTBEAT_INTERVAL_MS = 15_000;
 const HEARTBEAT_TIMEOUT_MS = 10_000;
 const BACKOFF_MIN_MS = 1_000;

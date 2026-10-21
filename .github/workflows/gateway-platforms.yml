@@ -1,9 +1,11 @@
 # Runs the storage gateway's tests on every OS/CPU it supports, plus a smoke test that drives
 # every ffmpeg command the gateway builds through the real binaries (src/platform.smoke.test.ts):
 # once with the ffmpeg the gateway would pick on that runner, once forced to the bundled builds.
+# release.yml also runs it (workflow_call) before publishing a release.
 name: Storage gateway platforms
 
 on:
+  workflow_call:
   push:
     branches: [main]
     paths: ['packages/**', 'package-lock.json', '.github/workflows/gateway-platforms.yml']

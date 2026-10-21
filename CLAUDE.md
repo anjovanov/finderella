@@ -43,6 +43,7 @@ MCP servers (configured in the git-ignored `.mcp.json`) and project skills (`.cl
 - **UI language** — wuchale compile-time i18n (`wuchale.config.js`, `src/locales/{en,es}.po`): English + Spanish; per profile (`/settings/preferences` → Language, null = hub default) else `site_settings.default_language` (admin Site settings); `hooks.server.ts` `handleLocale` → `runWithLocale`, root `+layout.ts` `loadLocale`; helpers `src/lib/data/locale.ts` (`resolveLocale`, `currentLocale()`), `$lib/plural`, `languages.ts`, `genres.ts`; watch-party text is structured and worded per viewer (`src/lib/together/notices.ts`).
 - **Themes & screensaver** — per profile; theme class written by `hooks.server.ts` `transformPageChunk`; `ScreensaverController` (`src/lib/screensaver.svelte.ts`) via context.
 - **Statistics** — `/admin/statistics` (Tautulli-style); `play_history` = one row per viewing, fed by player heartbeats (`src/lib/server/stats/`). Per-profile `/settings/statistics` reuses the same queries with an optional `profileId` (`profileWatchTimes`, `profileFinished`, `activityGraphs`).
+- **Releases** — one GitHub release per `vX.Y.Z` tag for hub + gateway at one version (`.github/workflows/release.yml`, `docs/releasing.md`): GHCR image + `docker-compose.yml`, hub tarball (`scripts/package-hub.sh`, gateway included), gateway `.tgz` (also as `finderella-storage-gateway.tgz` for `releases/latest/download/…`), notes from `scripts/release-notes.sh`; release installs migrate with `server/migrate.js`.
 - **Watch together** — in-memory rooms (`src/lib/server/together/`, `/ws/together`), client `src/lib/together/`, shared timeline but a playback session per viewer.
 
 ## Conventions
@@ -186,6 +187,13 @@ MCP servers (configured in the git-ignored `.mcp.json`) and project skills (`.cl
 - Only the **primary** wuchale process compiles catalogs: the dev server writes `src/locales/.wuchale/dev.pid`, and while it runs, `npx wuchale` and vitest are secondaries that read the compiled catalogs as they are: new messages render `''`, and after messages are added or removed a secondary's ids no longer match the catalog, so `npm run test` returns wrong strings (`'0m'` for `'0s'`). Run the test suite, and any `npm run build` you mean to ship, with the dev server stopped: a build next to it bundles the dev server's compiled catalogs with its own ids, which can disagree the same way (VPS/CI builds have no dev server, so they always compile fresh). Restart the dev server after changing `wuchale.config.js` (it doesn't reload it); run the extractor with the dev server stopped, or let the dev server extract.
 - The client `js` catalogs live in `$state` (`src/locales/js-runtimes.svelte.js`), so plain `.ts` helpers called from templates re-render when the language changes. `src/locales/data.js` and `plural.js` and everything in `.wuchale/` are regenerated, so never edit them. The `*.loader*.js` files are ours only because both adapters use `loader: 'custom'`: with a built-in loader (`'sveltekit'`, `'vite'`) wuchale rewrites them from its templates on every start, silently dropping the fallback and the reactive catalogs.
 
+### Releases
+
+- **The version is written only in the two `package.json`s** (root = hub, `packages/storage-gateway`), kept equal; the workflow refuses a tag that differs. Bump both with `npm version X.Y.Z --no-git-tag-version` (+ `--workspace @finderella/storage-gateway`), never by hand-editing one (the lockfile carries them too). The gateway reads its version via `src/version.ts`; never hard-code it again.
+- `scripts/package-hub.sh` is the **one** list of files a release install gets; the Dockerfile builds from its output. A new runtime file or folder the server reads (outside `build/`) goes in there, and every workspace's `package.json` must ship (`npm ci` refuses the lockfile otherwise).
+- `vite build` imports `db/index.ts` and `auth.ts` during route analysis: it needs `DATABASE_URL` and a non-default `BETTER_AUTH_SECRET` in the environment. CI and the Dockerfile pass placeholders for that command only; keep both modules on `$env/dynamic` so nothing is baked in.
+- Release installs have no drizzle-kit (`--omit=dev`): new migrations must stay plain SQL files in `drizzle/` with the journal, which `server/migrate.js` applies. Never make `npm start` migrate: a `db:push`-managed DB has no journal.
+
 ### Dev server
 
 - The Vite plugin `ssrLoadModule`s `gateways/ws.ts` at WebSocket **upgrade** time, so a connected gateway runs pre-edit handlers (ingest, `finalizeScan`, …) until it reconnects. Editing `@finderella/protocol` re-instantiates `gateways/registry.ts`, so gateways connected before the edit look offline until they reconnect.
@@ -199,7 +207,8 @@ MCP servers (configured in the git-ignored `.mcp.json`) and project skills (`.cl
 - `npm run build` / `npm run preview` / `npm run start` (production via `server/index.js`)
 - `npm run gateway:dev -- connect [--hub URL] [--token T]` — storage gateway from source (env `FINDERELLA_HUB`, `FINDERELLA_TOKEN` or dev `GATEWAY_DEV_TOKEN`)
 - `npm run test` (vitest) · `npm run check` (svelte-check; `check:watch`) · `npm run lint` / `npm run format`
-- `npm run db:push` (dev schema sync) · `npm run db:generate` / `npm run db:migrate` (migrations in `drizzle/`, for prod) · `npm run db:studio`
+- `npm run db:push` (dev schema sync) · `npm run db:generate` / `npm run db:migrate` (migrations in `drizzle/`, for prod) · `npm run db:migrate:deploy` (the same without drizzle-kit, for release installs) · `npm run db:studio`
+- Release: `npm version X.Y.Z --no-git-tag-version` (root and `--workspace @finderella/storage-gateway`), commit `Release vX.Y.Z`, push tag `vX.Y.Z` (`docs/releasing.md`)
 - `npm run auth:schema` — regenerate `src/lib/server/db/auth.schema.ts` (generated; never hand-edit) after changing Better Auth plugins/options
 
 Verify with `npm run test`, `npm run check`, `npm run format && npm run lint`, and dev-server smoke tests.

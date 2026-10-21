@@ -3,6 +3,9 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"engines": {
+		"node": ">=22"
+	},
 	"workspaces": [
 		"packages/*"
 	],
@@ -21,6 +24,7 @@
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
+		"db:migrate:deploy": "node --env-file-if-exists=.env server/migrate.js",
 		"db:studio": "drizzle-kit studio",
 		"auth:schema": "auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes"
 	},
