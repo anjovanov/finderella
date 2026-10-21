@@ -37,3 +37,7 @@ vite.config.ts.timestamp-*
 # wuchale dev-server runtime files
 src/locales/.wuchale/dev.pid
 src/locales/.wuchale/confUpdate.json
+
+# Copied in by the release workflow right before npm pack
+packages/storage-gateway/LICENSE
+packages/storage-gateway/THIRD-PARTY-NOTICES.md

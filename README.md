@@ -126,3 +126,9 @@ hard-won gotchas.
 Bump both versions, then push a `vX.Y.Z` tag. CI tests everything and publishes one
 GitHub release with the hub image, hub tarball and storage gateway. See
 [docs/releasing.md](docs/releasing.md).
+
+## License
+
+[MIT](LICENSE). Releases also contain or download third-party software under its own
+licenses, notably the GPL-licensed ffmpeg builds the storage gateway uses (the Docker
+image includes them). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

@@ -91,6 +91,8 @@ jobs:
           rm -rf "release-out/finderella-hub-$VERSION"
       - name: Gateway package
         run: |
+          # npm pack takes LICENSE from the package's own folder; the notices are in its `files`.
+          cp LICENSE THIRD-PARTY-NOTICES.md packages/storage-gateway/
           npm pack --workspace @finderella/storage-gateway --pack-destination release-out
           cp "release-out/finderella-storage-gateway-$VERSION.tgz" release-out/finderella-storage-gateway.tgz
       - name: Checksums
@@ -130,6 +132,7 @@ jobs:
           labels: |
             org.opencontainers.image.title=Finderella
             org.opencontainers.image.description=Finderella hub (self-hosted media streaming), with the storage gateway included
+            org.opencontainers.image.licenses=MIT
       - uses: docker/build-push-action@v6
         with:
           context: .

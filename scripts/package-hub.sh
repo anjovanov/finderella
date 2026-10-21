@@ -22,7 +22,7 @@ done
 
 mkdir -p "$dest/packages/protocol" "$dest/packages/storage-gateway"
 cp -R build server drizzle package.json package-lock.json .npmrc .env.example README.md "$dest/"
-if [ -f LICENSE ]; then cp LICENSE "$dest/"; fi
+cp LICENSE THIRD-PARTY-NOTICES.md "$dest/"
 # Workspaces: npm ci needs every workspace's package.json. The protocol is bundled into
 # both builds, but npm still links it, so it ships as source (tests left out).
 cp packages/protocol/package.json "$dest/packages/protocol/"

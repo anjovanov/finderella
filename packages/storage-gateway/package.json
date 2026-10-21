@@ -1,6 +1,7 @@
 {
 	"name": "@finderella/storage-gateway",
 	"version": "0.0.1",
+	"license": "MIT",
 	"private": true,
 	"type": "module",
 	"bin": {
@@ -12,7 +13,8 @@
 		"test": "vitest run"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"THIRD-PARTY-NOTICES.md"
 	],
 	"engines": {
 		"node": ">=22"
