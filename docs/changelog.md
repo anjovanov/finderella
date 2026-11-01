@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-01
+
+**Better Auth 1.7.14** (migration `0035_account_drop_issuer`: drops `account.issuer` and its unique index).
+
+- **Fixed "Drizzle schema mismatch" at startup after updating dependencies.** Better Auth 1.7.0–1.7.2 required an `account.issuer` column; 1.7.3 dropped it and now refuses to start while the column is still required. The migration removes the column and the `account_issuer_accountId_uidx` index (`IF EXISTS`, so databases already fixed by hand are fine). Without it, every sign-up on a v0.1.0 install would fail after the update. `better-auth` now requires `^1.7.14`.
+- **Development applies the schema with migrations.** `npm run db:migrate` replaces `npm run db:push` in the setup steps. On PostgreSQL 18, drizzle-kit's `push` reads multi-column unique constraints in the wrong column order and offers to drop and re-create the same four constraints on every run.
+
 ## 2026-10-21
 
 **GitHub releases** (no schema change).

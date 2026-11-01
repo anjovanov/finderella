@@ -246,6 +246,13 @@
       "when": 1792534528227,
       "tag": "0034_ui_language",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793496012669,
+      "tag": "0035_account_drop_issuer",
+      "breakpoints": true
     }
   ]
 }

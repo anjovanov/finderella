@@ -101,7 +101,7 @@ image include the gateway.
 ```sh
 npm install
 cp .env.example .env    # point DATABASE_URL at a local Postgres; TMDB_API_KEY optional
-npm run db:push
+npm run db:migrate
 npm run dev
 ```
 
